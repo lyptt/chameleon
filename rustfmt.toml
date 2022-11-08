@@ -1,0 +1,4 @@
+max_width = 120
+trailing_comma = "Always"
+trailing_semicolon = false
+tab_spaces = 2

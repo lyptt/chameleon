@@ -1,0 +1,39 @@
+[package]
+name = "chameleon"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.actix-web]
+version = "4.2.1"
+
+[dependencies.serde]
+version = "1.0.147"
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1.0.87"
+
+[dependencies.serde_qs]
+version = "0.10.1"
+
+[dependencies.config]
+version = "0.13.2"
+
+[dependencies.lazy_static]
+version = "1.4.0"
+
+[dependencies.sqlx]
+version = "0.6.2"
+features = [ "runtime-tokio-rustls", "postgres", "chrono", "macros", "migrate", "uuid", "json" ]
+
+[dependencies.activitypub]
+version = "0.2.0"
+
+[dependencies.env_logger]
+version = "0.9.3"
+
+[dependencies.log]
+version = "0.4.17"
+
+[dev-dependencies.mockall]
+version = "0.11.3"

@@ -1,0 +1,13 @@
+env = "Development"
+
+[server]
+url = "127.0.0.1"
+fqdn = "http://127.0.0.1:8000"
+api_fqdn = "http://127.0.0.1:8000/api"
+
+[database]
+url = "postgresql://chameleon:chameleon@127.0.0.1:5432/chameleon"
+max_connections = 5
+
+[log]
+level = "Debug"
