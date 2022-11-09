@@ -1,61 +1,27 @@
 use config::Config;
 use lazy_static::lazy_static;
 use serde::Deserialize;
-use std::{env, fmt};
+use std::env;
+use strum::{Display, EnumString};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, EnumString, Display)]
 pub enum AppEnv {
   Development,
   Testing,
   Production,
 }
 
-impl fmt::Display for AppEnv {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    match self {
-      AppEnv::Development => write!(f, "Development"),
-      AppEnv::Testing => write!(f, "Testing"),
-      AppEnv::Production => write!(f, "Production"),
-    }
-  }
-}
-
-impl From<&str> for AppEnv {
-  fn from(env: &str) -> Self {
-    match env {
-      "Testing" => AppEnv::Testing,
-      "Production" => AppEnv::Production,
-      _ => AppEnv::Development,
-    }
-  }
-}
-
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, EnumString, Display)]
 pub enum AppLogLevel {
   Critical,
   Normal,
   Debug,
 }
 
-impl fmt::Display for AppLogLevel {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    match self {
-      AppLogLevel::Critical => write!(f, "Critical"),
-      AppLogLevel::Normal => write!(f, "Normal"),
-      AppLogLevel::Debug => write!(f, "Debug"),
-    }
-  }
-}
-
-impl From<&str> for AppLogLevel {
-  fn from(env: &str) -> Self {
-    match env {
-      "Critical" => AppLogLevel::Critical,
-      "Normal" => AppLogLevel::Normal,
-      "Debug" => AppLogLevel::Debug,
-      _ => AppLogLevel::Debug,
-    }
-  }
+#[derive(Clone, Debug, Deserialize, EnumString, Display)]
+pub enum AppCdnStore {
+  // TODO: Add support for other CDNs (S3, Blob Storage, etc)
+  Local,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -80,11 +46,25 @@ pub struct Database {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Cdn {
+  pub file_store: AppCdnStore,
+  pub path: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
   pub server: Server,
   pub database: Database,
   pub log: Log,
   pub env: AppEnv,
+  pub cdn: Cdn,
+}
+
+fn get_cwd() -> String {
+  match std::env::current_dir() {
+    Ok(path) => path.into_os_string().into_string().unwrap_or(".".to_string()),
+    Err(_) => ".".to_string(),
+  }
 }
 
 impl Settings {
@@ -105,6 +85,10 @@ impl Settings {
         port: 8080,
         fqdn: "http://0.0.0.0:8080".to_string(),
         api_fqdn: "http://0.0.0.0:8080/api".to_string(),
+      },
+      cdn: Cdn {
+        file_store: AppCdnStore::Local,
+        path: get_cwd(),
       },
     }
   }

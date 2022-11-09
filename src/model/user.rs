@@ -1,16 +1,16 @@
-use serde::{Deserialize, Serialize};
 use sqlx::{Error, FromRow, Pool, Postgres};
+use uuid::Uuid;
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
 
-#[derive(Deserialize, Serialize, FromRow)]
+#[derive(Clone, FromRow)]
 pub struct User {
-  user_id: i32,
-  fediverse_id: String,
-  handle: Option<String>,
-  email: Option<String>,
-  password_hash: Option<String>,
-  is_external: bool,
+  pub user_id: Uuid,
+  pub fediverse_id: String,
+  pub handle: Option<String>,
+  pub email: Option<String>,
+  pub password_hash: Option<String>,
+  pub is_external: bool,
 }
 
 impl User {
@@ -47,12 +47,14 @@ impl User {
 
 #[cfg(test)]
 mod tests {
+  use std::str::FromStr;
+
   use super::*;
 
   #[test]
   fn test_to_webfinger_returns_data() {
     let user = User {
-      user_id: 1,
+      user_id: Uuid::from_str("ae1481a5-2eb7-4c52-93c3-e95839578dce").unwrap(),
       fediverse_id: "user@127.0.0.1:8000".to_string(),
       handle: Some("user".to_string()),
       email: Some("user@example.com".to_string()),
@@ -87,7 +89,7 @@ mod tests {
   #[test]
   fn test_to_webfinger_returns_data_for_no_handle() {
     let user = User {
-      user_id: 1,
+      user_id: Uuid::from_str("ae1481a5-2eb7-4c52-93c3-e95839578dce").unwrap(),
       fediverse_id: "user@127.0.0.1:8000".to_string(),
       handle: None,
       email: None,

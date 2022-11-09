@@ -9,5 +9,8 @@ api_fqdn = "http://127.0.0.1:8000/api"
 url = "postgresql://chameleon:chameleon@127.0.0.1:5432/chameleon"
 max_connections = 5
 
+[cdn]
+file_store = "Local"
+
 [log]
 level = "Debug"

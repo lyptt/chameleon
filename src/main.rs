@@ -1,3 +1,5 @@
+mod activitypub;
+mod cdn;
 mod helpers;
 mod logic;
 mod model;
@@ -6,9 +8,11 @@ mod settings;
 
 use actix_web::middleware::Logger;
 use actix_web::{guard, web, App, HttpResponse, HttpServer};
+use cdn::cdn_store::Cdn;
 use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
+use routes::post::{api_get_user_public_feed, api_upload_post_image};
 use routes::user::{api_get_user_by_id, api_get_user_by_id_astream};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -40,6 +44,7 @@ async fn main() -> std::io::Result<()> {
     App::new()
       .wrap(Logger::default())
       .app_data(web::Data::new(pool.clone()))
+      .app_data(web::Data::new(Cdn::new()))
       .service(
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
@@ -53,6 +58,18 @@ async fn main() -> std::io::Result<()> {
           .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE.clone()))
           .to(api_get_user_by_id_astream)
           .route(web::get().to(HttpResponse::Ok)),
+      )
+      .service(
+        web::resource("/api/users/{handle}/feed")
+          .name("get_user_public_feed")
+          .to(api_get_user_public_feed)
+          .route(web::post().to(HttpResponse::Ok)),
+      )
+      .service(
+        web::resource("/api/posts/content")
+          .name("upload_post_image")
+          .to(api_upload_post_image)
+          .route(web::post().to(HttpResponse::Ok)),
       )
       .service(
         web::resource("/.well-known/webfinger")
