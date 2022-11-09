@@ -6,7 +6,7 @@ use super::{
   core::{build_api_err, build_api_not_found},
   types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE},
 };
-use crate::{activitypub::ordered_collection::OrderedCollectionMetadata, logic::LogicErr};
+use crate::{activitypub::ordered_collection::OrderedCollection, logic::LogicErr};
 
 fn handle_async_get<T: serde::Serialize>(
   source: &str,
@@ -56,7 +56,7 @@ pub fn handle_activitypub_collection_metadata_get(
   match result {
     Ok(total_items) => HttpResponse::Ok()
       .insert_header(("Content-Type", *ACTIVITY_JSON_CONTENT_TYPE))
-      .json(OrderedCollectionMetadata::build(&subject_url, total_items, page_size)),
+      .json(OrderedCollection::build(&subject_url, total_items, page_size)),
     Err(err) => build_api_err(1, err.to_string(), Some(subject_url.to_string())),
   }
 }

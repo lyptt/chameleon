@@ -6,8 +6,8 @@ use crate::model::{access_type::AccessType, post::Post};
 pub async fn get_user_posts(
   handle: &str,
   visibilities: Vec<AccessType>,
-  limit: i32,
-  skip: i32,
+  limit: i64,
+  skip: i64,
   db: &Pool<Postgres>,
 ) -> Result<Vec<Post>, LogicErr> {
   Post::fetch_by_user(handle, &visibilities, limit, skip, &db)
