@@ -18,10 +18,10 @@ pub enum AppLogLevel {
   Debug,
 }
 
-#[derive(Clone, Debug, Deserialize, EnumString, Display)]
+#[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq)]
 pub enum AppCdnStore {
-  // TODO: Add support for other CDNs (S3, Blob Storage, etc)
   Local,
+  S3,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -46,9 +46,17 @@ pub struct Database {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct CloudCredentials {
+  pub access_key: String,
+  pub secret_key: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Cdn {
   pub file_store: AppCdnStore,
   pub path: String,
+  pub container: Option<String>,
+  pub credentials: Option<CloudCredentials>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -89,6 +97,8 @@ impl Settings {
       cdn: Cdn {
         file_store: AppCdnStore::Local,
         path: get_cwd(),
+        container: None,
+        credentials: None,
       },
     }
   }

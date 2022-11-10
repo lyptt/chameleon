@@ -15,7 +15,7 @@ pub struct Link {
 
 impl Link {
   pub fn from_post_small(post: &Post) -> Option<Link> {
-    match &post.content_image_url_small {
+    match &post.content_image_uri_small {
       Some(uri) => Some(Link {
         object_type: "Link".to_string(),
         href: uri.to_string(),
@@ -28,7 +28,7 @@ impl Link {
   }
 
   pub fn from_post_medium(post: &Post) -> Option<Link> {
-    match &post.content_image_url_medium {
+    match &post.content_image_uri_medium {
       Some(uri) => Some(Link {
         object_type: "Link".to_string(),
         href: uri.to_string(),
@@ -41,7 +41,7 @@ impl Link {
   }
 
   pub fn from_post_large(post: &Post) -> Option<Link> {
-    match &post.content_image_url_large {
+    match &post.content_image_uri_large {
       Some(uri) => Some(Link {
         object_type: "Link".to_string(),
         href: uri.to_string(),

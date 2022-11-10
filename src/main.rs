@@ -1,4 +1,5 @@
 mod activitypub;
+mod aws;
 mod cdn;
 mod helpers;
 mod logic;
@@ -8,6 +9,7 @@ mod settings;
 
 use actix_web::middleware::Logger;
 use actix_web::{guard, web, App, HttpResponse, HttpServer};
+use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
@@ -26,6 +28,8 @@ async fn main() -> std::io::Result<()> {
     settings::AppEnv::Testing => LevelFilter::Info,
     settings::AppEnv::Production => LevelFilter::Warn,
   };
+
+  AWSClient::create_s3_client().await;
 
   env_logger::Builder::new()
     .filter_level(filter)

@@ -59,5 +59,23 @@ features = ["std", "serde", "v4"]
 [dependencies.num-traits]
 version = "0.2"
 
+[dependencies.once_cell]
+version = "1.16.0"
+
+[dependencies.mime]
+version = "0.3.16"
+
+[dependencies.aws-types]
+version = "0.51.0"
+
+[dependencies.aws-config]
+version = "0.51.0"
+
+[dependencies.aws-sdk-s3]
+version = "0.21.0"
+
+[dependencies.aws-sdk-sqs]
+version = "0.21.0"
+
 [dev-dependencies.mockall]
 version = "0.11.3"

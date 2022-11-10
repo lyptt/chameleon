@@ -7,7 +7,7 @@ use actix_easy_multipart::tempfile::Tempfile;
 use async_trait::async_trait;
 use std::result::Result;
 
-use super::cdn_file_store::CdnFileStore;
+use super::{cdn_file_store::CdnFileStore, cdn_s3_store::CdnS3Store};
 
 #[async_trait]
 pub trait CdnStore {
@@ -23,6 +23,9 @@ impl Cdn {
     match SETTINGS.cdn.file_store {
       AppCdnStore::Local => Cdn {
         imp: Box::new(CdnFileStore {}),
+      },
+      AppCdnStore::S3 => Cdn {
+        imp: Box::new(CdnS3Store {}),
       },
     }
   }
