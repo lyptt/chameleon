@@ -7,12 +7,16 @@ use uuid::Uuid;
 
 use crate::{
   helpers::{
+    auth::require_auth,
     core::build_api_err,
     html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
   },
   logic::{user::authorize_user, LogicErr},
   model::{app::App, session::Session, user::User},
-  net::{jwt::JwtFactory, templates::HANDLEBARS},
+  net::{
+    jwt::{JwtContext, JwtFactory},
+    templates::HANDLEBARS,
+  },
 };
 
 #[derive(Debug, EnumString, Display, Serialize, Deserialize)]
@@ -28,6 +32,7 @@ pub enum OAuthAuthorizeResponseType {
 pub enum OAuthGrantType {
   AuthorizationCode,
   ClientCredentials,
+  RefreshToken,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -55,6 +60,7 @@ struct OAuthAuthorizeData<'a> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OAuthTokenRequest {
   pub code: Option<String>,
+  pub refresh_token: Option<String>,
   pub grant_type: OAuthGrantType,
   pub client_id: String,
   pub client_secret: String,
@@ -164,7 +170,11 @@ pub async fn api_oauth_authorize_post(
     .finish()
 }
 
-pub async fn api_oauth_token(db: web::Data<PgPool>, req: web::Form<OAuthTokenRequest>) -> impl Responder {
+pub async fn api_oauth_token(
+  db: web::Data<PgPool>,
+  session: web::ReqData<JwtContext>,
+  req: web::Form<OAuthTokenRequest>,
+) -> impl Responder {
   let app = match oauth_app_unwrap_result(
     App::fetch_by_client_id(&req.client_id, &db).await,
     "This application is not configured correctly to authenticate with Chameleon",
@@ -185,48 +195,110 @@ pub async fn api_oauth_token(db: web::Data<PgPool>, req: web::Form<OAuthTokenReq
     return build_api_err(401, "Invalid client configuration".to_string(), None);
   }
 
-  let code = req.code.clone().unwrap_or_default();
-  let claims = match JwtFactory::parse_jwt_props(&code) {
-    Some(claims) => claims,
-    None => return build_api_err(401, "Invalid authorization token".to_string(), None),
-  };
+  match req.grant_type {
+    OAuthGrantType::AuthorizationCode => {
+      let code = req.code.clone().unwrap_or_default();
+      let claims = match JwtFactory::parse_jwt_props(&code) {
+        Some(claims) => claims,
+        None => return build_api_err(401, "Invalid authorization token".to_string(), None),
+      };
 
-  let user = match User::fetch_by_handle(&claims.sub, &db).await {
-    Ok(user) => match user {
-      Some(user) => user,
-      None => return build_api_err(401, "Invalid authorization token".to_string(), None),
+      let user = match User::fetch_by_handle(&claims.sub, &db).await {
+        Ok(user) => match user {
+          Some(user) => user,
+          None => return build_api_err(401, "Invalid authorization token".to_string(), None),
+        },
+        Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
+      };
+
+      let session_id = Uuid::new_v4();
+
+      let session = match JwtFactory::generate_jwt_long_lived(&user, &session_id) {
+        Ok(session) => session,
+        Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
+      };
+
+      match Session::insert_session(
+        &session_id,
+        &user.user_id,
+        &app.app_id,
+        &session.refresh_token,
+        &session.access_expiry,
+        &session.refresh_expiry,
+        &db,
+      )
+      .await
+      {
+        Ok(_) => {}
+        Err(err) => return build_api_err(500, "Internal server error".to_string(), Some(err.to_string())),
+      };
+
+      HttpResponse::Ok().json(OAuthTokenResponse {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        token_type: "Bearer",
+        scope: "".to_string(),
+        created_at: Utc::now().timestamp(),
+        expires_at: session.access_expiry.timestamp(),
+        refresh_expires_at: session.refresh_expiry.timestamp(),
+      })
+    }
+    OAuthGrantType::ClientCredentials => return build_api_err(400, "Not implemented".to_string(), None),
+    OAuthGrantType::RefreshToken => match require_auth(&session, &db).await {
+      Ok(session) => {
+        let refresh_token = req.refresh_token.clone().unwrap_or_default();
+
+        match Session::query_session_exists_for_refresh_token(&refresh_token, &db).await {
+          true => {}
+          false => return build_api_err(401, "Invalid refresh token".to_string(), None),
+        };
+
+        let user = match User::fetch_by_fediverse_id(&session.sub, &db).await {
+          Ok(user) => match user {
+            Some(user) => user,
+            None => return build_api_err(401, "Invalid authorization token".to_string(), None),
+          },
+          Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
+        };
+
+        match Session::delete_session(&user.user_id, &app.app_id, &refresh_token, &db).await {
+          Ok(_) => {}
+          Err(_) => return build_api_err(500, "Internal server error".to_string(), None),
+        }
+
+        let session_id = Uuid::new_v4();
+
+        let session = match JwtFactory::generate_jwt_long_lived(&user, &session_id) {
+          Ok(session) => session,
+          Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
+        };
+
+        match Session::insert_session(
+          &session_id,
+          &user.user_id,
+          &app.app_id,
+          &session.refresh_token,
+          &session.access_expiry,
+          &session.refresh_expiry,
+          &db,
+        )
+        .await
+        {
+          Ok(_) => {}
+          Err(err) => return build_api_err(500, "Internal server error".to_string(), Some(err.to_string())),
+        };
+
+        HttpResponse::Ok().json(OAuthTokenResponse {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          token_type: "Bearer",
+          scope: "".to_string(),
+          created_at: Utc::now().timestamp(),
+          expires_at: session.access_expiry.timestamp(),
+          refresh_expires_at: session.refresh_expiry.timestamp(),
+        })
+      }
+      Err(err) => return err,
     },
-    Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
-  };
-
-  let session_id = Uuid::new_v4();
-
-  let session = match JwtFactory::generate_jwt_long_lived(&user, &session_id) {
-    Ok(session) => session,
-    Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
-  };
-
-  match Session::insert_session(
-    &session_id,
-    &user.user_id,
-    &app.app_id,
-    &session.access_expiry,
-    &session.refresh_expiry,
-    &db,
-  )
-  .await
-  {
-    Ok(_) => {}
-    Err(err) => return build_api_err(500, "Internal server error".to_string(), Some(err.to_string())),
-  };
-
-  HttpResponse::Ok().json(OAuthTokenResponse {
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-    token_type: "Bearer",
-    scope: "".to_string(),
-    created_at: Utc::now().timestamp(),
-    expires_at: session.access_expiry.timestamp(),
-    refresh_expires_at: session.refresh_expiry.timestamp(),
-  })
+  }
 }
