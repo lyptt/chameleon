@@ -1,22 +1,12 @@
 use actix_web::http::header::HeaderValue;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use serde::{Deserialize, Serialize};
 
-use super::jwt::{JwtContext, JwtContextProps};
+use super::jwt::{JwtClaims, JwtContext, JwtContextProps};
 use crate::settings::SETTINGS;
 
 pub struct JwtSessionInner {
   decoding_key: DecodingKey,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct JwtClaims {
-  sub: String,
-  iss: String,
-  exp: i64,
-  nbf: i64,
-  iat: i64,
 }
 
 impl Into<JwtContextProps> for JwtClaims {
@@ -27,6 +17,7 @@ impl Into<JwtContextProps> for JwtClaims {
       exp: DateTime::from_utc(NaiveDateTime::from_timestamp(self.exp, 0), Utc),
       nbf: DateTime::from_utc(NaiveDateTime::from_timestamp(self.nbf, 0), Utc),
       iat: DateTime::from_utc(NaiveDateTime::from_timestamp(self.iat, 0), Utc),
+      sid: self.sid,
     }
   }
 }

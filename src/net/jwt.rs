@@ -5,6 +5,7 @@ use rand::distributions::{Alphanumeric, DistString};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use strum::Display;
+use uuid::Uuid;
 
 use crate::{helpers::api::map_ext_err, logic::LogicErr, model::user::User, settings::SETTINGS};
 
@@ -24,6 +25,7 @@ pub struct JwtContextProps {
   pub exp: DateTime<Utc>,
   pub nbf: DateTime<Utc>,
   pub iat: DateTime<Utc>,
+  pub sid: String,
 }
 
 #[derive(Debug, Display, Clone)]
@@ -39,6 +41,7 @@ pub struct JwtClaims {
   pub exp: i64,
   pub nbf: i64,
   pub iat: i64,
+  pub sid: String,
 }
 
 lazy_static! {
@@ -58,13 +61,14 @@ impl JwtFactory {
       exp: (now + chrono::Duration::seconds(30)).timestamp(),
       nbf: (now - chrono::Duration::seconds(30)).timestamp(),
       iat: now.timestamp(),
+      sid: "none".to_string(),
     };
 
     let header = Header::new(Algorithm::HS512);
     encode(&header, &claims, &JWT_ENCODING_KEY).map_err(map_ext_err)
   }
 
-  pub fn generate_jwt_long_lived(user: &User) -> Result<JwtSessionToken, JwtSessionErr> {
+  pub fn generate_jwt_long_lived(user: &User, session_id: &Uuid) -> Result<JwtSessionToken, JwtSessionErr> {
     if user.is_external {
       // A user must sign into their home instance, not ours
       return Err(JwtSessionErr::InvalidDataErr);
@@ -87,6 +91,7 @@ impl JwtFactory {
       exp: access_expiry.timestamp(),
       nbf: (now - chrono::Duration::seconds(30)).timestamp(),
       iat: now.timestamp(),
+      sid: session_id.to_string(),
     };
 
     let header = Header::new(Algorithm::HS512);

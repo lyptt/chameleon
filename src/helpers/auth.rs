@@ -1,17 +1,51 @@
-use crate::net::jwt::{JwtContext, JwtContextProps};
+use crate::{
+  model::session::Session,
+  net::jwt::{JwtContext, JwtContextProps},
+};
 
 use actix_web::{web, HttpResponse};
+use sqlx::{Pool, Postgres};
+use uuid::Uuid;
 
-pub fn assert_auth(jwt: &web::ReqData<JwtContext>) -> Result<(), HttpResponse> {
-  match (**jwt).clone() {
-    JwtContext::Valid(_) => Ok(()),
-    JwtContext::Invalid(_) => Err(HttpResponse::Unauthorized().finish()),
+pub async fn assert_auth(jwt: &web::ReqData<JwtContext>, db: &Pool<Postgres>) -> Result<(), HttpResponse> {
+  let props = match (**jwt).clone() {
+    JwtContext::Valid(props) => props,
+    JwtContext::Invalid(_) => return Err(HttpResponse::Unauthorized().finish()),
+  };
+
+  let sid = match Uuid::parse_str(&props.sid) {
+    Ok(sid) => sid,
+    Err(_) => return Err(HttpResponse::Unauthorized().finish()),
+  };
+
+  match Session::query_session_exists(&sid, &db).await {
+    Ok(exists) => match exists {
+      true => return Ok(()),
+      false => return Err(HttpResponse::Unauthorized().finish()),
+    },
+    Err(_) => return Err(HttpResponse::Unauthorized().finish()),
   }
 }
 
-pub fn require_auth(jwt: &web::ReqData<JwtContext>) -> Result<JwtContextProps, HttpResponse> {
-  match (**jwt).clone() {
-    JwtContext::Valid(props) => Ok(props),
-    JwtContext::Invalid(_) => Err(HttpResponse::Unauthorized().finish()),
+pub async fn require_auth(
+  jwt: &web::ReqData<JwtContext>,
+  db: &Pool<Postgres>,
+) -> Result<JwtContextProps, HttpResponse> {
+  let props = match (**jwt).clone() {
+    JwtContext::Valid(props) => props,
+    JwtContext::Invalid(_) => return Err(HttpResponse::Unauthorized().finish()),
+  };
+
+  let sid = match Uuid::parse_str(&props.sid) {
+    Ok(sid) => sid,
+    Err(_) => return Err(HttpResponse::Unauthorized().finish()),
+  };
+
+  match Session::query_session_exists(&sid, &db).await {
+    Ok(exists) => match exists {
+      true => return Ok(props),
+      false => return Err(HttpResponse::Unauthorized().finish()),
+    },
+    Err(_) => return Err(HttpResponse::Unauthorized().finish()),
   }
 }

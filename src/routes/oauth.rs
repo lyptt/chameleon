@@ -3,6 +3,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use strum::{Display, EnumString};
+use uuid::Uuid;
 
 use crate::{
   helpers::{
@@ -10,7 +11,7 @@ use crate::{
     html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
   },
   logic::{user::authorize_user, LogicErr},
-  model::{app::App, user::User},
+  model::{app::App, session::Session, user::User},
   net::{jwt::JwtFactory, templates::HANDLEBARS},
 };
 
@@ -198,9 +199,25 @@ pub async fn api_oauth_token(db: web::Data<PgPool>, req: web::Form<OAuthTokenReq
     Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
   };
 
-  let session = match JwtFactory::generate_jwt_long_lived(&user) {
+  let session_id = Uuid::new_v4();
+
+  let session = match JwtFactory::generate_jwt_long_lived(&user, &session_id) {
     Ok(session) => session,
     Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
+  };
+
+  match Session::insert_session(
+    &session_id,
+    &user.user_id,
+    &app.app_id,
+    &session.access_expiry,
+    &session.refresh_expiry,
+    &db,
+  )
+  .await
+  {
+    Ok(_) => {}
+    Err(err) => return build_api_err(500, "Internal server error".to_string(), Some(err.to_string())),
   };
 
   HttpResponse::Ok().json(OAuthTokenResponse {
