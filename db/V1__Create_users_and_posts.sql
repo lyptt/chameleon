@@ -1,7 +1,8 @@
 CREATE TABLE users (
   "user_id" uuid NOT NULL,
   "fediverse_id" varchar(2048) NOT NULL,
-  "handle" varchar(256),
+  "handle" varchar(256) NOT NULL,
+  "avatar_url" varchar(2048),
   "email" varchar(2048),
   "password_hash" varchar(64),
   "is_external" bool NOT NULL DEFAULT true,

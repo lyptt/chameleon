@@ -7,8 +7,12 @@ use uuid::Uuid;
 use crate::{
   activitypub::ordered_collection::OrderedCollectionPage,
   cdn::cdn_store::Cdn,
-  helpers::{activitypub::handle_activitypub_collection_metadata_get, core::build_api_err},
+  helpers::{
+    activitypub::handle_activitypub_collection_metadata_get, auth::require_auth, core::build_api_err, math::div_up,
+  },
   logic::post::{get_user_posts, get_user_posts_count},
+  model::response::ListResponse,
+  net::jwt::JwtContext,
   settings::SETTINGS,
 };
 
@@ -34,12 +38,12 @@ pub async fn api_activitypub_get_user_public_feed(
       let page_size = query.page_size.unwrap_or(20);
       let posts_count = match get_user_posts_count(&handle, &db).await {
         Ok(count) => count,
-        Err(err) => return build_api_err(1, err.to_string(), Some(err.to_string())),
+        Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
       };
 
       let posts = match get_user_posts(&handle, page_size, page * page_size, &db).await {
         Ok(posts) => posts,
-        Err(err) => return build_api_err(1, err.to_string(), Some(err.to_string())),
+        Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
       };
 
       let collection = OrderedCollectionPage::build(
@@ -64,6 +68,37 @@ pub async fn api_activitypub_get_user_public_feed(
       get_user_posts_count(&handle, &db).await,
     ),
   }
+}
+
+pub async fn api_get_user_own_feed(
+  db: web::Data<PgPool>,
+  query: web::Query<PostsQuery>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  let fediverse_id = props.sub;
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match get_user_posts_count(&fediverse_id, &db).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match get_user_posts(&fediverse_id, page_size, page * page_size, &db).await {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
 }
 
 pub async fn api_upload_post_image(form: MultipartForm<PostUpload>, cdn: web::Data<Cdn>) -> impl Responder {

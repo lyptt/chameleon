@@ -12,36 +12,24 @@ pub struct WebfingerRecordLink {
 }
 
 impl WebfingerRecordLink {
-  pub fn build_self_uri(handle: &Option<String>) -> String {
-    format!(
-      "{}/users/{}",
-      SETTINGS.server.api_fqdn,
-      handle.clone().unwrap_or("<unknown>".to_string())
-    )
+  pub fn build_self_uri(handle: &String) -> String {
+    format!("{}/users/{}", SETTINGS.server.api_fqdn, handle.clone())
   }
 
-  pub fn build_self_link(handle: &Option<String>) -> WebfingerRecordLink {
+  pub fn build_self_link(handle: &String) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "self".to_string(),
       link_type: "application/activity+json".to_string(),
-      href: Some(format!(
-        "{}/users/{}",
-        SETTINGS.server.api_fqdn,
-        handle.clone().unwrap_or("<unknown>".to_string())
-      )),
+      href: Some(format!("{}/users/{}", SETTINGS.server.api_fqdn, handle.clone())),
       template: None,
     }
   }
 
-  pub fn build_profile_page_link(handle: &Option<String>) -> WebfingerRecordLink {
+  pub fn build_profile_page_link(handle: &String) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "http://webfinger.net/rel/profile-page".to_string(),
       link_type: "text/html".to_string(),
-      href: Some(format!(
-        "{}/feed/{}",
-        SETTINGS.server.fqdn,
-        handle.clone().unwrap_or("<unknown>".to_string())
-      )),
+      href: Some(format!("{}/feed/{}", SETTINGS.server.fqdn, handle.clone())),
       template: None,
     }
   }

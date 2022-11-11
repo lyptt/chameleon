@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::vec;
 
-use crate::{helpers::math::div_up, model::post::Post};
+use crate::{
+  helpers::math::div_up,
+  model::{post::Post, post_pub::PostPub},
+};
 
 use super::{
   activity::Activity,
@@ -75,7 +78,7 @@ impl OrderedCollectionPage<Activity<Image>> {
     collection_uri: &str,
     item_base_uri: &str,
     actor_uri: &str,
-    posts: Vec<Post>,
+    posts: Vec<PostPub>,
     total_items: i64,
     page_size: i64,
     page: i64,

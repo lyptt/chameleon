@@ -18,7 +18,7 @@ use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
-use routes::post::{api_activitypub_get_user_public_feed, api_upload_post_image};
+use routes::post::{api_activitypub_get_user_public_feed, api_get_user_own_feed, api_upload_post_image};
 use routes::user::{api_get_user_by_id, api_get_user_by_id_astream};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -91,6 +91,11 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/oauth/token")
           .name("oauth_token")
           .route(web::post().to(api_oauth_token)),
+      )
+      .service(
+        web::resource("/api/feed")
+          .name("oauth_token")
+          .route(web::get().to(api_get_user_own_feed)),
       )
       .service(
         actix_files::Files::new("/", "./public/static")
