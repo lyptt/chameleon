@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"> 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500&family=Pacifico&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <form method="POST">
+      <h1>Chameleon</h1>
+      {{#if error}}
+      <div class="form-error">{{ error }}</div>
+      {{/if}}
+      {{#unless blessed}}
+      <div class="form-info">
+        <p>The application {{app_name}} wants to sign in using your Chameleon credentials.</p>
+        <p>If this is not expected, you can close this page.</p>
+      </div>
+      {{/unless}}
+      <label for="handle">Username or email</label>
+      <input id="handle" type="text" name="username" value="{{ username }}" placeholder="Username or email" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" placeholder="Password" required>
+      <button type="submit">Sign in</button>
+    </form>
+    <div class="sign-up-panel">
+      <p>Don't have an account? <a href="{{ sign_up_url }}">Sign up</a></p>
+    </div>
+  </body>
+</html>

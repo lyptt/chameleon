@@ -1,7 +1,14 @@
 use actix_web::web;
+use argon2::{
+  password_hash::SaltString, Algorithm, Argon2, ParamsBuilder, PasswordHash, PasswordHasher, PasswordVerifier, Version,
+};
 use sqlx::PgPool;
 
-use crate::model::user::User;
+use crate::{
+  helpers::{handlers::map_ext_err, types::ApiError},
+  model::user::User,
+  net::jwt::JwtFactory,
+};
 
 use super::LogicErr;
 
@@ -15,4 +22,25 @@ pub async fn get_user_by_fediverse_id(fediverse_id: &String, db: &web::Data<PgPo
   User::fetch_by_fediverse_id(fediverse_id, db)
     .await
     .map_err(|e| LogicErr::DbError(e))
+}
+
+pub async fn authorize_user(username: &str, password: &str, db: &web::Data<PgPool>) -> Result<String, LogicErr> {
+  let current_hash = match User::fetch_password_hash(username, &db).await.map_err(map_ext_err)? {
+    Some(hash) => hash,
+    None => return Err(LogicErr::UnauthorizedError),
+  };
+
+  let hash = match PasswordHash::new(&current_hash) {
+    Ok(hash) => hash,
+    Err(err) => {
+      println!("{}", err);
+      return Err(LogicErr::InternalError("Invalid password hash".to_string()));
+    }
+  };
+
+  if Argon2::default().verify_password(password.as_bytes(), &hash).is_err() {
+    return Err(LogicErr::UnauthorizedError);
+  }
+
+  JwtFactory::generate_jwt_short_lived(username)
 }

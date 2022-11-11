@@ -4,6 +4,7 @@ env = "Development"
 url = "127.0.0.1"
 fqdn = "http://127.0.0.1:8000"
 api_fqdn = "http://127.0.0.1:8000/api"
+jwt_secret = "super-secret-key"
 
 [database]
 url = "postgresql://chameleon:chameleon@127.0.0.1:5432/chameleon"

@@ -1,0 +1,148 @@
+:root {
+  --button-color: rgb(55, 173, 94);
+  --button-color-highlight: rgb(40, 127, 69);
+  --button-color-disabled: rgb(134, 185, 151);
+  --button-text-color: rgb(255, 255, 255);
+  --link-color: rgb(55, 173, 94);
+  --error-color: rgb(204, 71, 37);
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: "Open Sans", sans-serif;
+  background: rgb(250, 250, 250);
+  color: rgb(38, 38, 38);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+form,
+.sign-up-panel {
+  margin-top: 20px;
+  border: 1px solid rgb(219, 219, 219);
+  background: white;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 3px;
+}
+
+.sign-up-panel {
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+label {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+}
+
+h1 {
+  font-family: "Pacifico", serif;
+  font-size: 2.4rem;
+  text-align: center;
+  margin-top: 0;
+  line-height: 1;
+  margin-top: 10px;
+  margin-bottom: 50px;
+}
+
+input {
+  padding: 8px;
+  margin-bottom: 4px;
+  border-radius: 3px;
+  outline: none;
+  border: 1px solid rgb(219, 219, 219);
+  background-color: rgb(250, 250, 250);
+  font-size: 0.8rem;
+}
+
+input:focus {
+  border-color: rgb(190, 190, 190);
+}
+
+button {
+  margin-top: 10px;
+  outline: none;
+  background: var(--button-color);
+  color: var(--button-text-color);
+  border: 1px solid var(--button-color);
+  border-radius: 3px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all ease 0.15s;
+  transition-property: border-color, background-color;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+form:invalid button {
+  pointer-events: none;
+  background: var(--button-color-disabled);
+  border-color: var(--button-color-disabled);
+}
+
+button:focus-within,
+button:hover {
+  border-color: var(--button-color-highlight);
+}
+
+button:hover,
+button:active {
+  background: var(--button-color-highlight);
+}
+
+.sign-up-panel p {
+  margin: 0;
+}
+
+.sign-up-panel a {
+  color: var(--link-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.form-info,
+.form-error {
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+}
+
+.form-info p,
+.form-error p {
+  margin: 0;
+  margin-bottom: 0.4rem;
+}
+
+.form-error {
+  color: var(--error-color);
+}
+
+@media screen and (min-width: 500px) {
+  body {
+    justify-content: center;
+  }
+
+  form {
+    min-width: 360px;
+    padding: 40px;
+  }
+
+  .sign-up-panel {
+    min-width: 360px;
+  }
+}

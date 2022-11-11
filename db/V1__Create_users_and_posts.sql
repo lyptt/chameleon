@@ -5,6 +5,7 @@ CREATE TABLE users (
   "email" varchar(2048),
   "password_hash" varchar(64),
   "is_external" bool NOT NULL DEFAULT true,
+  "is_admin" bool NOT NULL DEFAULT false,
   PRIMARY KEY ("user_id")
 );
 

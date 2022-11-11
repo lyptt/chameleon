@@ -32,6 +32,15 @@ impl User {
     Ok(user)
   }
 
+  pub async fn fetch_password_hash(handle: &str, pool: &Pool<Postgres>) -> Result<Option<String>, Error> {
+    let password_hash = sqlx::query_scalar("SELECT password_hash FROM users WHERE handle = $1")
+      .bind(handle)
+      .fetch_optional(pool)
+      .await?;
+
+    Ok(password_hash)
+  }
+
   pub fn to_webfinger(&self) -> WebfingerRecord {
     return WebfingerRecord {
       aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.handle)]),

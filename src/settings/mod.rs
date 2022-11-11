@@ -35,6 +35,7 @@ pub struct Server {
   pub url: String,
   pub fqdn: String,
   pub api_fqdn: String,
+  pub jwt_secret: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -93,6 +94,7 @@ impl Settings {
         port: 8080,
         fqdn: "http://0.0.0.0:8080".to_string(),
         api_fqdn: "http://0.0.0.0:8080/api".to_string(),
+        jwt_secret: "change-me".to_string(),
       },
       cdn: Cdn {
         file_store: AppCdnStore::Local,

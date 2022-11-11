@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::activity_type::ActivityType;
@@ -8,7 +9,7 @@ use super::activity_type::ActivityType;
 pub struct Activity<T> {
   pub id: String,
   pub actor: String,
-  pub published: chrono::DateTime<chrono::Utc>,
+  pub published: DateTime<Utc>,
   pub object: T,
   #[serde(rename = "type")]
   pub activity_type: ActivityType,

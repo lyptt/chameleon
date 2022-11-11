@@ -4,6 +4,7 @@ use crate::activitypub::{
 
 use super::access_type::AccessType;
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, FromRow, Pool, Postgres};
 use uuid::Uuid;
@@ -30,9 +31,9 @@ pub struct Post {
   pub content_type_large: Option<String>,
   pub content_image_storage_ref: Option<String>,
   pub visibility: AccessType,
-  pub created_at: chrono::DateTime<chrono::Utc>,
-  pub updated_at: chrono::DateTime<chrono::Utc>,
-  pub deletion_scheduled_at: Option<chrono::DateTime<chrono::Utc>>,
+  pub created_at: DateTime<Utc>,
+  pub updated_at: DateTime<Utc>,
+  pub deletion_scheduled_at: DateTime<Utc>,
 }
 
 impl Post {

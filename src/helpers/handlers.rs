@@ -1,12 +1,21 @@
-use actix_web::HttpResponse;
+use actix_web::{web, HttpResponse};
 use num_traits::PrimInt;
+use serde::Serialize;
 use std::error::Error;
 
 use super::{
   core::{build_api_err, build_api_not_found},
   types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE},
 };
-use crate::{activitypub::ordered_collection::OrderedCollection, logic::LogicErr};
+use crate::{
+  activitypub::ordered_collection::OrderedCollection,
+  logic::LogicErr,
+  model::app::App,
+  net::{
+    jwt::{JwtContext, JwtContextProps},
+    templates::HANDLEBARS,
+  },
+};
 
 fn handle_async_get<T: serde::Serialize>(
   source: &str,
@@ -58,6 +67,71 @@ pub fn handle_activitypub_collection_metadata_get(
       .insert_header(("Content-Type", *ACTIVITY_JSON_CONTENT_TYPE))
       .json(OrderedCollection::build(&subject_url, total_items, page_size)),
     Err(err) => build_api_err(1, err.to_string(), Some(subject_url.to_string())),
+  }
+}
+
+#[derive(Debug, Serialize)]
+struct OAuthAuthorizeErrData<'a> {
+  pub error: String,
+  pub username: Option<&'a str>,
+  pub blessed: bool,
+  pub app_name: Option<&'a str>,
+}
+
+pub fn handle_oauth_app_err(err: &'static str) -> HttpResponse {
+  match HANDLEBARS.render(
+    "oauth_authorize_app_err",
+    &OAuthAuthorizeErrData {
+      error: err.to_string(),
+      username: None,
+      blessed: false,
+      app_name: None,
+    },
+  ) {
+    Ok(body) => return HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body),
+    Err(_) => return HttpResponse::InternalServerError().finish(),
+  };
+}
+
+pub fn handle_oauth_app_body(app: &App, err: &'static str) -> HttpResponse {
+  match HANDLEBARS.render(
+    "oauth_authorize",
+    &OAuthAuthorizeErrData {
+      error: err.to_string(),
+      username: None,
+      blessed: app.blessed,
+      app_name: Some(&app.name),
+    },
+  ) {
+    Ok(body) => return HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body),
+    Err(_) => return HttpResponse::InternalServerError().finish(),
+  };
+}
+
+pub fn oauth_app_unwrap_result<T>(obj: Result<Option<T>, sqlx::Error>, error: &'static str) -> Result<T, HttpResponse> {
+  match obj {
+    Ok(obj) => match obj {
+      Some(obj) => Ok(obj),
+      None => Err(handle_oauth_app_err(error)),
+    },
+    Err(err) => {
+      println!("{}", err);
+      Err(handle_oauth_app_err(error))
+    }
+  }
+}
+
+pub fn assert_auth(jwt: &web::ReqData<JwtContext>) -> Result<(), HttpResponse> {
+  match (**jwt).clone() {
+    JwtContext::Valid(_) => Ok(()),
+    JwtContext::Invalid(_) => Err(HttpResponse::Unauthorized().finish()),
+  }
+}
+
+pub fn require_auth(jwt: &web::ReqData<JwtContext>) -> Result<JwtContextProps, HttpResponse> {
+  match (**jwt).clone() {
+    JwtContext::Valid(props) => Ok(props),
+    JwtContext::Invalid(_) => Err(HttpResponse::Unauthorized().finish()),
   }
 }
 
