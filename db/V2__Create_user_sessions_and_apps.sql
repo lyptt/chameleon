@@ -8,6 +8,7 @@ CREATE TABLE apps (
   "owner_instance_uri" varchar(256) NOT NULL,
   "redirect_uri" varchar(256) NOT NULL,
   "client_id" uuid NOT NULL,
+  "client_secret" uuid NOT NULL,
   -- 'blessed' apps do not show the confirmation prompt when a user enters their credentials,
   -- they just sign you in directly.
   -- You should only bless apps that should be officially associated to your chameleon instance,
@@ -28,6 +29,7 @@ CREATE TABLE sessions (
   "app_id" uuid NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
+  "refresh_token" VARCHAR(64) NOT NULL,
   "access_expires_at" timestamptz NOT NULL,
   "refresh_expires_at" timestamptz NOT NULL,
   PRIMARY KEY ("session_id"),
