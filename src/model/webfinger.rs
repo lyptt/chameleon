@@ -25,6 +25,15 @@ impl WebfingerRecordLink {
     }
   }
 
+  pub fn build_feed_link(handle: &String) -> WebfingerRecordLink {
+    WebfingerRecordLink {
+      rel: "feed".to_string(),
+      link_type: "application/activity+json".to_string(),
+      href: Some(format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle.clone())),
+      template: None,
+    }
+  }
+
   pub fn build_profile_page_link(handle: &String) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "http://webfinger.net/rel/profile-page".to_string(),

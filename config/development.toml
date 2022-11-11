@@ -2,7 +2,7 @@ env = "Development"
 
 [server]
 url = "127.0.0.1"
-fqdn = "http://127.0.0.1:8000"
+fqdn = "http://127.0.0.1:3000"
 api_fqdn = "http://127.0.0.1:8000/api"
 jwt_secret = "super-secret-key"
 

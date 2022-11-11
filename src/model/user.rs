@@ -49,6 +49,7 @@ impl User {
       links: [
         WebfingerRecordLink::build_self_link(&self.fediverse_id),
         WebfingerRecordLink::build_profile_page_link(&self.fediverse_id),
+        WebfingerRecordLink::build_feed_link(&self.fediverse_id),
       ]
       .into(),
     };
