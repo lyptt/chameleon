@@ -9,7 +9,6 @@ use crate::{
   cdn::cdn_store::Cdn,
   helpers::{activitypub::handle_activitypub_collection_metadata_get, core::build_api_err},
   logic::post::{get_user_posts, get_user_posts_count},
-  model::access_type::AccessType,
   settings::SETTINGS,
 };
 
@@ -25,7 +24,7 @@ pub struct PostUpload {
   images: Vec<Tempfile>,
 }
 
-pub async fn api_get_user_public_feed(
+pub async fn api_activitypub_get_user_public_feed(
   db: web::Data<PgPool>,
   handle: web::Path<String>,
   query: web::Query<PostsQuery>,
@@ -33,21 +32,12 @@ pub async fn api_get_user_public_feed(
   match query.page {
     Some(page) => {
       let page_size = query.page_size.unwrap_or(20);
-      let posts_count =
-        match get_user_posts_count(&handle, vec![AccessType::PublicLocal, AccessType::PublicFederated], &db).await {
-          Ok(count) => count,
-          Err(err) => return build_api_err(1, err.to_string(), Some(err.to_string())),
-        };
+      let posts_count = match get_user_posts_count(&handle, &db).await {
+        Ok(count) => count,
+        Err(err) => return build_api_err(1, err.to_string(), Some(err.to_string())),
+      };
 
-      let posts = match get_user_posts(
-        &handle,
-        vec![AccessType::PublicLocal, AccessType::PublicFederated],
-        page_size,
-        page * page_size,
-        &db,
-      )
-      .await
-      {
+      let posts = match get_user_posts(&handle, page_size, page * page_size, &db).await {
         Ok(posts) => posts,
         Err(err) => return build_api_err(1, err.to_string(), Some(err.to_string())),
       };
@@ -71,7 +61,7 @@ pub async fn api_get_user_public_feed(
     None => handle_activitypub_collection_metadata_get(
       &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
       query.page_size.unwrap_or(20),
-      get_user_posts_count(&handle, vec![AccessType::PublicLocal, AccessType::PublicFederated], &db).await,
+      get_user_posts_count(&handle, &db).await,
     ),
   }
 }

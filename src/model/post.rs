@@ -33,26 +33,35 @@ pub struct Post {
   pub visibility: AccessType,
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
-  pub deletion_scheduled_at: DateTime<Utc>,
+  pub deletion_scheduled_at: Option<DateTime<Utc>>,
 }
 
 impl Post {
-  pub async fn fetch_by_user(
-    user_id: &str,
-    visibilities: &Vec<AccessType>,
+  /// Fetches the user's feed from their own perspective, i.e. all of the posts they have submitted
+  pub async fn fetch_user_own_feed(
+    handle: &str,
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
   ) -> Result<Vec<Post>, Error> {
-    // There's no way yet to bind a Vec<T> in sqlx, so we need to use the limited available postgres support by
-    // binding a slice of a built-in supported type i.e. Vec<String>.
-    let visibilities_strs: Vec<String> = visibilities.iter().map(|item| item.to_string()).collect();
-
     let post = sqlx::query_as(
-      "SELECT p.* FROM posts p INNER JOIN users u ON p.user_id = u.user_id WHERE u.handle = $1 AND visibility = ANY($2) ORDER BY created_at DESC LIMIT $3 OFFSET $4",
+      "SELECT DISTINCT p.* from followers f
+      INNER JOIN users u1
+      ON u1.user_id = f.user_id
+      INNER JOIN users u2
+      ON u2.user_id = f.following_user_id
+      LEFT OUTER JOIN posts p
+      ON p.user_id = u1.user_id OR p.user_id = u2.user_id
+      WHERE u1.handle = $1
+      AND (
+        (p.user_id = u1.user_id AND p.visibility IN ('shadow', 'unlisted', 'private', 'followers_only', 'public_local', 'public_federated'))
+        OR (p.user_id = u2.user_id AND p.visibility IN ('followers_only', 'public_local', 'public_federated'))
+      )
+      ORDER BY p.created_at DESC
+      LIMIT $2
+      OFFSET $3",
     )
-    .bind(user_id)
-    .bind(&visibilities_strs[..])
+    .bind(handle)
     .bind(limit)
     .bind(skip)
     .fetch_all(pool)
@@ -61,19 +70,131 @@ impl Post {
     Ok(post)
   }
 
-  pub async fn count_by_user(
-    user_id: &str,
-    visibilities: &Vec<AccessType>,
-    pool: &Pool<Postgres>,
-  ) -> Result<i64, Error> {
-    // There's no way yet to bind a Vec<T> in sqlx, so we need to use the limited available postgres support by
-    // binding a slice of a built-in supported type i.e. Vec<String>.
-    let visibilities_strs: Vec<String> = visibilities.iter().map(|item| item.to_string()).collect();
-    let count = sqlx::query_scalar("SELECT COUNT(p.*) FROM posts p INNER JOIN users u ON p.user_id = u.user_id WHERE u.handle = $1 AND visibility = ANY($2)")
-      .bind(user_id)
-      .bind(&visibilities_strs[..])
+  /// Fetches the count of the posts in the user's feed from their own perspective, i.e. all of the posts they have submitted
+  pub async fn count_user_own_feed(handle: &str, pool: &Pool<Postgres>) -> Result<i64, Error> {
+    let count = sqlx::query_scalar("SELECT DISTINCT COUNT(p.*) from followers f
+    INNER JOIN users u1
+    ON u1.user_id = f.user_id
+    INNER JOIN users u2
+    ON u2.user_id = f.following_user_id
+    LEFT OUTER JOIN posts p
+    ON p.user_id = u1.user_id OR p.user_id = u2.user_id
+    WHERE u1.handle = $1
+    AND (
+      (p.user_id = u1.user_id AND p.visibility IN ('shadow', 'unlisted', 'private', 'followers_only', 'public_local', 'public_federated'))
+      OR (p.user_id = u2.user_id AND p.visibility IN ('followers_only', 'public_local', 'public_federated'))
+    )")
+      .bind(handle)
       .fetch_one(pool)
       .await?;
+
+    Ok(count)
+  }
+
+  /// Fetches the user's federated feed, i.e. what users on any server can see
+  pub async fn fetch_user_federated_feed(
+    handle: &str,
+    limit: i64,
+    skip: i64,
+    pool: &Pool<Postgres>,
+  ) -> Result<Vec<Post>, Error> {
+    let post = sqlx::query_as(
+      "SELECT DISTINCT p.* from posts p
+      INNER JOIN users u
+      ON u.user_id = p.user_id
+      WHERE u.handle = $1
+      AND p.visibility IN ('public_federated')
+      ORDER BY p.created_at DESC
+      LIMIT $2
+      OFFSET $3",
+    )
+    .bind(handle)
+    .bind(limit)
+    .bind(skip)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(post)
+  }
+
+  /// Fetches the count of the user's posts in their federated feed, i.e.
+  /// what users on any server can see
+  pub async fn count_user_federated_feed(handle: &str, pool: &Pool<Postgres>) -> Result<i64, Error> {
+    let count = sqlx::query_scalar(
+      "SELECT DISTINCT COUNT(p.*) from posts p
+    INNER JOIN users u
+    ON u.user_id = p.user_id
+    WHERE u.handle = $1
+    AND p.visibility IN ('public_federated')",
+    )
+    .bind(handle)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(count)
+  }
+
+  /// Fetches the user's public feed, i.e. what users that follow this user
+  /// can see, or alternatively all the user's public posts
+  pub async fn fetch_user_public_feed(
+    target_user_handle: &str,
+    own_user_handle: &str,
+    limit: i64,
+    skip: i64,
+    pool: &Pool<Postgres>,
+  ) -> Result<Vec<Post>, Error> {
+    let post = sqlx::query_as(
+      "SELECT DISTINCT p.* from followers f
+      INNER JOIN users u1
+      ON u1.user_id = f.user_id
+      INNER JOIN users u2
+      ON u2.user_id = f.following_user_id
+      LEFT OUTER JOIN posts p
+      ON p.user_id = u1.user_id
+      WHERE u1.handle = $1
+      AND (
+        (p.visibility IN ('public_local', 'public_federated'))
+        OR (u2.handle = $2 AND p.visibility = 'followers_only')
+      )
+      ORDER BY p.created_at DESC
+      LIMIT $3
+      OFFSET $4",
+    )
+    .bind(target_user_handle)
+    .bind(own_user_handle)
+    .bind(limit)
+    .bind(skip)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(post)
+  }
+
+  /// Fetches the count of posts in the user's public feed, i.e. what users that follow this
+  /// user can see, or alternatively all the user's public posts
+  pub async fn count_user_public_feed(
+    target_user_handle: &str,
+    own_user_handle: &str,
+    pool: &Pool<Postgres>,
+  ) -> Result<i64, Error> {
+    let count = sqlx::query_scalar(
+      "SELECT DISTINCT COUNT(p.*) from followers f
+      INNER JOIN users u1
+      ON u1.user_id = f.user_id
+      INNER JOIN users u2
+      ON u2.user_id = f.following_user_id
+      LEFT OUTER JOIN posts p
+      ON p.user_id = u1.user_id
+      WHERE u1.handle = $1
+      AND (
+        (p.visibility IN ('public_local', 'public_federated'))
+        OR (u2.handle = $2 AND p.visibility = 'followers_only')
+      )",
+    )
+    .bind(target_user_handle)
+    .bind(own_user_handle)
+    .fetch_one(pool)
+    .await?;
 
     Ok(count)
   }

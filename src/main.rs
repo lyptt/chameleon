@@ -18,7 +18,7 @@ use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
-use routes::post::{api_get_user_public_feed, api_upload_post_image};
+use routes::post::{api_activitypub_get_user_public_feed, api_upload_post_image};
 use routes::user::{api_get_user_by_id, api_get_user_by_id_astream};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/users/{handle}/feed")
           .name("get_user_public_feed")
-          .route(web::get().to(api_get_user_public_feed)),
+          .route(web::get().to(api_activitypub_get_user_public_feed)),
       )
       .service(
         web::resource("/api/posts/content")
