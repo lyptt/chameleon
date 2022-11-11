@@ -1,5 +1,5 @@
 use super::cdn_store::CdnStore;
-use crate::{helpers::handlers::map_ext_err, logic::LogicErr, settings::SETTINGS};
+use crate::{helpers::api::map_ext_err, logic::LogicErr, settings::SETTINGS};
 
 use actix_easy_multipart::tempfile::Tempfile;
 use async_trait::async_trait;

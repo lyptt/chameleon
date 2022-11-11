@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use strum::Display;
 
-use crate::{helpers::handlers::map_ext_err, logic::LogicErr, model::user::User, settings::SETTINGS};
+use crate::{helpers::api::map_ext_err, logic::LogicErr, model::user::User, settings::SETTINGS};
 
 use super::jwt_session_err::JwtSessionErr;
 

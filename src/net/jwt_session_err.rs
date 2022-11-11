@@ -1,7 +1,6 @@
 use std::error::Error;
 
-use serde::{Deserialize, Serialize};
-use strum::{Display, EnumString};
+use strum::Display;
 
 #[derive(Debug, Display)]
 pub enum JwtSessionErr {

@@ -8,7 +8,7 @@ mod net;
 mod routes;
 mod settings;
 
-use actix_web::dev::{fn_service, ServiceRequest, ServiceResponse};
+use actix_web::dev::ServiceResponse;
 use actix_web::middleware::Logger;
 use actix_web::{guard, web, App, HttpResponse, HttpServer};
 use aws::clients::AWSClient;

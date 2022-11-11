@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse, Responder};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use strum::{Display, EnumString};
@@ -7,7 +7,7 @@ use strum::{Display, EnumString};
 use crate::{
   helpers::{
     core::build_api_err,
-    handlers::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
+    html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
   },
   logic::{user::authorize_user, LogicErr},
   model::{app::App, user::User},

@@ -1,8 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::vec;
 
-use serde::{Deserialize, Serialize};
-
-use crate::{helpers::handlers::div_up, model::post::Post};
+use crate::{helpers::math::div_up, model::post::Post};
 
 use super::{
   activity::Activity,

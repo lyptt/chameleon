@@ -1,3 +1,7 @@
+pub mod activitypub;
+pub mod api;
+pub mod auth;
 pub mod core;
-pub mod handlers;
+pub mod html;
+pub mod math;
 pub mod types;

@@ -1,14 +1,8 @@
 use actix_web::web;
-use argon2::{
-  password_hash::SaltString, Algorithm, Argon2, ParamsBuilder, PasswordHash, PasswordHasher, PasswordVerifier, Version,
-};
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use sqlx::PgPool;
 
-use crate::{
-  helpers::{handlers::map_ext_err, types::ApiError},
-  model::user::User,
-  net::jwt::JwtFactory,
-};
+use crate::{helpers::api::map_ext_err, model::user::User, net::jwt::JwtFactory};
 
 use super::LogicErr;
 

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use handlebars::Handlebars;
 use lazy_static::lazy_static;
 

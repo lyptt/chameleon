@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::{
   activitypub::ordered_collection::OrderedCollectionPage,
   cdn::cdn_store::Cdn,
-  helpers::{core::build_api_err, handlers::handle_activitypub_collection_metadata_get},
+  helpers::{activitypub::handle_activitypub_collection_metadata_get, core::build_api_err},
   logic::post::{get_user_posts, get_user_posts_count},
   model::access_type::AccessType,
   settings::SETTINGS,

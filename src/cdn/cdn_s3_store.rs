@@ -1,5 +1,5 @@
 use super::cdn_store::CdnStore;
-use crate::{aws::clients::S3_CLIENT, helpers::handlers::map_ext_err, logic::LogicErr, settings::SETTINGS};
+use crate::{aws::clients::S3_CLIENT, helpers::api::map_ext_err, logic::LogicErr, settings::SETTINGS};
 
 use actix_easy_multipart::tempfile::Tempfile;
 use async_trait::async_trait;
