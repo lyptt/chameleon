@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::vec;
 
-use crate::{
-  helpers::math::div_up,
-  model::{post::Post, post_pub::PostPub},
-};
+use crate::{helpers::math::div_up, model::post_pub::PostPub};
 
 use super::{
   activity::Activity,
