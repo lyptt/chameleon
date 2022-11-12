@@ -8,6 +8,7 @@ mod net;
 mod routes;
 mod settings;
 
+use actix_cors::Cors;
 use actix_web::dev::ServiceResponse;
 use actix_web::middleware::Logger;
 use actix_web::{guard, web, App, HttpResponse, HttpServer};
@@ -18,8 +19,10 @@ use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
-use routes::post::{api_activitypub_get_user_public_feed, api_get_user_own_feed, api_upload_post_image};
-use routes::user::{api_get_user_by_id, api_get_user_by_id_astream};
+use routes::post::{
+  api_activitypub_get_user_public_feed, api_get_global_feed, api_get_user_own_feed, api_upload_post_image,
+};
+use routes::user::{api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
@@ -49,8 +52,16 @@ async fn main() -> std::io::Result<()> {
     .unwrap();
 
   HttpServer::new(move || {
+    let cors = Cors::default()
+      .allowed_origin_fn(|_, _| true)
+      .allow_any_method()
+      .allow_any_header()
+      .supports_credentials()
+      .max_age(3600);
+
     App::new()
       .wrap(Logger::default())
+      .wrap(cors)
       .wrap(JwtSession::default())
       .app_data(web::Data::new(pool.clone()))
       .app_data(web::Data::new(Cdn::new()))
@@ -58,13 +69,13 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
           .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE.clone()))
-          .route(web::get().to(api_get_user_by_id)),
+          .route(web::get().to(api_activitypub_get_user_by_id)),
       )
       .service(
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
           .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE.clone()))
-          .route(web::get().to(api_get_user_by_id_astream)),
+          .route(web::get().to(api_activitypub_get_user_by_id_astream)),
       )
       .service(
         web::resource("/api/users/{handle}/feed")
@@ -94,8 +105,18 @@ async fn main() -> std::io::Result<()> {
       )
       .service(
         web::resource("/api/feed")
-          .name("oauth_token")
+          .name("feed")
           .route(web::get().to(api_get_user_own_feed)),
+      )
+      .service(
+        web::resource("/api/feed/federated")
+          .name("federated_feed")
+          .route(web::get().to(api_get_global_feed)),
+      )
+      .service(
+        web::resource("/api/profile")
+          .name("profile")
+          .route(web::get().to(api_get_profile)),
       )
       .service(
         actix_files::Files::new("/", "./public/static")

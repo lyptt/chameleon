@@ -214,6 +214,41 @@ impl PostPub {
 
     Ok(count)
   }
+
+  /// Fetches the global federated feed, i.e. what users not signed into this instance can see
+  pub async fn fetch_global_federated_feed(
+    limit: i64,
+    skip: i64,
+    pool: &Pool<Postgres>,
+  ) -> Result<Vec<PostPub>, Error> {
+    let post = sqlx::query_as(
+      "SELECT DISTINCT p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url from posts p
+      INNER JOIN users u
+      ON u.user_id = p.user_id
+      WHERE p.visibility IN ('public_local', 'public_federated')
+      ORDER BY p.created_at DESC
+      LIMIT $1
+      OFFSET $2",
+    )
+    .bind(limit)
+    .bind(skip)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(post)
+  }
+
+  /// Fetches the post count for the global federated feed, i.e. what users not signed into this instance can see
+  pub async fn count_global_federated_feed(pool: &Pool<Postgres>) -> Result<i64, Error> {
+    let count = sqlx::query_scalar(
+      "SELECT COUNT(DISTINCT p.*) from posts p
+      WHERE p.visibility IN ('public_local', 'public_federated')",
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(count)
+  }
 }
 
 impl ActivityConvertible<Image> for PostPub {

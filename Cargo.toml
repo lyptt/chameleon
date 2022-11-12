@@ -9,6 +9,9 @@ version = "4.2.1"
 [dependencies.actix-files]
 version = "0.6.2"
 
+[dependencies.actix-cors]
+version = "0.6.4"
+
 [dependencies.serde]
 version = "1.0.147"
 features = ["derive"]
