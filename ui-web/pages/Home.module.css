@@ -1,0 +1,19 @@
+.container {
+  flex: 1;
+  display: flex;
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+
+.feed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.post {
+  max-width: 470px;
+  overflow: hidden;
+}

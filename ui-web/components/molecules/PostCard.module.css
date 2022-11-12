@@ -1,0 +1,73 @@
+.post {
+  background: white;
+  border: 0.5px solid #ccc;
+  border-radius: 8px;
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+}
+
+.avatarImage {
+  width: 34px;
+  height: 34px;
+  border-radius: 9999999px;
+  margin-right: 10px;
+}
+
+.avatarName {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.content {
+  width: 100%;
+  object-fit: cover;
+}
+
+.actionBar {
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.tools {
+  display: flex;
+  width: 100%;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.save {
+  margin-left: auto;
+}
+
+.stats {
+  font-size: 0.9rem;
+  font-weight: 600;
+  user-select: none;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.date {
+  font-size: 0.7rem;
+  font-weight: 400;
+  user-select: none;
+  text-transform: uppercase;
+  color: var(--text-color-faded);
+  margin: 0;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}

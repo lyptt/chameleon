@@ -1,0 +1,9 @@
+.layout {
+  display: flex;
+}
+
+.nav {
+  width: 245px;
+  background: white;
+  height: 100vh;
+}
