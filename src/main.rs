@@ -20,7 +20,8 @@ use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
-  api_activitypub_get_user_public_feed, api_get_global_feed, api_get_user_own_feed, api_upload_post_image,
+  api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_user_own_feed,
+  api_upload_post_image,
 };
 use routes::user::{api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile};
 use routes::webfinger::api_webfinger_query_resource;
@@ -83,11 +84,6 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_activitypub_get_user_public_feed)),
       )
       .service(
-        web::resource("/api/posts/content")
-          .name("upload_post_image")
-          .route(web::post().to(api_upload_post_image)),
-      )
-      .service(
         web::resource("/.well-known/webfinger")
           .name("get_user_by_id")
           .route(web::get().to(api_webfinger_query_resource)),
@@ -106,12 +102,18 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/feed")
           .name("feed")
-          .route(web::get().to(api_get_user_own_feed)),
+          .route(web::get().to(api_get_user_own_feed))
+          .route(web::post().to(api_create_post)),
       )
       .service(
         web::resource("/api/feed/federated")
           .name("federated_feed")
           .route(web::get().to(api_get_global_feed)),
+      )
+      .service(
+        web::resource("/api/feed/{post_id}")
+          .name("upload_post_image")
+          .route(web::post().to(api_upload_post_image)),
       )
       .service(
         web::resource("/api/profile")

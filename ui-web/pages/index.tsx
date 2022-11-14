@@ -15,14 +15,16 @@ export default function Home() {
   const { authenticated, session } = useAuth()
   const [posts, setPosts] = useState<IListResponse<IPost> | undefined>()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    if (loading || posts) {
+    if (loading || posts || error) {
       return
     }
 
     ;(async () => {
       setLoading(true)
+      setError(false)
       try {
         const result =
           authenticated && !!session
@@ -32,6 +34,7 @@ export default function Home() {
         setLoading(false)
       } catch {
         setLoading(false)
+        setError(true)
       }
     })()
   }, [authenticated, session, loading, posts])

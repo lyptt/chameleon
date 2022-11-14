@@ -3,8 +3,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Error, FromRow, Pool, Postgres};
 use uuid::Uuid;
 
-use crate::activitypub::{
-  activity::Activity, activity_convertible::ActivityConvertible, activity_type::ActivityType, image::Image, link::Link,
+use crate::{
+  activitypub::{
+    activity::Activity, activity_convertible::ActivityConvertible, activity_type::ActivityType, image::Image,
+    link::Link,
+  },
+  settings::SETTINGS,
 };
 
 use super::access_type::AccessType;

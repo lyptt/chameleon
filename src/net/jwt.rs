@@ -26,6 +26,7 @@ pub struct JwtContextProps {
   pub nbf: DateTime<Utc>,
   pub iat: DateTime<Utc>,
   pub sid: String,
+  pub uid: Uuid,
 }
 
 #[derive(Debug, Display, Clone)]
@@ -42,6 +43,7 @@ pub struct JwtClaims {
   pub nbf: i64,
   pub iat: i64,
   pub sid: String,
+  pub uid: Uuid,
 }
 
 lazy_static! {
@@ -62,6 +64,7 @@ impl JwtFactory {
       nbf: (now - chrono::Duration::seconds(30)).timestamp(),
       iat: now.timestamp(),
       sid: "none".to_string(),
+      uid: Uuid::new_v4(),
     };
 
     let header = Header::new(Algorithm::HS512);
@@ -92,6 +95,7 @@ impl JwtFactory {
       nbf: (now - chrono::Duration::seconds(30)).timestamp(),
       iat: now.timestamp(),
       sid: session_id.to_string(),
+      uid: user.user_id,
     };
 
     let header = Header::new(Algorithm::HS512);

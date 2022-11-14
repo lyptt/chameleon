@@ -10,8 +10,15 @@ use crate::{
   helpers::{
     activitypub::handle_activitypub_collection_metadata_get, auth::require_auth, core::build_api_err, math::div_up,
   },
-  logic::post::{get_global_posts, get_global_posts_count, get_user_posts, get_user_posts_count},
-  model::response::ListResponse,
+  logic::post::{
+    create_post, get_global_posts, get_global_posts_count, get_user_posts, get_user_posts_count, upload_post_file,
+    NewPostRequest, NewPostResponse,
+  },
+  model::{
+    response::{JobResponse, ListResponse},
+    user::User,
+    user_account_pub::UserAccountPub,
+  },
   net::jwt::JwtContext,
   settings::SETTINGS,
 };
@@ -122,15 +129,40 @@ pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQ
   })
 }
 
-pub async fn api_upload_post_image(form: MultipartForm<PostUpload>, cdn: web::Data<Cdn>) -> impl Responder {
+pub async fn api_create_post(
+  db: web::Data<PgPool>,
+  req: web::Json<NewPostRequest>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  match create_post(&db, &req, &props.uid).await {
+    Ok(post_id) => HttpResponse::Ok().json(NewPostResponse { post_id }),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_upload_post_image(
+  form: MultipartForm<PostUpload>,
+  post_id: web::Path<Uuid>,
+  cdn: web::Data<Cdn>,
+  db: web::Data<PgPool>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
   if form.images.is_empty() {
     return HttpResponse::BadRequest().finish();
   }
 
-  let file_name = format!("originals/{}", Uuid::new_v4());
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
 
-  match cdn.upload_file(&form.images[0], &file_name).await {
-    Ok(_) => HttpResponse::Ok().finish(),
-    Err(err) => build_api_err(1, err.to_string(), None),
+  match upload_post_file(&db, &post_id, &props.uid, &cdn, &form.images[0]).await {
+    Ok(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
+    Err(err) => build_api_err(500, err.to_string(), None),
   }
 }

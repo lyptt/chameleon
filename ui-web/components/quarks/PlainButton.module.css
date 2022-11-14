@@ -1,0 +1,39 @@
+.button {
+  margin-top: 10px;
+  outline: none;
+  background: none;
+  border: none;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all ease 0.15s;
+  transition-property: color;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  color: #333;
+}
+
+.button:focus-visible,
+.button:active {
+  color: #999;
+}
+
+.button.brand {
+  color: var(--brand-color);
+}
+
+.button.brand:focus-visible,
+.button.brand:active {
+  color: var(--brand-color-light);
+}
+
+.button > svg {
+  width: 28px;
+  height: 28px;
+}

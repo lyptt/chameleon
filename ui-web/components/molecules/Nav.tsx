@@ -16,6 +16,8 @@ import {
   IoHeart,
   IoAddCircleOutline,
 } from 'react-icons/io5'
+import NewPostModal from './NewPostModal'
+import { useState } from 'react'
 
 export interface INavProps {
   className?: string
@@ -50,58 +52,65 @@ function NavItem({
 
 export default function Nav({ className }: INavProps) {
   const { route } = useRouter()
+  const [newPostModalOpen, setNewPostModalOpen] = useState(false)
+
+  const handleModalOpen = () => setNewPostModalOpen(true)
+  const handleModalClose = () => setNewPostModalOpen(false)
 
   return (
-    <nav className={cx(className, classNames.container)}>
-      <div className={cx(className, classNames.nav)}>
-        <h1 className={classNames.title}>Chameleon</h1>
-        <ul className={classNames.list} role="list">
-          <NavItem
-            active={route === '/'}
-            title="Home"
-            href="/"
-            inactiveIcon={IoHomeOutline}
-            activeIcon={IoHome}
-          />
-          <NavItem
-            active={route === '/search'}
-            title="Search"
-            href="/search"
-            inactiveIcon={IoSearchOutline}
-            activeIcon={IoSearch}
-          />
-          <NavItem
-            active={route === '/explore'}
-            title="Explore"
-            href="/explore"
-            inactiveIcon={IoCompassOutline}
-            activeIcon={IoCompass}
-          />
-          <NavItem
-            active={route === '/messages'}
-            title="Messages"
-            href="/messages"
-            inactiveIcon={IoPaperPlaneOutline}
-            activeIcon={IoPaperPlane}
-          />
-          <NavItem
-            active={route === '/notifications'}
-            title="Notifications"
-            href="/notifications"
-            inactiveIcon={IoHeartOutline}
-            activeIcon={IoHeart}
-          />
-          <li>
-            <button className={classNames.link}>
-              <IoAddCircleOutline />
-              <span>Post!</span>
-            </button>
-          </li>
-          <li>
-            <UserButton active={route === '/profile'} />
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <>
+      <nav className={cx(className, classNames.container)}>
+        <div className={cx(className, classNames.nav)}>
+          <h1 className={classNames.title}>Chameleon</h1>
+          <ul className={classNames.list} role="list">
+            <NavItem
+              active={route === '/'}
+              title="Home"
+              href="/"
+              inactiveIcon={IoHomeOutline}
+              activeIcon={IoHome}
+            />
+            <NavItem
+              active={route === '/search'}
+              title="Search"
+              href="/search"
+              inactiveIcon={IoSearchOutline}
+              activeIcon={IoSearch}
+            />
+            <NavItem
+              active={route === '/explore'}
+              title="Explore"
+              href="/explore"
+              inactiveIcon={IoCompassOutline}
+              activeIcon={IoCompass}
+            />
+            <NavItem
+              active={route === '/messages'}
+              title="Messages"
+              href="/messages"
+              inactiveIcon={IoPaperPlaneOutline}
+              activeIcon={IoPaperPlane}
+            />
+            <NavItem
+              active={route === '/notifications'}
+              title="Notifications"
+              href="/notifications"
+              inactiveIcon={IoHeartOutline}
+              activeIcon={IoHeart}
+            />
+            <li>
+              <button className={classNames.link} onClick={handleModalOpen}>
+                <IoAddCircleOutline />
+                <span>Post!</span>
+              </button>
+            </li>
+            <li>
+              <UserButton active={route === '/profile'} />
+            </li>
+          </ul>
+        </div>
+      </nav>
+      <NewPostModal open={newPostModalOpen} onClose={handleModalClose} />
+    </>
   )
 }

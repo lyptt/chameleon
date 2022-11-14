@@ -18,6 +18,7 @@ impl Into<JwtContextProps> for JwtClaims {
       nbf: DateTime::from_utc(NaiveDateTime::from_timestamp(self.nbf, 0), Utc),
       iat: DateTime::from_utc(NaiveDateTime::from_timestamp(self.iat, 0), Utc),
       sid: self.sid,
+      uid: self.uid,
     }
   }
 }
