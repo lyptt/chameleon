@@ -1,8 +1,15 @@
 import { IPost } from '@/core/api'
+import Config from '@/core/config'
 import cx from 'classnames'
 import Link from 'next/link'
 import IconButton, { IconButtonIcon } from '../atoms/IconButton'
 import classNames from './PostCard.module.css'
+import dayjs from 'dayjs'
+import dayjsUtc from 'dayjs/plugin/utc'
+import dayjsRelative from 'dayjs/plugin/relativeTime'
+
+dayjs.extend(dayjsUtc)
+dayjs.extend(dayjsRelative)
 
 export interface IPostCardProps {
   className?: string
@@ -26,7 +33,10 @@ export default function PostCard({ className, post }: IPostCardProps) {
           </a>
         </Link>
       </div>
-      <img className={classNames.content} src={post.content_image_uri_large} />
+      <img
+        className={classNames.content}
+        src={`${Config.cdn}/${post.content_image_uri_large}`}
+      />
       <div className={classNames.actionBar}>
         <div className={classNames.tools}>
           <IconButton icon={IconButtonIcon.Like} />
@@ -35,7 +45,9 @@ export default function PostCard({ className, post }: IPostCardProps) {
           <IconButton className={classNames.save} icon={IconButtonIcon.Save} />
         </div>
         <p className={classNames.stats}>1337 likes</p>
-        <p className={classNames.date}>2022 years ago</p>
+        <p className={classNames.date}>
+          {dayjs.utc(post.created_at).fromNow()}
+        </p>
       </div>
     </article>
   )

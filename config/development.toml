@@ -13,5 +13,10 @@ max_connections = 5
 [cdn]
 file_store = "Local"
 
+[queue]
+queue_backend = "RabbitMQ"
+work_queue = "work_q"
+work_deadletter_queue="work_dq"
+
 [log]
 level = "Debug"

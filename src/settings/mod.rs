@@ -24,6 +24,12 @@ pub enum AppCdnStore {
   S3,
 }
 
+#[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq)]
+pub enum AppQueueBackend {
+  RabbitMQ,
+  SQS,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Log {
   pub level: AppLogLevel,
@@ -61,12 +67,21 @@ pub struct Cdn {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Queue {
+  pub queue_backend: AppQueueBackend,
+  pub work_queue: String,
+  pub work_deadletter_queue: String,
+  pub credentials: Option<CloudCredentials>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
   pub server: Server,
   pub database: Database,
   pub log: Log,
   pub env: AppEnv,
   pub cdn: Cdn,
+  pub queue: Queue,
 }
 
 fn get_cwd() -> String {
@@ -100,6 +115,12 @@ impl Settings {
         file_store: AppCdnStore::Local,
         path: get_cwd(),
         container: None,
+        credentials: None,
+      },
+      queue: Queue {
+        queue_backend: AppQueueBackend::RabbitMQ,
+        work_queue: "work_q".to_string(),
+        work_deadletter_queue: "work_dq".to_string(),
         credentials: None,
       },
     }

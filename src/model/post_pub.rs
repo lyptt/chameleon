@@ -253,6 +253,20 @@ impl PostPub {
 
     Ok(count)
   }
+  /// Fetches the user's feed from their own perspective, i.e. all of the posts they have submitted
+  pub async fn fetch_post(post_id: &Uuid, pool: &Pool<Postgres>) -> Result<Option<PostPub>, Error> {
+    let post = sqlx::query_as(
+      "SELECT p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url FROM posts p
+      INNER JOIN users u
+      ON u.user_id = p.user_id
+      WHERE p.post_id = $1",
+    )
+    .bind(post_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(post)
+  }
 }
 
 impl ActivityConvertible<Image> for PostPub {

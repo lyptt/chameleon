@@ -43,3 +43,20 @@ pub async fn require_auth(
     false => return Err(HttpResponse::Unauthorized().finish()),
   }
 }
+
+pub async fn query_auth(jwt: &web::ReqData<JwtContext>, db: &Pool<Postgres>) -> Option<JwtContextProps> {
+  let props = match (**jwt).clone() {
+    JwtContext::Valid(props) => props,
+    JwtContext::Invalid(_) => return None,
+  };
+
+  let sid = match Uuid::parse_str(&props.sid) {
+    Ok(sid) => sid,
+    Err(_) => return None,
+  };
+
+  match Session::query_session_exists(&sid, &db).await {
+    true => Some(props),
+    false => None,
+  }
+}

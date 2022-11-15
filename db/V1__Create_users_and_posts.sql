@@ -20,7 +20,7 @@ CREATE TABLE posts (
   "content_image_uri_small" varchar(2048),
   "content_image_uri_medium" varchar(2048),
   "content_image_uri_large" varchar(2048),
-  "content_image_storage_ref" varchar(2048) NOT NULL,
+  "content_image_storage_ref" varchar(2048),
   "visibility" varchar(32) NOT NULL DEFAULT 'private',
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),

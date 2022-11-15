@@ -72,6 +72,7 @@ impl Post {
 
     Ok(())
   }
+
   pub async fn user_owns_post(user_id: &Uuid, post_id: &Uuid, pool: &Pool<Postgres>) -> bool {
     let result: Result<i64, Error> =
       sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE user_id = $1 AND post_id = $2")
@@ -84,5 +85,41 @@ impl Post {
       Ok(count) => count > 0,
       Err(_) => false,
     }
+  }
+
+  pub async fn find_optional_by_id(post_id: &Uuid, pool: &Pool<Postgres>) -> Option<Post> {
+    let result = sqlx::query_as("SELECT * FROM posts WHERE post_id = $1")
+      .bind(post_id)
+      .fetch_optional(pool)
+      .await;
+
+    match result {
+      Ok(post) => post,
+      Err(_) => None,
+    }
+  }
+
+  pub async fn update_post_content(&self, pool: &Pool<Postgres>) -> Result<(), Error> {
+    sqlx::query("UPDATE posts SET content_type_large = $1, content_type_medium = $2, content_type_small = $3, content_width_large = $4, 
+    content_height_large = $5, content_width_medium = $6, content_height_medium = $7, content_width_small = $8,
+     content_height_small = $9, content_image_uri_large = $10, content_image_uri_medium = $11, content_image_uri_small = $12 
+     WHERE post_id = $13")
+      .bind(&self.content_type_large)
+      .bind(&self.content_type_medium)
+      .bind(&self.content_type_small)
+      .bind(&self.content_width_large)
+      .bind(&self.content_height_large)
+      .bind(&self.content_width_medium)
+      .bind(&self.content_height_medium)
+      .bind(&self.content_width_small)
+      .bind(&self.content_height_small)
+      .bind(&self.content_image_uri_large)
+      .bind(&self.content_image_uri_medium)
+      .bind(&self.content_image_uri_small)
+      .bind(&self.post_id)
+      .execute(pool)
+      .await?;
+
+    Ok(())
   }
 }

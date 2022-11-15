@@ -5,6 +5,7 @@ import AuthContext, {
   IAuthContext,
 } from '../organisms/AuthContext'
 import DefaultActionsDelegator from '../organisms/DefaultActionsDelegator'
+import { FeedProvider } from '../organisms/FeedContext'
 import { ProfileProvider } from '../organisms/ProfileContext'
 import classNames from './MainLayout.module.css'
 
@@ -30,11 +31,13 @@ export default function MainLayout(props: MainLayoutProps) {
   return (
     <AuthContext.Provider value={authContext}>
       <ProfileProvider>
-        <DefaultActionsDelegator />
-        <main className={classNames.layout}>
-          <Nav className={classNames.nav} />
-          {children}
-        </main>
+        <FeedProvider>
+          <DefaultActionsDelegator />
+          <main className={classNames.layout}>
+            <Nav className={classNames.nav} />
+            {children}
+          </main>
+        </FeedProvider>
       </ProfileProvider>
     </AuthContext.Provider>
   )

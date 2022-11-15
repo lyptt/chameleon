@@ -14,6 +14,7 @@
 }
 
 .post {
-  max-width: 470px;
+  width: 470px;
+  min-height: 630.5px;
   overflow: hidden;
 }

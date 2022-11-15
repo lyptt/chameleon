@@ -8,18 +8,22 @@ use crate::{
   activitypub::ordered_collection::OrderedCollectionPage,
   cdn::cdn_store::Cdn,
   helpers::{
-    activitypub::handle_activitypub_collection_metadata_get, auth::require_auth, core::build_api_err, math::div_up,
+    activitypub::handle_activitypub_collection_metadata_get,
+    auth::require_auth,
+    core::{build_api_err, build_api_not_found},
+    math::div_up,
   },
   logic::post::{
-    create_post, get_global_posts, get_global_posts_count, get_user_posts, get_user_posts_count, upload_post_file,
-    NewPostRequest, NewPostResponse,
+    create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
+    upload_post_file, NewPostRequest, NewPostResponse,
   },
   model::{
-    response::{JobResponse, ListResponse},
+    response::{JobResponse, ListResponse, ObjectResponse},
     user::User,
     user_account_pub::UserAccountPub,
   },
   net::jwt::JwtContext,
+  queue::queue::Queue,
   settings::SETTINGS,
 };
 
@@ -108,6 +112,18 @@ pub async fn api_get_user_own_feed(
   })
 }
 
+pub async fn api_get_post(db: web::Data<PgPool>, post_id: web::Path<Uuid>) -> impl Responder {
+  let post = match get_post(&post_id, &db).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return build_api_not_found(post_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ObjectResponse { data: post })
+}
+
 pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQuery>) -> impl Responder {
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
@@ -140,7 +156,7 @@ pub async fn api_create_post(
   };
 
   match create_post(&db, &req, &props.uid).await {
-    Ok(post_id) => HttpResponse::Ok().json(NewPostResponse { post_id }),
+    Ok(post_id) => HttpResponse::Ok().json(NewPostResponse { id: post_id }),
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
   }
 }
@@ -149,6 +165,7 @@ pub async fn api_upload_post_image(
   form: MultipartForm<PostUpload>,
   post_id: web::Path<Uuid>,
   cdn: web::Data<Cdn>,
+  queue: web::Data<Queue>,
   db: web::Data<PgPool>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
@@ -161,7 +178,7 @@ pub async fn api_upload_post_image(
     Err(res) => return res,
   };
 
-  match upload_post_file(&db, &post_id, &props.uid, &cdn, &form.images[0]).await {
+  match upload_post_file(&db, &post_id, &props.uid, &cdn, &queue, &form.images[0]).await {
     Ok(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
     Err(err) => build_api_err(500, err.to_string(), None),
   }

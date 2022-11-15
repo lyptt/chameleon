@@ -4,6 +4,7 @@ const Config = {
   clientId: process.env.OAUTH_CLIENT_ID,
   clientSecret: process.env.OAUTH_CLIENT_SECRET,
   fqdn: process.env.NEXT_PUBLIC_FQDN,
+  cdn: process.env.NEXT_PUBLIC_CDN,
 }
 
 export default Config

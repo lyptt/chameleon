@@ -1,10 +1,14 @@
+#![allow(unused)]
+
 mod activitypub;
 mod aws;
 mod cdn;
 mod helpers;
+mod job;
 mod logic;
 mod model;
 mod net;
+mod queue;
 mod routes;
 mod settings;
 
@@ -18,9 +22,11 @@ use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
+use queue::queue::Queue;
+use routes::job::api_job_query_status;
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
-  api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_user_own_feed,
+  api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_post, api_get_user_own_feed,
   api_upload_post_image,
 };
 use routes::user::{api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile};
@@ -38,6 +44,7 @@ async fn main() -> std::io::Result<()> {
   };
 
   AWSClient::create_s3_client().await;
+  AWSClient::create_sqs_client().await;
 
   env_logger::Builder::new()
     .filter_level(filter)
@@ -66,6 +73,7 @@ async fn main() -> std::io::Result<()> {
       .wrap(JwtSession::default())
       .app_data(web::Data::new(pool.clone()))
       .app_data(web::Data::new(Cdn::new()))
+      .app_data(web::Data::new(Queue::new()))
       .service(
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
@@ -113,12 +121,18 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/feed/{post_id}")
           .name("upload_post_image")
+          .route(web::get().to(api_get_post))
           .route(web::post().to(api_upload_post_image)),
       )
       .service(
         web::resource("/api/profile")
           .name("profile")
           .route(web::get().to(api_get_profile)),
+      )
+      .service(
+        web::resource("/api/job/{job_id}")
+          .name("jobs")
+          .route(web::get().to(api_job_query_status)),
       )
       .service(
         actix_files::Files::new("/", "./public/static")

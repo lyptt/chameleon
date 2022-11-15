@@ -5,6 +5,18 @@ function buildDefaultHeaders(authToken: string): any {
     headers: {
       Authorization: `Bearer ${authToken}`,
       Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    mode: 'cors',
+    credentials: 'include',
+  } as any
+}
+
+function buildFormHeaders(authToken: string): any {
+  return {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      Accept: 'application/json',
     },
     mode: 'cors',
     credentials: 'include',
@@ -15,6 +27,7 @@ function buildUnauthenticatedHeaders(): any {
   return {
     headers: {
       Accept: 'application/json',
+      'Content-Type': 'application/json',
     },
     mode: 'cors',
   } as any
@@ -25,6 +38,18 @@ export interface IListResponse<T> {
   page: number
   total_items: number
   total_pages: number
+}
+
+export interface IObjectResponse<T> {
+  data: T
+}
+
+export interface IRecordResponse {
+  id: string
+}
+
+export interface INewJobResponse {
+  job_id: string
 }
 
 export interface IProfile {
@@ -71,6 +96,28 @@ export interface IPost {
   updated_at: number
 }
 
+export interface INewPost {
+  content_md: string
+  visibility: AccessType
+}
+
+export enum JobStatus {
+  NotStarted = 'not_started',
+  InProgress = 'in_progress',
+  Done = 'done',
+  Failed = 'failed',
+}
+
+export interface IJob {
+  job_id: string
+  completion_record_id?: string
+  created_by_id?: string
+  created_at: number
+  updated_at: number
+  status: JobStatus
+  failed_count: number
+}
+
 export async function fetchProfile(authToken: string): Promise<IProfile> {
   const response = await fetch(`${Config.apiUri}/profile`, {
     ...buildDefaultHeaders(authToken),
@@ -115,6 +162,76 @@ export async function fetchOwnFeed(
       method: 'GET',
     }
   )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function submitPost(
+  post: INewPost,
+  authToken: string
+): Promise<IRecordResponse> {
+  const response = await fetch(`${Config.apiUri}/feed`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+    body: JSON.stringify(post),
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function submitPostImage(
+  postId: string,
+  file: File,
+  authToken: string
+): Promise<INewJobResponse> {
+  const form = new FormData()
+  form.append('images[]', file)
+
+  const response = await fetch(`${Config.apiUri}/feed/${postId}`, {
+    ...buildFormHeaders(authToken),
+    method: 'POST',
+    body: form,
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function getJobStatus(
+  jobId: string,
+  authToken: string
+): Promise<IJob> {
+  const response = await fetch(`${Config.apiUri}/job/${jobId}`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'GET',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchPost(
+  postId: string,
+  authToken: string
+): Promise<IObjectResponse<IPost>> {
+  const response = await fetch(`${Config.apiUri}/feed/${postId}`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'GET',
+  })
 
   if (response.status !== 200) {
     throw new Error('Request failed')

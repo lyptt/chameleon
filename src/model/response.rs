@@ -13,3 +13,8 @@ pub struct ListResponse<T> {
 pub struct JobResponse {
   pub job_id: Uuid,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ObjectResponse<T> {
+  pub data: T,
+}

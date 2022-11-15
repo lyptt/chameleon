@@ -11,11 +11,13 @@ use super::{cdn_file_store::CdnFileStore, cdn_s3_store::CdnS3Store};
 
 #[async_trait]
 pub trait CdnStore {
-  async fn upload_file(&self, local_path: &Tempfile, remote_path: &str) -> Result<String, LogicErr>;
+  async fn upload_tmp_file(&self, local_path: &Tempfile, remote_path: &str) -> Result<String, LogicErr>;
+  async fn upload_file(&self, local_path: &str, content_type: &str, remote_path: &str) -> Result<String, LogicErr>;
+  async fn download_file(&self, remote_path: &str, local_path: &str) -> Result<(), LogicErr>;
 }
 
 pub struct Cdn {
-  imp: Box<dyn CdnStore + 'static>,
+  imp: Box<dyn CdnStore + Send + Sync + 'static>,
 }
 
 impl Cdn {
@@ -30,7 +32,15 @@ impl Cdn {
     }
   }
 
-  pub async fn upload_file(&self, local_file: &Tempfile, remote_path: &str) -> Result<String, LogicErr> {
-    self.imp.upload_file(local_file, remote_path).await
+  pub async fn upload_tmp_file(&self, local_file: &Tempfile, remote_path: &str) -> Result<String, LogicErr> {
+    self.imp.upload_tmp_file(local_file, remote_path).await
+  }
+
+  pub async fn upload_file(&self, local_file: &str, content_type: &str, remote_path: &str) -> Result<String, LogicErr> {
+    self.imp.upload_file(local_file, content_type, remote_path).await
+  }
+
+  pub async fn download_file(&self, remote_path: &str, local_path: &str) -> Result<(), LogicErr> {
+    self.imp.download_file(remote_path, local_path).await
   }
 }

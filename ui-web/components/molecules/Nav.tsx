@@ -18,6 +18,9 @@ import {
 } from 'react-icons/io5'
 import NewPostModal from './NewPostModal'
 import { useState } from 'react'
+import { feedActionSubmitPost, useFeed } from '../organisms/FeedContext'
+import { useAuth } from '../organisms/AuthContext'
+import { AccessType, INewPost } from '@/core/api'
 
 export interface INavProps {
   className?: string
@@ -52,10 +55,25 @@ function NavItem({
 
 export default function Nav({ className }: INavProps) {
   const { route } = useRouter()
+  const { session } = useAuth()
+  const { dispatch } = useFeed()
   const [newPostModalOpen, setNewPostModalOpen] = useState(false)
 
   const handleModalOpen = () => setNewPostModalOpen(true)
   const handleModalClose = () => setNewPostModalOpen(false)
+  const handleModalSubmit = (
+    visibility: string,
+    file: File,
+    contentMd: string
+  ) => {
+    setNewPostModalOpen(false)
+    const newPost: INewPost = {
+      content_md: contentMd,
+      visibility: visibility as AccessType,
+    }
+
+    feedActionSubmitPost(newPost, file, session?.access_token, dispatch)
+  }
 
   return (
     <>
@@ -110,7 +128,11 @@ export default function Nav({ className }: INavProps) {
           </ul>
         </div>
       </nav>
-      <NewPostModal open={newPostModalOpen} onClose={handleModalClose} />
+      <NewPostModal
+        open={newPostModalOpen}
+        onCancel={handleModalClose}
+        onSubmit={handleModalSubmit}
+      />
     </>
   )
 }

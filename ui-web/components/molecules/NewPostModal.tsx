@@ -24,13 +24,15 @@ export interface INewPostModal {
   className?: string
   open: boolean
   onOpen?: () => void
-  onClose?: () => void
+  onCancel?: () => void
+  onSubmit?: (visibility: string, file: File, contentMd: string) => void
 }
 
 export default function NewPostModal({
   className,
   open,
-  onClose,
+  onCancel,
+  onSubmit,
 }: INewPostModal) {
   const { state: profileState } = useProfile()
   const [opened, setOpened] = useState(false)
@@ -72,7 +74,19 @@ export default function NewPostModal({
   }, [open])
 
   const handleClose = () => {
-    onClose?.()
+    onCancel?.()
+    setTimeout(() => {
+      setOpened(false)
+      setSelectingFiles(true)
+    }, 50)
+  }
+
+  const handleSubmit = () => {
+    onSubmit?.(
+      visibility || 'public_federated',
+      selectedFiles[0],
+      caption || ''
+    )
     setTimeout(() => {
       setOpened(false)
       setSelectingFiles(true)
@@ -119,7 +133,11 @@ export default function NewPostModal({
             )}
             <span>Create new post</span>
             {!selectingFiles && (
-              <PlainButton brand className={classNames.rightAction}>
+              <PlainButton
+                brand
+                className={classNames.rightAction}
+                onClick={handleSubmit}
+              >
                 Share
               </PlainButton>
             )}

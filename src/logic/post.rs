@@ -6,7 +6,14 @@ use uuid::Uuid;
 use super::LogicErr;
 use crate::{
   cdn::cdn_store::Cdn,
-  model::{access_type::AccessType, post::Post, post_pub::PostPub},
+  model::{
+    access_type::AccessType,
+    job::{Job, JobStatus, NewJob},
+    post::Post,
+    post_pub::PostPub,
+    queue_job::{QueueJob, QueueJobType},
+  },
+  queue::queue::Queue,
 };
 
 #[derive(Debug, Deserialize)]
@@ -17,7 +24,7 @@ pub struct NewPostRequest {
 
 #[derive(Debug, Serialize)]
 pub struct NewPostResponse {
-  pub post_id: Uuid,
+  pub id: Uuid,
 }
 
 pub async fn get_user_posts(
@@ -27,6 +34,12 @@ pub async fn get_user_posts(
   db: &Pool<Postgres>,
 ) -> Result<Vec<PostPub>, LogicErr> {
   PostPub::fetch_user_own_feed(handle, limit, skip, &db)
+    .await
+    .map_err(|e| LogicErr::DbError(e))
+}
+
+pub async fn get_post(post_id: &Uuid, db: &Pool<Postgres>) -> Result<Option<PostPub>, LogicErr> {
+  PostPub::fetch_post(post_id, &db)
     .await
     .map_err(|e| LogicErr::DbError(e))
 }
@@ -62,15 +75,16 @@ pub async fn upload_post_file(
   post_id: &Uuid,
   user_id: &Uuid,
   cdn: &Cdn,
+  queue: &Queue,
   upload: &Tempfile,
 ) -> Result<Uuid, LogicErr> {
   if !Post::user_owns_post(&user_id, &post_id, &db).await {
     return Err(LogicErr::UnauthorizedError);
   }
 
-  let file_name = format!("originals/{}", Uuid::new_v4());
+  let file_name = format!("media/{}/or/{}", user_id, Uuid::new_v4());
 
-  let path = match cdn.upload_file(&upload, &file_name).await {
+  let path = match cdn.upload_tmp_file(&upload, &file_name).await {
     Ok(path) => path,
     Err(err) => return Err(err),
   };
@@ -80,7 +94,26 @@ pub async fn upload_post_file(
     Err(err) => return Err(LogicErr::DbError(err)),
   }
 
-  // TODO: Create job in job queue
   let job_id = Uuid::new_v4();
-  Ok(job_id)
+  Job::create(
+    NewJob {
+      job_id,
+      created_by_id: Some(user_id.clone()),
+      status: JobStatus::NotStarted,
+      completion_record_id: Some(*post_id),
+    },
+    &db,
+  )
+  .await
+  .map_err(|err| LogicErr::DbError(err))?;
+
+  let job = QueueJob {
+    job_id: job_id.clone(),
+    job_type: QueueJobType::ConvertNewPostImages,
+  };
+
+  match queue.send_job(job).await {
+    Ok(_) => Ok(job_id),
+    Err(err) => Err(err),
+  }
 }
