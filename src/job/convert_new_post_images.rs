@@ -1,7 +1,6 @@
-use std::borrow::BorrowMut;
-
-use magick_rust::bindings::GravityType_CenterGravity;
-use magick_rust::MagickWand;
+use blurhash::encode;
+use futures_util::future::join_all;
+use image::{GenericImageView, ImageFormat};
 use sqlx::{Pool, Postgres};
 use tempfile::TempDir;
 use uuid::Uuid;
@@ -11,7 +10,8 @@ use crate::helpers::api::map_ext_err;
 use crate::logic::LogicErr;
 use crate::model::job::Job;
 use crate::model::post::Post;
-use crate::model::queue_job::QueueJob;
+use crate::settings::SETTINGS;
+use log::{debug, warn};
 
 pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
   let job = match Job::fetch_optional_by_id(&job_id, &db).await {
@@ -102,49 +102,115 @@ pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cd
   cdn.download_file(&storage_ref, &tmp_original_path).await?;
 
   {
-    let mut wand = MagickWand::new();
-    wand.read_image(&tmp_original_path).map_err(map_ext_err)?;
-    wand.set_gravity(GravityType_CenterGravity).map_err(map_ext_err)?;
-    wand.adaptive_resize_image(2048, 2048).map_err(map_ext_err)?;
-    wand.set_format("JPEG").map_err(map_ext_err)?;
-    wand.set_compression_quality(80).map_err(map_ext_err)?;
+    let output = tokio::process::Command::new(&SETTINGS.app.imagemagick_exe_path)
+      .arg(&tmp_original_path)
+      .arg("-gravity")
+      .arg("center")
+      .arg("-scale")
+      .arg("2048x2048^")
+      .arg("-extent")
+      .arg("2048x2048")
+      .arg("-quality")
+      .arg("80")
+      .arg(format!("JPEG:{}", &tmp_large_path))
+      .output()
+      .await
+      .map_err(map_ext_err)?;
 
-    wand.write_image(&tmp_large_path).map_err(map_ext_err)?;
+    debug!("{}", String::from_utf8_lossy(output.stderr.as_slice()));
+
+    if !output.status.success() {
+      return Err(LogicErr::InternalError("Failed to convert image".to_string()));
+    }
   }
 
   {
-    let mut wand = MagickWand::new();
-    wand.read_image(&tmp_original_path).map_err(map_ext_err)?;
-    wand.set_gravity(GravityType_CenterGravity).map_err(map_ext_err)?;
-    wand.adaptive_resize_image(1024, 1024).map_err(map_ext_err)?;
-    wand.set_format("JPEG").map_err(map_ext_err)?;
-    wand.set_compression_quality(80).map_err(map_ext_err)?;
+    let output = tokio::process::Command::new(&SETTINGS.app.imagemagick_exe_path)
+      .arg(&tmp_original_path)
+      .arg("-gravity")
+      .arg("center")
+      .arg("-scale")
+      .arg("1024x1024^")
+      .arg("-extent")
+      .arg("1024x1024")
+      .arg("-quality")
+      .arg("80")
+      .arg(format!("JPEG:{}", &tmp_medium_path))
+      .output()
+      .await
+      .map_err(map_ext_err)?;
 
-    wand.write_image(&tmp_medium_path).map_err(map_ext_err)?;
+    debug!("{}", String::from_utf8_lossy(output.stderr.as_slice()));
+
+    if !output.status.success() {
+      return Err(LogicErr::InternalError("Failed to convert image".to_string()));
+    }
   }
 
   {
-    let mut wand = MagickWand::new();
-    wand.read_image(&tmp_original_path).map_err(map_ext_err)?;
-    wand.set_gravity(GravityType_CenterGravity).map_err(map_ext_err)?;
-    wand.adaptive_resize_image(256, 256).map_err(map_ext_err)?;
-    wand.set_format("JPEG").map_err(map_ext_err)?;
-    wand.set_compression_quality(80).map_err(map_ext_err)?;
+    let output = tokio::process::Command::new(&SETTINGS.app.imagemagick_exe_path)
+      .arg(&tmp_original_path)
+      .arg("-gravity")
+      .arg("center")
+      .arg("-scale")
+      .arg("256x256^")
+      .arg("-extent")
+      .arg("256x256")
+      .arg("-quality")
+      .arg("80")
+      .arg(format!("JPEG:{}", &tmp_small_path))
+      .output()
+      .await
+      .map_err(map_ext_err)?;
 
-    wand.write_image(&tmp_small_path).map_err(map_ext_err)?;
+    debug!("{}", String::from_utf8_lossy(output.stderr.as_slice()));
+
+    if !output.status.success() {
+      return Err(LogicErr::InternalError("Failed to convert image".to_string()));
+    }
   }
 
-  cdn
-    .upload_file(&tmp_large_path, &mime::JPEG.to_string(), &large_file_name)
-    .await?;
+  let mime_type = mime::JPEG.to_string();
 
-  cdn
-    .upload_file(&tmp_medium_path, &mime::JPEG.to_string(), &medium_file_name)
-    .await?;
+  let upload_tasks = vec![
+    cdn.upload_file(&tmp_large_path, &mime_type, &large_file_name),
+    cdn.upload_file(&tmp_medium_path, &mime_type, &medium_file_name),
+    cdn.upload_file(&tmp_small_path, &mime_type, &small_file_name),
+  ];
 
-  cdn
-    .upload_file(&tmp_small_path, &mime::JPEG.to_string(), &small_file_name)
-    .await?;
+  let results = join_all(upload_tasks).await;
+
+  for result in results {
+    if result.is_err() {
+      return Err(result.unwrap_err());
+    }
+  }
+
+  let blurhash = match image::io::Reader::open(&tmp_small_path) {
+    Ok(mut img) => {
+      img.set_format(ImageFormat::Jpeg);
+      match img.decode() {
+        Ok(img) => {
+          let (width, height) = img.dimensions();
+          Some(encode(4, 3, width, height, &img.to_rgba8().into_vec()))
+        }
+        Err(err) => {
+          warn!(
+            "Failed to open small image to generate blurhash, blurhash generation will be skipped: {}",
+            err
+          );
+          None
+        }
+      }
+    }
+    Err(err) => {
+      warn!(
+        "Failed to open small image to generate blurhash, blurhash generation will be skipped: {}",
+        err
+      );
+      None
+    }
+  };
 
   post.content_type_large = Some(mime::JPEG.to_string());
   post.content_type_medium = Some(mime::JPEG.to_string());
@@ -158,6 +224,7 @@ pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cd
   post.content_image_uri_large = Some(large_file_name);
   post.content_image_uri_medium = Some(medium_file_name);
   post.content_image_uri_small = Some(small_file_name);
+  post.content_blurhash = blurhash;
 
   post.update_post_content(&db).await.map_err(map_ext_err)?;
 

@@ -17,11 +17,7 @@ use crate::{
     create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
     upload_post_file, NewPostRequest, NewPostResponse,
   },
-  model::{
-    response::{JobResponse, ListResponse, ObjectResponse},
-    user::User,
-    user_account_pub::UserAccountPub,
-  },
+  model::response::{JobResponse, ListResponse, ObjectResponse},
   net::jwt::JwtContext,
   queue::queue::Queue,
   settings::SETTINGS,

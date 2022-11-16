@@ -1,11 +1,6 @@
-use std::str::FromStr;
-
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 use uuid::Uuid;
-
-use super::job::JobStatus;
 
 #[derive(Deserialize, Serialize, EnumString, Display, Debug)]
 pub enum QueueJobType {

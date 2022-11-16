@@ -75,6 +75,11 @@ pub struct Queue {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Application {
+  pub imagemagick_exe_path: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
   pub server: Server,
   pub database: Database,
@@ -82,6 +87,7 @@ pub struct Settings {
   pub env: AppEnv,
   pub cdn: Cdn,
   pub queue: Queue,
+  pub app: Application,
 }
 
 fn get_cwd() -> String {
@@ -122,6 +128,9 @@ impl Settings {
         work_queue: "work_q".to_string(),
         work_deadletter_queue: "work_dq".to_string(),
         credentials: None,
+      },
+      app: Application {
+        imagemagick_exe_path: "convert".to_string(),
       },
     }
   }

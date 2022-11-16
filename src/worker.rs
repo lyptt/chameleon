@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![allow(dead_code)]
 
 mod activitypub;
 mod aws;
@@ -14,23 +14,15 @@ mod settings;
 use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use env_logger::WriteStyle;
+use log::error;
 use log::LevelFilter;
-use log::{error, Level};
-use magick_rust::{magick_wand_genesis, MagickWand};
 use queue::queue::Queue;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
-use std::sync::Once;
 use std::time::Duration;
-
-static START: Once = Once::new();
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-  START.call_once(|| {
-    magick_wand_genesis();
-  });
-
   let filter: LevelFilter = match SETTINGS.env {
     settings::AppEnv::Development => LevelFilter::Debug,
     settings::AppEnv::Testing => LevelFilter::Info,
@@ -63,6 +55,4 @@ async fn main() -> std::io::Result<()> {
       Err(err) => error!("{}", err.to_string()),
     }
   }
-
-  Ok(())
 }

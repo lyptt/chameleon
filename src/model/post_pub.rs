@@ -3,12 +3,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Error, FromRow, Pool, Postgres};
 use uuid::Uuid;
 
-use crate::{
-  activitypub::{
-    activity::Activity, activity_convertible::ActivityConvertible, activity_type::ActivityType, image::Image,
-    link::Link,
-  },
-  settings::SETTINGS,
+use crate::activitypub::{
+  activity::Activity, activity_convertible::ActivityConvertible, activity_type::ActivityType, image::Image, link::Link,
 };
 
 use super::access_type::AccessType;
@@ -38,6 +34,7 @@ pub struct PostPub {
   pub visibility: AccessType,
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
+  pub content_blurhash: Option<String>,
 }
 
 impl PostPub {

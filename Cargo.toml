@@ -64,7 +64,7 @@ version = "0.1.58"
 
 [dependencies.tokio]
 version = "1.21.2"
-features = ["macros"]
+features = ["macros", "process"]
 
 [dependencies.actix-easy-multipart]
 version = "3.0.0"
@@ -118,12 +118,17 @@ version = "0.4.1"
 [dependencies.markdown]
 version = "0.3.0"
 
-[dependencies.magick_rust]
-version = "0.16.0"
-features = ["disable-hdri"]
-
 [dependencies.tempfile]
 verison = "3.3.0"
+
+[dependencies.aws-smithy-http]
+version = "0.51.0"
+
+[dependencies.blurhash]
+version = "0.1.1"
+
+[dependencies.image]
+version = "0.24.5"
 
 [dev-dependencies.mockall]
 version = "0.11.3"

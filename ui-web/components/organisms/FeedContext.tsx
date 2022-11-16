@@ -113,9 +113,10 @@ export async function feedActionSubmitPost(
         }
       },
       {
-        retries: 20,
-        factor: 2.5,
+        retries: 100,
+        factor: 1.2,
         maxRetryTime: 1000 * 60 * 30,
+        maxTimeout: 1500,
       }
     )
   } catch (error) {

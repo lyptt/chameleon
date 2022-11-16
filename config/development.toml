@@ -20,3 +20,6 @@ work_deadletter_queue="work_dq"
 
 [log]
 level = "Debug"
+
+[app]
+imagemagick_exe_path = "convert"

@@ -91,6 +91,7 @@ export interface IPost {
   content_type_small?: string
   content_type_medium?: string
   content_type_large?: string
+  content_blurhash?: string
   visibility: AccessType
   created_at: number
   updated_at: number

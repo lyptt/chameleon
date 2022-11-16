@@ -2,20 +2,20 @@ use actix_web::web;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use sqlx::PgPool;
 
-use crate::{helpers::api::map_ext_err, model::user::User, net::jwt::JwtFactory};
+use crate::{
+  helpers::api::{map_db_err, map_ext_err},
+  model::user::User,
+  net::jwt::JwtFactory,
+};
 
 use super::LogicErr;
 
 pub async fn get_user_by_id(handle: &String, db: &web::Data<PgPool>) -> Result<Option<User>, LogicErr> {
-  User::fetch_by_handle(handle, db)
-    .await
-    .map_err(|e| LogicErr::DbError(e))
+  User::fetch_by_handle(handle, db).await.map_err(map_db_err)
 }
 
 pub async fn get_user_by_fediverse_id(fediverse_id: &String, db: &web::Data<PgPool>) -> Result<Option<User>, LogicErr> {
-  User::fetch_by_fediverse_id(fediverse_id, db)
-    .await
-    .map_err(|e| LogicErr::DbError(e))
+  User::fetch_by_fediverse_id(fediverse_id, db).await.map_err(map_db_err)
 }
 
 pub async fn authorize_user(username: &str, password: &str, db: &web::Data<PgPool>) -> Result<String, LogicErr> {

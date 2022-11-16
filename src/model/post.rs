@@ -26,6 +26,7 @@ pub struct Post {
   pub content_type_medium: Option<String>,
   pub content_type_large: Option<String>,
   pub content_image_storage_ref: Option<String>,
+  pub content_blurhash: Option<String>,
   pub visibility: AccessType,
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
@@ -102,8 +103,8 @@ impl Post {
   pub async fn update_post_content(&self, pool: &Pool<Postgres>) -> Result<(), Error> {
     sqlx::query("UPDATE posts SET content_type_large = $1, content_type_medium = $2, content_type_small = $3, content_width_large = $4, 
     content_height_large = $5, content_width_medium = $6, content_height_medium = $7, content_width_small = $8,
-     content_height_small = $9, content_image_uri_large = $10, content_image_uri_medium = $11, content_image_uri_small = $12 
-     WHERE post_id = $13")
+     content_height_small = $9, content_image_uri_large = $10, content_image_uri_medium = $11, content_image_uri_small = $12, content_blurhash = $13 
+     WHERE post_id = $14")
       .bind(&self.content_type_large)
       .bind(&self.content_type_medium)
       .bind(&self.content_type_small)
@@ -116,6 +117,7 @@ impl Post {
       .bind(&self.content_image_uri_large)
       .bind(&self.content_image_uri_medium)
       .bind(&self.content_image_uri_small)
+      .bind(&self.content_blurhash)
       .bind(&self.post_id)
       .execute(pool)
       .await?;

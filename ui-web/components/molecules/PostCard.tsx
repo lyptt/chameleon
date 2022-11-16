@@ -2,11 +2,12 @@ import { IPost } from '@/core/api'
 import Config from '@/core/config'
 import cx from 'classnames'
 import Link from 'next/link'
-import IconButton, { IconButtonIcon } from '../atoms/IconButton'
+import IconButton, { IconButtonIcon } from '@/components/atoms/IconButton'
 import classNames from './PostCard.module.css'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
+import { LazyImage } from '@/components/atoms/LazyImage'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -33,9 +34,11 @@ export default function PostCard({ className, post }: IPostCardProps) {
           </a>
         </Link>
       </div>
-      <img
+      <LazyImage
         className={classNames.content}
-        src={`${Config.cdn}/${post.content_image_uri_large}`}
+        blurhash={post.content_blurhash}
+        srcSet={`${Config.cdn}/${post.content_image_uri_large} 2048w, ${Config.cdn}/${post.content_image_uri_medium} 1024w, ${Config.cdn}/${post.content_image_uri_small} 256w`}
+        src={`${Config.cdn}/${post.content_image_uri_medium}`}
       />
       <div className={classNames.actionBar}>
         <div className={classNames.tools}>
