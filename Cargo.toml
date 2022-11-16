@@ -70,7 +70,7 @@ features = ["macros", "process"]
 version = "3.0.0"
 
 [dependencies.uuid]
-version = "1.2.1"
+version = "1.2.2"
 features = ["std", "serde", "v4"]
 
 [dependencies.num-traits]
