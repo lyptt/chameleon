@@ -1,11 +1,8 @@
-use lazy_static::lazy_static;
 use serde::Serialize;
 
-lazy_static! {
-  pub static ref ACTIVITY_JSON_CONTENT_TYPE: &'static str = "application/activity+json";
-  pub static ref ACTIVITY_LD_JSON_CONTENT_TYPE: &'static str =
-    "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"";
-}
+pub const ACTIVITY_JSON_CONTENT_TYPE: &str = "application/activity+json";
+pub const ACTIVITY_LD_JSON_CONTENT_TYPE: &str =
+  "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"";
 
 #[derive(Serialize, Debug)]
 pub struct ApiError {

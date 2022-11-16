@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::too_many_arguments)]
 
 mod activitypub;
 mod aws;
@@ -8,9 +9,9 @@ mod job;
 mod logic;
 mod model;
 mod net;
-mod queue;
 mod routes;
 mod settings;
+mod work_queue;
 
 use actix_cors::Cors;
 use actix_web::dev::ServiceResponse;
@@ -22,7 +23,6 @@ use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
-use queue::queue::Queue;
 use routes::job::api_job_query_status;
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
@@ -34,6 +34,7 @@ use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
+use work_queue::queue::Queue;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -77,13 +78,13 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
-          .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE.clone()))
+          .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
           .route(web::get().to(api_activitypub_get_user_by_id)),
       )
       .service(
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
-          .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE.clone()))
+          .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
           .route(web::get().to(api_activitypub_get_user_by_id_astream)),
       )
       .service(

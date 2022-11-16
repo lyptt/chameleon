@@ -18,9 +18,9 @@ pub async fn assert_auth(jwt: &web::ReqData<JwtContext>, db: &Pool<Postgres>) ->
     Err(_) => return Err(HttpResponse::Unauthorized().finish()),
   };
 
-  match Session::query_session_exists(&sid, &db).await {
-    true => return Ok(()),
-    false => return Err(HttpResponse::Unauthorized().finish()),
+  match Session::query_session_exists(&sid, db).await {
+    true => Ok(()),
+    false => Err(HttpResponse::Unauthorized().finish()),
   }
 }
 
@@ -38,9 +38,9 @@ pub async fn require_auth(
     Err(_) => return Err(HttpResponse::Unauthorized().finish()),
   };
 
-  match Session::query_session_exists(&sid, &db).await {
-    true => return Ok(props),
-    false => return Err(HttpResponse::Unauthorized().finish()),
+  match Session::query_session_exists(&sid, db).await {
+    true => Ok(props),
+    false => Err(HttpResponse::Unauthorized().finish()),
   }
 }
 
@@ -55,7 +55,7 @@ pub async fn query_auth(jwt: &web::ReqData<JwtContext>, db: &Pool<Postgres>) -> 
     Err(_) => return None,
   };
 
-  match Session::query_session_exists(&sid, &db).await {
+  match Session::query_session_exists(&sid, db).await {
     true => Some(props),
     false => None,
   }

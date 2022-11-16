@@ -19,7 +19,7 @@ pub async fn get_user_by_fediverse_id(fediverse_id: &String, db: &web::Data<PgPo
 }
 
 pub async fn authorize_user(username: &str, password: &str, db: &web::Data<PgPool>) -> Result<String, LogicErr> {
-  let current_hash = match User::fetch_password_hash(username, &db).await.map_err(map_ext_err)? {
+  let current_hash = match User::fetch_password_hash(username, db).await.map_err(map_ext_err)? {
     Some(hash) => hash,
     None => return Err(LogicErr::UnauthorizedError),
   };

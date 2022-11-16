@@ -38,7 +38,7 @@ impl<'r> Decode<'r, Postgres> for AccessType {
       Err(e) => return Err(e),
     };
 
-    match AccessType::from_str(&s) {
+    match AccessType::from_str(s) {
       Ok(t) => Ok(t),
       Err(e) => Err(Box::new(e)),
     }

@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::too_many_arguments)]
 
 mod activitypub;
 mod aws;
@@ -8,18 +9,18 @@ mod job;
 mod logic;
 mod model;
 mod net;
-mod queue;
 mod settings;
+mod work_queue;
 
 use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use env_logger::WriteStyle;
 use log::error;
 use log::LevelFilter;
-use queue::queue::Queue;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
+use work_queue::queue::Queue;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
