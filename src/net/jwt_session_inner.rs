@@ -14,9 +14,18 @@ impl From<JwtClaims> for JwtContextProps {
     Self {
       sub: claims.sub,
       iss: claims.iss,
-      exp: DateTime::from_utc(NaiveDateTime::from_timestamp(claims.exp, 0), Utc),
-      nbf: DateTime::from_utc(NaiveDateTime::from_timestamp(claims.nbf, 0), Utc),
-      iat: DateTime::from_utc(NaiveDateTime::from_timestamp(claims.iat, 0), Utc),
+      exp: DateTime::from_utc(
+        NaiveDateTime::from_timestamp_opt(claims.exp, 0).expect("Invalid or out of range datetime"),
+        Utc,
+      ),
+      nbf: DateTime::from_utc(
+        NaiveDateTime::from_timestamp_opt(claims.nbf, 0).expect("Invalid or out of range datetime"),
+        Utc,
+      ),
+      iat: DateTime::from_utc(
+        NaiveDateTime::from_timestamp_opt(claims.iat, 0).expect("Invalid or out of range datetime"),
+        Utc,
+      ),
       sid: claims.sid,
       uid: claims.uid,
     }
