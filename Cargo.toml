@@ -5,12 +5,10 @@ edition = "2021"
 
 [[bin]]
 name = "chameleon"
-src = "src/main.rs"
 path = "src/main.rs"
 
 [[bin]]
 name = "chameleon-worker"
-src = "src/worker.rs"
 path = "src/worker.rs"
 
 [dependencies.actix-web]
