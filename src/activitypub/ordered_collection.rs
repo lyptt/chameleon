@@ -63,7 +63,7 @@ impl OrderedCollection {
         page_size
       ),
       id: subject_url.to_string(),
-      total_items: total_items,
+      total_items,
       object_type: "OrderedCollection",
     }
   }
@@ -96,8 +96,7 @@ impl OrderedCollectionPage<Activity<Image>> {
       )]),
       ordered_items: posts
         .iter()
-        .map(|p| p.to_activity(item_base_uri, actor_uri))
-        .flatten()
+        .filter_map(|p| p.to_activity(item_base_uri, actor_uri))
         .collect(),
       id: current_uri.to_string(),
       part_of: collection_uri.to_string(),

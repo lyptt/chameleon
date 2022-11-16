@@ -14,7 +14,7 @@ use crate::settings::SETTINGS;
 use log::{debug, warn};
 
 pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
-  let job = match Job::fetch_optional_by_id(&job_id, &db).await {
+  let job = match Job::fetch_optional_by_id(&job_id, db).await {
     Some(job) => job,
     None => return Err(LogicErr::InternalError("Job not found".to_string())),
   };
@@ -24,7 +24,7 @@ pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cd
     None => return Err(LogicErr::InternalError("Post ID not found for job".to_string())),
   };
 
-  let mut post = match Post::find_optional_by_id(&post_id, &db).await {
+  let mut post = match Post::find_optional_by_id(&post_id, db).await {
     Some(post) => post,
     None => return Err(LogicErr::InternalError("Post not found for job".to_string())),
   };
@@ -99,7 +99,7 @@ pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cd
   let medium_file_name = format!("media/{}/md/{}", post.user_id, Uuid::new_v4());
   let small_file_name = format!("media/{}/sm/{}", post.user_id, Uuid::new_v4());
 
-  cdn.download_file(&storage_ref, &tmp_original_path).await?;
+  cdn.download_file(storage_ref, &tmp_original_path).await?;
 
   {
     let output = tokio::process::Command::new(&SETTINGS.app.imagemagick_exe_path)
@@ -226,7 +226,7 @@ pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cd
   post.content_image_uri_small = Some(small_file_name);
   post.content_blurhash = blurhash;
 
-  post.update_post_content(&db).await.map_err(map_ext_err)?;
+  post.update_post_content(db).await.map_err(map_ext_err)?;
 
   Ok(())
 }

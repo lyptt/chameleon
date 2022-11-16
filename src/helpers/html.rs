@@ -22,8 +22,8 @@ pub fn handle_oauth_app_err(err: &'static str) -> HttpResponse {
     },
   ) {
     Ok(body) => return HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body),
-    Err(_) => return HttpResponse::InternalServerError().finish(),
-  };
+    Err(_) => HttpResponse::InternalServerError().finish(),
+  }
 }
 
 pub fn handle_oauth_app_body(app: &App, err: &'static str) -> HttpResponse {
@@ -37,8 +37,8 @@ pub fn handle_oauth_app_body(app: &App, err: &'static str) -> HttpResponse {
     },
   ) {
     Ok(body) => return HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body),
-    Err(_) => return HttpResponse::InternalServerError().finish(),
-  };
+    Err(_) => HttpResponse::InternalServerError().finish(),
+  }
 }
 
 pub fn oauth_app_unwrap_result<T>(obj: Result<Option<T>, sqlx::Error>, error: &'static str) -> Result<T, HttpResponse> {

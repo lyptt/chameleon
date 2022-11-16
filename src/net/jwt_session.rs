@@ -62,6 +62,6 @@ where
       .insert(self.inner.parse_jwt(req.headers().get("authorization")));
 
     let fut = self.service.call(req);
-    Box::pin(async move { Ok(fut.await?) })
+    Box::pin(async move { fut.await })
   }
 }

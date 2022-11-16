@@ -173,12 +173,7 @@ impl CdnStore for CdnS3Store {
 
     let mut byte_stream = response.body;
 
-    let raw_temp_file = match File::options()
-      .read(true)
-      .write(true)
-      .create_new(true)
-      .open(&local_path)
-    {
+    let raw_temp_file = match File::options().read(true).write(true).create_new(true).open(local_path) {
       Ok(file) => file,
       Err(err) => return Err(map_ext_err(err)),
     };

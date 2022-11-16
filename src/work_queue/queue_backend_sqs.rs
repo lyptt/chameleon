@@ -104,7 +104,7 @@ impl QueueBackend for QueueBackendSQS {
       }
 
       match match queue_job.job_type {
-        ConvertNewPostImages => convert_new_post_images(queue_job.job_id, &db, &cdn).await,
+        ConvertNewPostImages => convert_new_post_images(queue_job.job_id, &db, cdn).await,
       } {
         Ok(()) => {
           job.status = JobStatus::Done;
@@ -146,7 +146,7 @@ impl QueueBackend for QueueBackendSQS {
             err.to_string()
           );
 
-          job.failed_count = job.failed_count + 1;
+          job.failed_count += 1;
           job.status = JobStatus::NotStarted;
           match Job::update(&job, &db).await {
             Ok(_) => {}

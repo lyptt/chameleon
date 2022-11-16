@@ -32,7 +32,7 @@ impl<'r> Decode<'r, Postgres> for JobStatus {
       Err(e) => return Err(e),
     };
 
-    match JobStatus::from_str(&s) {
+    match JobStatus::from_str(s) {
       Ok(t) => Ok(t),
       Err(e) => Err(Box::new(e)),
     }
@@ -102,10 +102,10 @@ impl Job {
     sqlx::query(
       "UPDATE jobs SET completion_record_id=$1, status = $2, failed_count = $3, updated_at = now() WHERE job_id = $4",
     )
-    .bind(&job.completion_record_id)
+    .bind(job.completion_record_id)
     .bind(&job.status)
-    .bind(&job.failed_count)
-    .bind(&job.job_id)
+    .bind(job.failed_count)
+    .bind(job.job_id)
     .execute(pool)
     .await?;
 

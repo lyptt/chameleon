@@ -43,7 +43,7 @@ impl User {
   }
 
   pub fn to_webfinger(&self) -> WebfingerRecord {
-    return WebfingerRecord {
+    WebfingerRecord {
       aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.fediverse_id)]),
       subject: self.fediverse_id.clone(),
       links: [
@@ -52,7 +52,7 @@ impl User {
         WebfingerRecordLink::build_feed_link(&self.fediverse_id),
       ]
       .into(),
-    };
+    }
   }
 }
 
@@ -77,13 +77,13 @@ mod tests {
     let finger = user.to_webfinger();
 
     assert_eq!(&finger.subject, &user.fediverse_id);
-    assert_eq!(finger.aliases.is_some(), true);
+    assert!(finger.aliases.is_some());
     assert_eq!(finger.aliases.unwrap().len(), 1);
     assert_eq!(finger.links.len(), 2);
 
     assert_eq!(finger.links[0].rel, "self");
     assert_eq!(finger.links[0].link_type, "application/activity+json");
-    assert_eq!(finger.links[0].href.is_some(), true);
+    assert!(finger.links[0].href.is_some());
     assert_eq!(
       finger.links[0].href.as_ref().unwrap(),
       "http://127.0.0.1:8000/api/users/user"
@@ -91,7 +91,7 @@ mod tests {
 
     assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
     assert_eq!(finger.links[1].link_type, "text/html");
-    assert_eq!(finger.links[1].href.is_some(), true);
+    assert!(finger.links[1].href.is_some());
     assert_eq!(
       finger.links[1].href.as_ref().unwrap(),
       "http://127.0.0.1:8000/feed/user"
@@ -113,13 +113,13 @@ mod tests {
     let finger = user.to_webfinger();
 
     assert_eq!(&finger.subject, &user.fediverse_id);
-    assert_eq!(finger.aliases.is_some(), true);
+    assert!(finger.aliases.is_some());
     assert_eq!(finger.aliases.unwrap().len(), 1);
     assert_eq!(finger.links.len(), 2);
 
     assert_eq!(finger.links[0].rel, "self");
     assert_eq!(finger.links[0].link_type, "application/activity+json");
-    assert_eq!(finger.links[0].href.is_some(), true);
+    assert!(finger.links[0].href.is_some());
     assert_eq!(
       finger.links[0].href.as_ref().unwrap(),
       "http://127.0.0.1:8000/api/users/<unknown>"
@@ -127,7 +127,7 @@ mod tests {
 
     assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
     assert_eq!(finger.links[1].link_type, "text/html");
-    assert_eq!(finger.links[1].href.is_some(), true);
+    assert!(finger.links[1].href.is_some());
     assert_eq!(
       finger.links[1].href.as_ref().unwrap(),
       "http://127.0.0.1:8000/feed/<unknown>"

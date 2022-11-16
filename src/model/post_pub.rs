@@ -269,17 +269,14 @@ impl PostPub {
 impl ActivityConvertible<Image> for PostPub {
   fn to_activity(&self, base_uri: &str, actor_uri: &str) -> Option<Activity<Image>> {
     let mut image_links: Vec<Link> = vec![];
-    match Link::from_post_pub_small(self) {
-      Some(link) => image_links.push(link),
-      None => {}
+    if let Some(link) = Link::from_post_pub_small(self) {
+      image_links.push(link);
     };
-    match Link::from_post_pub_medium(self) {
-      Some(link) => image_links.push(link),
-      None => {}
+    if let Some(link) = Link::from_post_pub_medium(self) {
+      image_links.push(link);
     };
-    match Link::from_post_pub_large(self) {
-      Some(link) => image_links.push(link),
-      None => {}
+    if let Some(link) = Link::from_post_pub_large(self) {
+      image_links.push(link);
     };
 
     if image_links.is_empty() {
@@ -289,7 +286,7 @@ impl ActivityConvertible<Image> for PostPub {
     Some(Activity {
       id: format!("{}/{}", &base_uri, &self.uri),
       actor: actor_uri.to_string(),
-      published: self.created_at.clone(),
+      published: self.created_at,
       object: Image {
         to: Some(vec!["https://www.w3.org/ns/activitystreams#Public".to_string()]),
         cc: Some(vec![format!("{}/followers", base_uri)]),

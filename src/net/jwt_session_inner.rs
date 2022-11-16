@@ -9,16 +9,16 @@ pub struct JwtSessionInner {
   decoding_key: DecodingKey,
 }
 
-impl Into<JwtContextProps> for JwtClaims {
-  fn into(self) -> JwtContextProps {
-    JwtContextProps {
-      sub: self.sub,
-      iss: self.iss,
-      exp: DateTime::from_utc(NaiveDateTime::from_timestamp(self.exp, 0), Utc),
-      nbf: DateTime::from_utc(NaiveDateTime::from_timestamp(self.nbf, 0), Utc),
-      iat: DateTime::from_utc(NaiveDateTime::from_timestamp(self.iat, 0), Utc),
-      sid: self.sid,
-      uid: self.uid,
+impl From<JwtClaims> for JwtContextProps {
+  fn from(claims: JwtClaims) -> Self {
+    Self {
+      sub: claims.sub,
+      iss: claims.iss,
+      exp: DateTime::from_utc(NaiveDateTime::from_timestamp(claims.exp, 0), Utc),
+      nbf: DateTime::from_utc(NaiveDateTime::from_timestamp(claims.nbf, 0), Utc),
+      iat: DateTime::from_utc(NaiveDateTime::from_timestamp(claims.iat, 0), Utc),
+      sid: claims.sid,
+      uid: claims.uid,
     }
   }
 }
@@ -43,7 +43,7 @@ impl JwtSessionInner {
       return JwtContext::Invalid(None);
     }
 
-    let raw_jwt_split = authorization_header_value.split(" ");
+    let raw_jwt_split = authorization_header_value.split(' ');
     let raw_jwt_components = raw_jwt_split.collect::<Vec<&str>>();
 
     if raw_jwt_components.len() != 2 {
@@ -52,7 +52,7 @@ impl JwtSessionInner {
 
     let raw_jwt = raw_jwt_components[1];
 
-    let token = match decode::<JwtClaims>(&raw_jwt, &self.decoding_key, &Validation::new(Algorithm::HS512)) {
+    let token = match decode::<JwtClaims>(raw_jwt, &self.decoding_key, &Validation::new(Algorithm::HS512)) {
       Ok(token) => token,
       Err(err) => return JwtContext::Invalid(Some(err.to_string())),
     };

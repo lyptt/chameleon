@@ -243,7 +243,7 @@ pub async fn api_oauth_token(
         refresh_expires_at: session.refresh_expiry.timestamp(),
       })
     }
-    OAuthGrantType::ClientCredentials => return build_api_err(400, "Not implemented".to_string(), None),
+    OAuthGrantType::ClientCredentials => build_api_err(400, "Not implemented".to_string(), None),
     OAuthGrantType::RefreshToken => match require_auth(&session, &db).await {
       Ok(session) => {
         let refresh_token = req.refresh_token.clone().unwrap_or_default();
@@ -298,7 +298,7 @@ pub async fn api_oauth_token(
           refresh_expires_at: session.refresh_expiry.timestamp(),
         })
       }
-      Err(err) => return err,
+      Err(err) => err,
     },
   }
 }
