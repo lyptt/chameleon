@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
-    branches: "**"
+    branches:
+      - "dev"
+    tags:
+      - "**"
   pull_request:
     branches: "**"
 
@@ -22,6 +25,19 @@ jobs:
           default: true
           override: true
 
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
       - name: Lint (Check)
         uses: actions-rs/cargo@v1
         with:
@@ -31,6 +47,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
+
+      - name: Format (fmt)
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
 
       - name: Build
         run: cargo build --all --release
