@@ -18,16 +18,16 @@ pub enum AppLogLevel {
   Debug,
 }
 
-#[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq)]
+#[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq, Eq)]
 pub enum AppCdnStore {
   Local,
   S3,
 }
 
-#[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq)]
+#[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq, Eq)]
 pub enum AppQueueBackend {
   RabbitMQ,
-  SQS,
+  Sqs,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -92,7 +92,7 @@ pub struct Settings {
 
 fn get_cwd() -> String {
   match std::env::current_dir() {
-    Ok(path) => path.into_os_string().into_string().unwrap_or(".".to_string()),
+    Ok(path) => path.into_os_string().into_string().unwrap_or_else(|_| ".".to_string()),
     Err(_) => ".".to_string(),
   }
 }
@@ -145,7 +145,7 @@ impl Settings {
       .add_source(config::Environment::with_prefix("chameleon"))
       .build();
 
-    return match settings {
+    match settings {
       Ok(settings) => match settings.try_deserialize() {
         Ok(settings) => settings,
         Err(err) => {
@@ -155,9 +155,9 @@ impl Settings {
       },
       Err(err) => {
         eprintln!("{}", err);
-        return Settings::default();
+        Settings::default()
       }
-    };
+    }
   }
 }
 

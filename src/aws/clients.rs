@@ -46,7 +46,7 @@ impl AWSClient {
   }
 
   pub async fn create_sqs_client() {
-    if SETTINGS.queue.queue_backend != AppQueueBackend::SQS {
+    if SETTINGS.queue.queue_backend != AppQueueBackend::Sqs {
       return;
     }
 

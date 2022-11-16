@@ -99,7 +99,7 @@ impl JwtFactory {
     };
 
     let header = Header::new(Algorithm::HS512);
-    let access_token = encode(&header, &claims, &JWT_ENCODING_KEY).map_err(|e| JwtSessionErr::JwtError(e))?;
+    let access_token = encode(&header, &claims, &JWT_ENCODING_KEY).map_err(JwtSessionErr::JwtError)?;
 
     Ok(JwtSessionToken {
       access_token,

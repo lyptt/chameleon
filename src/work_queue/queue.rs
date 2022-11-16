@@ -24,7 +24,7 @@ pub struct Queue {
 impl Queue {
   pub fn new() -> Queue {
     match SETTINGS.queue.queue_backend {
-      AppQueueBackend::SQS => Queue {
+      AppQueueBackend::Sqs => Queue {
         imp: Box::new(QueueBackendSQS {}),
       },
       AppQueueBackend::RabbitMQ => todo!("RabbitMQ queue backend is implemented"),

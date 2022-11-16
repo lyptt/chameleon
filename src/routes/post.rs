@@ -19,8 +19,8 @@ use crate::{
   },
   model::response::{JobResponse, ListResponse, ObjectResponse},
   net::jwt::JwtContext,
-  queue::queue::Queue,
   settings::SETTINGS,
+  work_queue::queue::Queue,
 };
 
 #[derive(Debug, Deserialize)]
