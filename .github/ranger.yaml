@@ -1,0 +1,20 @@
+default:
+  close:
+    comment: '⚠️ This has been marked to be closed in $DELAY.'
+    delay: '7 days'
+
+labels:
+  duplicate: close
+  wontfix: close
+  invalid: close
+
+closes:
+  - action: lock
+    delay: 0s # lock the thread immediately
+
+labels:
+  'feature request':
+    action: close
+    delay: 30 minutes
+    comment: "For new feature requests, please [start a new discussion](https://github.com/lyptt/chameleon/discussions/new). Closing in $DELAY..."
+
