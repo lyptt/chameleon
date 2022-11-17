@@ -52,7 +52,8 @@ version = "0.24.1"
 
 [dependencies.chrono]
 version = "0.4.23"
-features = ["serde"]
+features = ["clock", "std", "wasmbind", "serde"]
+default-features = false
 
 [dependencies.async-trait]
 version = "0.1.58"
