@@ -11,10 +11,19 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  position: relative;
 }
 
 .post {
   width: 470px;
   min-height: 630.5px;
   overflow: hidden;
+}
+
+.progress {
+  position: fixed;
+  top: 0;
+  left: 246px;
+  right: 0;
+  width: calc(100% - 246px);
 }
