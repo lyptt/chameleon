@@ -21,7 +21,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          components: clippy, cargo-audit
+          components: clippy
 
       - name: Set up cargo cache
         uses: actions/cache@v3
@@ -35,6 +35,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install additional cargo tools
+        run: |
+          cargo install --locked cargo-audit || true
 
       - name: Lint (Check)
         uses: actions-rs/cargo@v1
@@ -53,9 +57,9 @@ jobs:
           args: --all -- --check
 
       - name: Audit
-        uses: actions-rs/cargo@v1
-        with:
-          command: audit
+        run: |
+          rm -rf ~/.cargo/advisory-db
+          cargo audit
 
       - name: Build
         run: cargo build --all --release
