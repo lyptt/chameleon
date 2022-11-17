@@ -14,9 +14,6 @@ path = "src/worker.rs"
 [dependencies.actix-web]
 version = "4.2.1"
 
-[dependencies.actix-files]
-version = "0.6.2"
-
 [dependencies.actix-cors]
 version = "0.6.4"
 

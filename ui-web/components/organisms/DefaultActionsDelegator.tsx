@@ -29,7 +29,7 @@ export default function DefaultActionsDelegator() {
   }, [session, profileState, profileDispatch])
 
   useEffect(() => {
-    if (feedState.feed) {
+    if (feedState.initialLoadComplete) {
       if (feedState.type === FeedType.PublicFederated && !session) {
         return
       } else if (feedState.type === FeedType.Own && session) {

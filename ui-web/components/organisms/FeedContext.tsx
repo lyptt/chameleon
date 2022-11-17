@@ -24,6 +24,7 @@ enum FeedActionType {
   REFRESH_FEED_LOADED = 'REFRESH_FEED_LOADED',
   SUBMIT_POST_SENDING_METADATA = 'SUBMIT_POST_SENDING_METADATA',
   SUBMIT_POST_SENDING_IMAGE = 'SUBMIT_POST_SENDING_IMAGE',
+  SUBMIT_POST_SENDING_IMAGE_PROGRESS = 'SUBMIT_POST_SENDING_IMAGE_PROGRESS',
   SUBMIT_POST_WAITING_FOR_JOB = 'SUBMIT_POST_WAITING_FOR_JOB',
   SUBMIT_POST_ERROR = 'SUBMIT_POST_ERROR',
   SUBMIT_POST_COMPLETED = 'SUBMIT_POST_COMPLETED',
@@ -39,6 +40,7 @@ interface FeedAction {
   newPost?: IPost
   error?: any
   feedType?: FeedType
+  progress?: number
 }
 
 export async function feedActionLoadFeed(
@@ -92,7 +94,21 @@ export async function feedActionSubmitPost(
       newPostFile: file,
     })
 
-    const job = await submitPostImage(createdRecord.id, file, authToken)
+    const job = await submitPostImage(
+      createdRecord.id,
+      file,
+      authToken,
+      (progress) =>
+        dispatch({
+          type: FeedActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS,
+          progress,
+        })
+    )
+
+    dispatch({
+      type: FeedActionType.SUBMIT_POST_WAITING_FOR_JOB,
+      newPostJobId: job.job_id,
+    })
 
     await retry(
       async (bail) => {
@@ -129,11 +145,13 @@ export async function feedActionSubmitPost(
 
 export interface IFeedState {
   feed: IPost[]
+  initialLoadComplete: boolean
   loading: boolean
   loadingFailed: boolean
   submitting: boolean
   submittingMetadata: boolean
   submittingImage: boolean
+  submittingImageProgress?: number
   submittingFailed: boolean
   submittingPost?: INewPost | null
   submittingFile?: File | null
@@ -145,11 +163,13 @@ export interface IFeedState {
 
 const initialState: IFeedState = {
   feed: [],
+  initialLoadComplete: false,
   loading: false,
   loadingFailed: false,
   submitting: false,
   submittingMetadata: false,
   submittingImage: false,
+  submittingImageProgress: undefined,
   submittingFailed: false,
   page: 0,
   type: FeedType.PublicFederated,
@@ -166,6 +186,7 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         ...state,
         loading: true,
         loadingFailed: false,
+        initialLoadComplete: true,
         type: action.feedType ?? state.type,
       }
     case FeedActionType.REFRESH_FEED_ERROR:
@@ -197,7 +218,16 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         submitting: true,
         submittingMetadata: false,
         submittingImage: true,
+        submittingImageProgress: 0,
         submittingFile: action.newPostFile,
+      }
+    case FeedActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS:
+      return {
+        ...state,
+        submittingImageProgress:
+          action.progress !== undefined && action.progress < 1
+            ? action.progress
+            : undefined,
       }
     case FeedActionType.SUBMIT_POST_WAITING_FOR_JOB:
       return {
@@ -205,6 +235,7 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         submitting: true,
         submittingMetadata: false,
         submittingImage: false,
+        submittingImageProgress: undefined,
         submittingPost: null,
         submittingFile: null,
         submittingJobId: action.newPostJobId,
@@ -216,6 +247,7 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
           submitting: false,
           submittingMetadata: false,
           submittingImage: false,
+          submittingImageProgress: undefined,
           submittingPost: null,
           submittingFile: null,
           submittingJobId: null,
@@ -228,6 +260,7 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         submitting: false,
         submittingMetadata: false,
         submittingImage: false,
+        submittingImageProgress: undefined,
         submittingPost: null,
         submittingFile: null,
         submittingJobId: null,
@@ -240,6 +273,7 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         submitting: false,
         submittingMetadata: false,
         submittingImage: false,
+        submittingImageProgress: undefined,
         submittingPost: null,
         submittingFile: null,
         submittingJobId: null,

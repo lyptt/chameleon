@@ -14,9 +14,8 @@ mod settings;
 mod work_queue;
 
 use actix_cors::Cors;
-use actix_web::dev::ServiceResponse;
 use actix_web::middleware::Logger;
-use actix_web::{guard, web, App, HttpResponse, HttpServer};
+use actix_web::{guard, web, App, HttpServer};
 use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use env_logger::WriteStyle;
@@ -29,6 +28,7 @@ use routes::post::{
   api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_post, api_get_user_own_feed,
   api_upload_post_image,
 };
+use routes::public::web_serve_static;
 use routes::user::{api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -136,15 +136,9 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_job_query_status)),
       )
       .service(
-        actix_files::Files::new("/", "./public/static")
-          .prefer_utf8(true)
-          .use_etag(true)
-          // HACK: We use the file listing feature to return a blank 404 when the client requests
-          //       a directory as actix_files doesn't provide a nice way for us to do this
-          .show_files_listing()
-          .files_listing_renderer(|_, req: &actix_web::HttpRequest| {
-            Ok(ServiceResponse::new(req.clone(), HttpResponse::NotFound().finish()))
-          }),
+        web::resource("/{path:.*}")
+          .name("static_files")
+          .route(web::get().to(web_serve_static)),
       )
   })
   .bind((SETTINGS.server.url.clone(), SETTINGS.server.port))?

@@ -188,25 +188,40 @@ export async function submitPost(
   return await response.json()
 }
 
-export async function submitPostImage(
+export function submitPostImage(
   postId: string,
   file: File,
-  authToken: string
+  authToken: string,
+  onProgress?: (progress: number) => void
 ): Promise<INewJobResponse> {
   const form = new FormData()
   form.append('images[]', file)
 
-  const response = await fetch(`${Config.apiUri}/feed/${postId}`, {
-    ...buildFormHeaders(authToken),
-    method: 'POST',
-    body: form,
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.upload.addEventListener('progress', (e) =>
+      onProgress?.(e.loaded / e.total)
+    )
+    xhr.addEventListener('load', () => {
+      if (xhr.status !== 200) {
+        return reject(new Error('Request failed'))
+      }
+
+      try {
+        resolve(JSON.parse(xhr.responseText))
+      } catch (err) {
+        reject(err)
+      }
+    })
+    xhr.addEventListener('error', () => reject(new Error('File upload failed')))
+    xhr.addEventListener('abort', () =>
+      reject(new Error('File upload aborted'))
+    )
+    xhr.open('POST', `${Config.apiUri}/feed/${postId}`, true)
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`)
+    xhr.setRequestHeader('Accept', `application/json`)
+    xhr.send(form)
   })
-
-  if (response.status !== 200) {
-    throw new Error('Request failed')
-  }
-
-  return await response.json()
 }
 
 export async function getJobStatus(
