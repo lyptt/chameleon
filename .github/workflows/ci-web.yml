@@ -1,4 +1,4 @@
-name: CI
+name: CI Web
 
 on:
   push:
@@ -6,11 +6,15 @@ on:
       - "dev"
     tags:
       - "**"
+    paths-ignore:
+      - "**/README.md"
   pull_request:
     branches: "**"
+    paths-ignore:
+      - "**/README.md"
 
 jobs:
-  build:
+  build-ui:
     runs-on: ubuntu-latest
 
     steps:

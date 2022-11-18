@@ -1,3 +1,5 @@
+![Server Build Status](https://img.shields.io/github/workflow/status/lyptt/chameleon/CI?label=server%20build) ![Server Build Status](https://img.shields.io/github/workflow/status/lyptt/chameleon/CI%20Web?label=ui%20build)
+
 Chameleon is a **free, open source social network server** based on ActivityPub where users can share photos with friends and followers, and discover a feed of content tailored to their interests. All Chameleon servers are interoperable and part of the Fediverse, allowing for multiple servers to share each other's content as part of a federated network.
 
 Chameleon's default language is ActivityPub, allowing for any server that speaks ActivityPub to expose its content to Chameleon, and vice versa.
