@@ -1,0 +1,17 @@
+accepted = [
+    "Apache-2.0",
+    "MIT",
+    "BSD-3-Clause",
+    "MPL-2.0",
+    "ISC",
+    "Unicode-DFS-2016",
+    "GPL-1.0",
+    "GPL-2.0",
+    "Zlib",
+    "LGPL-3.0",
+    "AGPL-3.0",
+    "NOASSERTION",
+    "OpenSSL"
+]
+
+private = { ignore = true }

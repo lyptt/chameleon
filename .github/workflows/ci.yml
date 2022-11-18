@@ -40,6 +40,8 @@ jobs:
       - name: Install additional cargo tools
         run: |
           cargo install --locked cargo-audit || true
+          cargo install --locked cargo-deny || true
+          cargo install --locked cargo-about || true
 
       - name: Lint (Check)
         uses: actions-rs/cargo@v1
@@ -61,9 +63,15 @@ jobs:
         run: |
           rm -rf ~/.cargo/advisory-db
           cargo audit
+          cargo deny check
 
       - name: Build
         run: cargo build --all --release
+
+      - name: Generate third party licensing information
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cargo-about generate -c=about.toml docs/license.hbs > THIRD_PARTY.md
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -72,5 +80,7 @@ jobs:
           files: |
             target/release/chameleon
             target/release/chameleon-worker
+            LICENSE.md
+            THIRD_PARTY.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
