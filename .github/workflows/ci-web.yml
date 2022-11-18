@@ -22,11 +22,18 @@ jobs:
         with:
           node-version: "16.x"
 
+      - name: Install dependencies
+        run: yarn
+        working-directory: ui-web
+
       - name: Lint
         run: yarn lint
+        working-directory: ui-web
 
       - name: Style
         run: yarn style
+        working-directory: ui-web
 
       - name: Build
         run: yarn build
+        working-directory: ui-web
