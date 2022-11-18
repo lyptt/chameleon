@@ -54,14 +54,23 @@ export async function feedActionLoadFeed(
   })
 
   try {
-    const result = authToken
-      ? await fetchOwnFeed(authToken, page)
-      : await fetchFederatedFeed(page)
-    dispatch({
-      type: FeedActionType.REFRESH_FEED_LOADED,
-      feedData: result,
-      feedType: authToken ? FeedType.Own : FeedType.PublicFederated,
-    })
+    await retry(
+      async () => {
+        const result = authToken
+          ? await fetchOwnFeed(authToken, page, 5)
+          : await fetchFederatedFeed(page, 5)
+        dispatch({
+          type: FeedActionType.REFRESH_FEED_LOADED,
+          feedData: result,
+          feedType: authToken ? FeedType.Own : FeedType.PublicFederated,
+        })
+      },
+      {
+        retries: 5,
+        factor: 2,
+        randomize: true,
+      }
+    )
   } catch (error) {
     dispatch({
       type: FeedActionType.REFRESH_FEED_ERROR,
@@ -111,7 +120,7 @@ export async function feedActionSubmitPost(
     })
 
     await retry(
-      async (bail) => {
+      async () => {
         const res = await getJobStatus(job.job_id, authToken)
 
         if (res.status !== JobStatus.Done && res.status !== JobStatus.Failed) {
@@ -133,6 +142,7 @@ export async function feedActionSubmitPost(
         factor: 1.2,
         maxRetryTime: 1000 * 60 * 30,
         maxTimeout: 1500,
+        randomize: true,
       }
     )
   } catch (error) {
@@ -158,6 +168,7 @@ export interface IFeedState {
   submittingJobId?: string | null
   page: number
   totalPages?: number
+  noMorePages: boolean
   type: FeedType
 }
 
@@ -172,6 +183,7 @@ const initialState: IFeedState = {
   submittingImageProgress: undefined,
   submittingFailed: false,
   page: 0,
+  noMorePages: false,
   type: FeedType.PublicFederated,
 }
 
@@ -196,15 +208,19 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         loadingFailed: true,
         type: action.feedType ?? state.type,
       }
-    case FeedActionType.REFRESH_FEED_LOADED:
+    case FeedActionType.REFRESH_FEED_LOADED: {
+      const feed = [...state.feed, ...(action.feedData?.data ?? [])]
       return {
         ...state,
         loading: false,
         loadingFailed: false,
-        feed: [...state.feed, ...(action.feedData?.data ?? [])],
+        feed,
         totalPages: action.feedData?.total_pages ?? state.totalPages,
         type: action.feedType ?? state.type,
+        noMorePages: feed.length >= (action.feedData?.total_items || 0),
+        page: action.feedData?.page || 0,
       }
+    }
     case FeedActionType.SUBMIT_POST_SENDING_METADATA:
       return {
         ...state,

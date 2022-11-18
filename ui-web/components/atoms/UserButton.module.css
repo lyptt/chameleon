@@ -40,3 +40,25 @@
   left: 8px;
   border-radius: 9999999px;
 }
+
+/* Container is constrained? (i.e. Mobile). See MainLayout.module.css for matching media query ruleset. */
+@media screen and (max-width: 800px), screen and (max-height: 580px) {
+  .button {
+    padding: 0;
+    margin: 0;
+    gap: 0;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    flex: 1;
+  }
+
+  .button > img {
+    position: inherit;
+    left: 0;
+  }
+
+  .button > span {
+    display: none;
+  }
+}

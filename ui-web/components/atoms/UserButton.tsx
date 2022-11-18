@@ -23,6 +23,7 @@ export default function UserButton({ className, active }: IUserButtonProps) {
         <Link href="/profile">
           <a
             className={cx(
+              'chameleon-user-button',
               className,
               classNames.button,
               classNames.authenticated,
@@ -31,7 +32,10 @@ export default function UserButton({ className, active }: IUserButtonProps) {
           >
             {!loading && !!profile && (
               <img
-                className={classNames.img}
+                className={cx(
+                  'chameleon-user-button__profile-image',
+                  classNames.img
+                )}
                 src={profile.avatar_url || transparentPixelUri}
                 alt={profile.handle || 'You'}
               />
@@ -43,7 +47,7 @@ export default function UserButton({ className, active }: IUserButtonProps) {
       {!auth.authenticated && (
         <a
           href="/api/oauth/authorize"
-          className={cx(className, classNames.button, {
+          className={cx('chameleon-user-button', className, classNames.button, {
             [classNames.active]: active,
           })}
         >

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "dev"
+    tags:
+      - "**"
+  pull_request:
+    branches: "**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: "16.x"
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Style
+        run: yarn style
+
+      - name: Build
+        run: yarn build

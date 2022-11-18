@@ -50,6 +50,7 @@ export default function IconButton({
   return (
     <button
       className={cx(
+        'chameleon-icon-button',
         classNames.button,
         className,
         determineStyleClassName(icon),

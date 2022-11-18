@@ -44,7 +44,7 @@ function NavItem({
   return (
     <li>
       <Link href={href}>
-        <a className={classNames.link}>
+        <a className={cx('chameleon-nav__link', classNames.link)}>
           {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
           <span>{title}</span>
         </a>
@@ -77,10 +77,15 @@ export default function Nav({ className }: INavProps) {
 
   return (
     <>
-      <nav className={cx(className, classNames.container)}>
-        <div className={cx(className, classNames.nav)}>
-          <h1 className={classNames.title}>Chameleon</h1>
-          <ul className={classNames.list} role="list">
+      <nav className={cx('chameleon-nav', className, classNames.container)}>
+        <div className={cx('chameleon-nav__content', classNames.nav)}>
+          <h1 className={cx('chameleon-nav__title', classNames.title)}>
+            Chameleon
+          </h1>
+          <ul
+            className={cx('chameleon-nav__list', classNames.list)}
+            role="list"
+          >
             <NavItem
               active={route === '/'}
               title="Home"
@@ -117,7 +122,10 @@ export default function Nav({ className }: INavProps) {
               activeIcon={IoHeart}
             />
             <li>
-              <button className={classNames.link} onClick={handleModalOpen}>
+              <button
+                className={cx('chameleon-nav__post-button', classNames.link)}
+                onClick={handleModalOpen}
+              >
                 <IoAddCircleOutline />
                 <span>Post!</span>
               </button>

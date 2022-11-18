@@ -21,34 +21,49 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 
 export default function PostCard({ className, post }: IPostCardProps) {
   return (
-    <article className={cx(className, classNames.post)}>
-      <div className={classNames.masthead}>
+    <article className={cx('chameleon-post', className, classNames.post)}>
+      <div className={cx('chameleon-post__masthead', classNames.masthead)}>
         <Link href={`/users/${post.user_fediverse_id}`}>
-          <a className={classNames.avatar}>
+          <a className={cx('chameleon-post__avatar', classNames.avatar)}>
             <img
-              className={classNames.avatarImage}
+              className={cx(
+                'chameleon-post__avatar-image',
+                classNames.avatarImage
+              )}
               src={post.user_avatar_url || transparentPixelUri}
               alt={post.user_handle}
             />
-            <div className={classNames.avatarName}>{post.user_handle}</div>
+            <div
+              className={cx(
+                'chameleon-post__avatar-name',
+                classNames.avatarName
+              )}
+            >
+              {post.user_handle}
+            </div>
           </a>
         </Link>
       </div>
       <LazyImage
-        className={classNames.content}
+        className={cx('chameleon-post__content', classNames.content)}
         blurhash={post.content_blurhash}
         srcSet={`${Config.cdn}/${post.content_image_uri_large} 2048w, ${Config.cdn}/${post.content_image_uri_medium} 1024w, ${Config.cdn}/${post.content_image_uri_small} 256w`}
         src={`${Config.cdn}/${post.content_image_uri_medium}`}
       />
-      <div className={classNames.actionBar}>
-        <div className={classNames.tools}>
+      <div className={cx('chameleon-post__action-bar', classNames.actionBar)}>
+        <div className={cx('chameleon-post__tools', classNames.tools)}>
           <IconButton icon={IconButtonIcon.Like} />
           <IconButton icon={IconButtonIcon.Message} />
           <IconButton icon={IconButtonIcon.Share} />
-          <IconButton className={classNames.save} icon={IconButtonIcon.Save} />
+          <IconButton
+            className={cx('chameleon-post__save', classNames.save)}
+            icon={IconButtonIcon.Save}
+          />
         </div>
-        <p className={classNames.stats}>1337 likes</p>
-        <p className={classNames.date}>
+        <p className={cx('chameleon-post__stats', classNames.stats)}>
+          1337 likes
+        </p>
+        <p className={cx('chameleon-post__date', classNames.date)}>
           {dayjs.utc(post.created_at).fromNow()}
         </p>
       </div>

@@ -27,3 +27,18 @@
   right: 0;
   width: calc(100% - 246px);
 }
+
+.indicator {
+  margin: 0;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  user-select: none;
+}
+
+@media screen and (max-width: 800px) {
+  .post {
+    width: calc(100% - 20px);
+    min-height: auto;
+    aspect-ratio: 3 / 4;
+  }
+}
