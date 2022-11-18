@@ -15,11 +15,16 @@ dayjs.extend(dayjsRelative)
 export interface IPostCardProps {
   className?: string
   post: IPost
+  handlePostLiked?: (post: IPost) => void
 }
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
 
-export default function PostCard({ className, post }: IPostCardProps) {
+export default function PostCard({
+  className,
+  post,
+  handlePostLiked,
+}: IPostCardProps) {
   return (
     <article className={cx('chameleon-post', className, classNames.post)}>
       <div className={cx('chameleon-post__masthead', classNames.masthead)}>
@@ -52,7 +57,11 @@ export default function PostCard({ className, post }: IPostCardProps) {
       />
       <div className={cx('chameleon-post__action-bar', classNames.actionBar)}>
         <div className={cx('chameleon-post__tools', classNames.tools)}>
-          <IconButton icon={IconButtonIcon.Like} />
+          <IconButton
+            icon={IconButtonIcon.Like}
+            active={post.liked}
+            onClick={() => handlePostLiked?.(post)}
+          />
           <IconButton icon={IconButtonIcon.Message} />
           <IconButton icon={IconButtonIcon.Share} />
           <IconButton
@@ -61,7 +70,33 @@ export default function PostCard({ className, post }: IPostCardProps) {
           />
         </div>
         <p className={cx('chameleon-post__stats', classNames.stats)}>
-          1337 likes
+          {post.likes === 0 && (
+            <>
+              <span
+                className={cx(
+                  'chameleon-post__stats--thin-text',
+                  classNames.thinText
+                )}
+              >
+                Be the first to
+              </span>{' '}
+              <a
+                href=""
+                className={cx(
+                  'chameleon-post__stats--cta',
+                  classNames.statsCta
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handlePostLiked?.(post)
+                }}
+              >
+                like this
+              </a>
+            </>
+          )}
+          {post.likes === 1 && '1 like'}
+          {post.likes > 1 && `${post.likes} likes`}
         </p>
         <p className={cx('chameleon-post__date', classNames.date)}>
           {dayjs.utc(post.created_at).fromNow()}

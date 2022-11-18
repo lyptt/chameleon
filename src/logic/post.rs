@@ -58,7 +58,9 @@ pub async fn get_global_posts_count(db: &Pool<Postgres>) -> Result<i64, LogicErr
 }
 
 pub async fn create_post(db: &Pool<Postgres>, req: &NewPostRequest, user_id: &Uuid) -> Result<Uuid, LogicErr> {
-  let content_html = markdown::to_html(&req.content_md);
+  let parser = pulldown_cmark::Parser::new(&req.content_md);
+  let mut content_html = String::new();
+  pulldown_cmark::html::push_html(&mut content_html, parser);
 
   Post::create_post(user_id, &req.content_md, &content_html, &req.visibility, db)
     .await

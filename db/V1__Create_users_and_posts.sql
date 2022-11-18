@@ -1,7 +1,7 @@
 CREATE TABLE users (
   "user_id" uuid NOT NULL,
   "fediverse_id" varchar(2048) NOT NULL,
-  "handle" varchar(256) NOT NULL,
+  "handle" varchar(256),
   "avatar_url" varchar(2048),
   "email" varchar(2048),
   "password_hash" varchar(64),
@@ -31,6 +31,7 @@ CREATE TABLE posts (
   "content_type_large" varchar(64),
   "content_image_storage_ref" varchar(2048),
   "content_type_large" varchar(128),
+  "content_blurhash" varchar(256),
   "visibility" varchar(32) NOT NULL DEFAULT 'private',
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),

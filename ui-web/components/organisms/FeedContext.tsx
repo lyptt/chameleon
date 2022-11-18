@@ -9,6 +9,8 @@ import {
   getJobStatus,
   JobStatus,
   fetchPost,
+  likePost,
+  unlikePost,
 } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 import retry from 'async-retry'
@@ -29,6 +31,7 @@ enum FeedActionType {
   SUBMIT_POST_ERROR = 'SUBMIT_POST_ERROR',
   SUBMIT_POST_COMPLETED = 'SUBMIT_POST_COMPLETED',
   SUBMIT_POST_DISMISS_ERROR = 'SUBMIT_POST_DISMISS_ERROR',
+  UPDATE_POST_LIKED = 'UPDATE_POST_LIKED',
 }
 
 interface FeedAction {
@@ -41,6 +44,8 @@ interface FeedAction {
   error?: any
   feedType?: FeedType
   progress?: number
+  postId?: string
+  liked?: boolean
 }
 
 export async function feedActionLoadFeed(
@@ -150,6 +155,31 @@ export async function feedActionSubmitPost(
       type: FeedActionType.SUBMIT_POST_ERROR,
       error,
     })
+  }
+}
+
+export async function updatePostLiked(
+  liked: boolean,
+  postId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<FeedAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: FeedActionType.UPDATE_POST_LIKED,
+    liked,
+    postId,
+  })
+
+  try {
+    liked
+      ? await likePost(postId, authToken)
+      : await unlikePost(postId, authToken)
+  } catch (err) {
+    console.error(err)
   }
 }
 
@@ -300,6 +330,26 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         ...state,
         submittingFailed: false,
       }
+    case FeedActionType.UPDATE_POST_LIKED: {
+      if (action.liked === undefined || action.postId === undefined) {
+        return state
+      }
+      const postIdx = state.feed.findIndex(
+        (post) => post.post_id === action.postId
+      )
+      if (postIdx === -1) {
+        return state
+      }
+
+      const feed = [...state.feed]
+      feed[postIdx] = {
+        ...feed[postIdx],
+        liked: action.liked,
+        likes: action.liked ? feed[postIdx].likes + 1 : feed[postIdx].likes - 1,
+      }
+
+      return { ...state, feed }
+    }
     default:
       return state
   }

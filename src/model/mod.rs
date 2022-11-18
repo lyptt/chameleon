@@ -1,6 +1,8 @@
 pub mod access_type;
 pub mod app;
+pub mod follow;
 pub mod job;
+pub mod like;
 pub mod post;
 pub mod post_create_request;
 pub mod post_pub;

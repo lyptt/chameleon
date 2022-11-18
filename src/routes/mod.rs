@@ -1,6 +1,9 @@
+pub mod follow;
 pub mod job;
+pub mod like;
 pub mod oauth;
 pub mod post;
 pub mod public;
+pub mod status;
 pub mod user;
 pub mod webfinger;

@@ -95,6 +95,8 @@ export interface IPost {
   visibility: AccessType
   created_at: number
   updated_at: number
+  likes: number
+  liked?: boolean
 }
 
 export interface INewPost {
@@ -254,4 +256,32 @@ export async function fetchPost(
   }
 
   return await response.json()
+}
+
+export async function likePost(
+  postId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/feed/${postId}/likes`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+  })
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function unlikePost(
+  postId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/feed/${postId}/likes`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'DELETE',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
 }

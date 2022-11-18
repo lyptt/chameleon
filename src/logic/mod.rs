@@ -1,5 +1,7 @@
 use std::{error::Error, fmt::Display};
 
+pub mod follow;
+pub mod like;
 pub mod post;
 pub mod user;
 
@@ -10,6 +12,7 @@ pub enum LogicErr {
   UnauthorizedError,
   InternalError(String),
   InvalidOperation(String),
+  MissingRecord,
 }
 
 impl Display for LogicErr {
@@ -19,6 +22,7 @@ impl Display for LogicErr {
       LogicErr::UnauthorizedError => f.write_fmt(format_args!("UnauthorizedError")),
       LogicErr::InternalError(err) => f.write_fmt(format_args!("InternalError: {}", err)),
       LogicErr::InvalidOperation(err) => f.write_fmt(format_args!("InvalidOperation: {}", err)),
+      LogicErr::MissingRecord => f.write_fmt(format_args!("MissingRecord")),
     }
   }
 }
