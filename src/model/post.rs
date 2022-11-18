@@ -34,7 +34,6 @@ pub struct Post {
 }
 
 impl Post {
-  /// Fetches the post count for the global federated feed, i.e. what users not signed into this instance can see
   pub async fn create_post(
     user_id: &Uuid,
     content_md: &String,

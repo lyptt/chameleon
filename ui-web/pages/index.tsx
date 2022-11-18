@@ -1,5 +1,9 @@
 import PostCard from '@/components/molecules/PostCard'
-import { feedActionLoadFeed, useFeed } from '@/components/organisms/FeedContext'
+import {
+  feedActionLoadFeed,
+  updatePostLiked,
+  useFeed,
+} from '@/components/organisms/FeedContext'
 import Progress from '@/components/quarks/Progress'
 import Head from 'next/head'
 import { HTMLAttributes, useCallback, useEffect, useState } from 'react'
@@ -8,6 +12,7 @@ import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
+import { IPost } from '@/core/api'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -89,6 +94,10 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
     }
   }, [loading, feed, session, noMorePages, page, listInView])
 
+  const handlePostLiked = (post: IPost) => {
+    updatePostLiked(!post.liked, post.post_id, session?.access_token, dispatch)
+  }
+
   return (
     <section
       className={cx('chameleon-page-home', classNames.container, className)}
@@ -109,6 +118,7 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
               key={post.post_id}
               className={cx('chameleon-feed__post', classNames.post)}
               post={post}
+              handlePostLiked={handlePostLiked}
             />
           ))}
         {submitting && (

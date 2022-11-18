@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(clippy::too_many_arguments)]
+#![deny(unused_imports)]
 
 mod activitypub;
 mod aws;
@@ -22,13 +23,16 @@ use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
+use routes::follow::{api_create_follow, api_delete_follow};
 use routes::job::api_job_query_status;
+use routes::like::{api_create_like, api_delete_like};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
   api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_post, api_get_user_own_feed,
   api_upload_post_image,
 };
 use routes::public::web_serve_static;
+use routes::status::api_get_server_status;
 use routes::user::{api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -76,26 +80,33 @@ async fn main() -> std::io::Result<()> {
       .app_data(web::Data::new(Cdn::new()))
       .app_data(web::Data::new(Queue::new()))
       .service(
-        web::resource("/api/users/{handle}")
-          .name("get_user_by_id")
-          .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
-          .route(web::get().to(api_activitypub_get_user_by_id)),
+        web::resource("/api/users/{handle}").name("get_user_by_id").route(
+          web::get()
+            .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+            .to(api_activitypub_get_user_by_id),
+        ),
       )
       .service(
-        web::resource("/api/users/{handle}")
-          .name("get_user_by_id")
-          .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
-          .route(web::get().to(api_activitypub_get_user_by_id_astream)),
+        web::resource("/api/users/{handle}").name("get_user_by_id").route(
+          web::get()
+            .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+            .to(api_activitypub_get_user_by_id_astream),
+        ),
       )
       .service(
         web::resource("/api/users/{handle}/feed")
           .name("get_user_public_feed")
-          .route(web::get().to(api_activitypub_get_user_public_feed)),
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_public_feed),
+          ),
       )
       .service(
-        web::resource("/.well-known/webfinger")
-          .name("get_user_by_id")
-          .route(web::get().to(api_webfinger_query_resource)),
+        web::resource("/api/users/{user_handle}/follows")
+          .name("user_follows")
+          .route(web::post().to(api_create_follow))
+          .route(web::delete().to(api_delete_follow)),
       )
       .service(
         web::resource("/api/oauth/authorize")
@@ -126,6 +137,12 @@ async fn main() -> std::io::Result<()> {
           .route(web::post().to(api_upload_post_image)),
       )
       .service(
+        web::resource("/api/feed/{post_id}/likes")
+          .name("post_likes")
+          .route(web::post().to(api_create_like))
+          .route(web::delete().to(api_delete_like)),
+      )
+      .service(
         web::resource("/api/profile")
           .name("profile")
           .route(web::get().to(api_get_profile)),
@@ -134,6 +151,16 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/job/{job_id}")
           .name("jobs")
           .route(web::get().to(api_job_query_status)),
+      )
+      .service(
+        web::resource("/.well-known/webfinger")
+          .name("get_user_by_id")
+          .route(web::get().to(api_webfinger_query_resource)),
+      )
+      .service(
+        web::resource("/.well-known/status")
+          .name("status")
+          .route(web::get().to(api_get_server_status)),
       )
       .service(
         web::resource("/{path:.*}")

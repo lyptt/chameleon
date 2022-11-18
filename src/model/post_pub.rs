@@ -35,6 +35,8 @@ pub struct PostPub {
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
   pub content_blurhash: Option<String>,
+  pub likes: i64,
+  pub liked: Option<bool>,
 }
 
 impl PostPub {
@@ -45,62 +47,19 @@ impl PostPub {
     skip: i64,
     pool: &Pool<Postgres>,
   ) -> Result<Vec<PostPub>, Error> {
-    let post = sqlx::query_as(
-      "SELECT DISTINCT p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url FROM posts p
-      INNER JOIN users u
-      ON u.user_id = p.user_id
-      INNER JOIN (
-        SELECT p.post_id as post_id, p.user_id as user_id from followers f
-        INNER JOIN users u1
-        ON u1.user_id = f.user_id
-        INNER JOIN users u2
-        ON u2.user_id = f.following_user_id
-        LEFT OUTER JOIN posts p
-        ON p.user_id = u1.user_id OR p.user_id = u2.user_id
-        WHERE u1.fediverse_id = $1
-        AND (
-          (p.user_id = u1.user_id AND p.visibility IN ('shadow', 'unlisted', 'private', 'followers_only', 'public_local', 'public_federated'))
-          OR (p.user_id = u2.user_id AND p.visibility IN ('followers_only', 'public_local', 'public_federated'))
-        )
-        ORDER BY p.created_at DESC
-      ) AS pu
-      ON p.post_id = pu.post_id
-      AND u.user_id = pu.user_id
-      ORDER BY p.created_at DESC
-      LIMIT $2
-      OFFSET $3",
-    )
-    .bind(fediverse_id)
-    .bind(limit)
-    .bind(skip)
-    .fetch_all(pool)
-    .await?;
+    let post = sqlx::query_as(include_str!("../db/fetch_user_own_feed.sql"))
+      .bind(fediverse_id)
+      .bind(limit)
+      .bind(skip)
+      .fetch_all(pool)
+      .await?;
 
     Ok(post)
   }
 
   /// Fetches the count of the posts in the user's feed from their own perspective, i.e. all of the posts they have submitted
   pub async fn count_user_own_feed(fediverse_id: &str, pool: &Pool<Postgres>) -> Result<i64, Error> {
-    let count = sqlx::query_scalar("SELECT COUNT(DISTINCT p.post_id) FROM posts p
-    INNER JOIN users u
-    ON u.user_id = p.user_id
-    INNER JOIN (
-      SELECT p.post_id as post_id, p.user_id as user_id from followers f
-      INNER JOIN users u1
-      ON u1.user_id = f.user_id
-      INNER JOIN users u2
-      ON u2.user_id = f.following_user_id
-      LEFT OUTER JOIN posts p
-      ON p.user_id = u1.user_id OR p.user_id = u2.user_id
-      WHERE u1.fediverse_id = $1
-      AND (
-        (p.user_id = u1.user_id AND p.visibility IN ('shadow', 'unlisted', 'private', 'followers_only', 'public_local', 'public_federated'))
-        OR (p.user_id = u2.user_id AND p.visibility IN ('followers_only', 'public_local', 'public_federated'))
-      )
-      ORDER BY p.created_at DESC
-    ) AS pu
-    ON p.post_id = pu.post_id
-    AND u.user_id = pu.user_id")
+    let count = sqlx::query_scalar(include_str!("../db/count_user_own_feed.sql"))
       .bind(fediverse_id)
       .fetch_one(pool)
       .await?;
@@ -115,21 +74,12 @@ impl PostPub {
     skip: i64,
     pool: &Pool<Postgres>,
   ) -> Result<Vec<PostPub>, Error> {
-    let post = sqlx::query_as(
-      "SELECT DISTINCT p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url from posts p
-      INNER JOIN users u
-      ON u.user_id = p.user_id
-      WHERE u.fediverse_id = $1
-      AND p.visibility IN ('public_federated')
-      ORDER BY p.created_at DESC
-      LIMIT $2
-      OFFSET $3",
-    )
-    .bind(fediverse_id)
-    .bind(limit)
-    .bind(skip)
-    .fetch_all(pool)
-    .await?;
+    let post = sqlx::query_as(include_str!("../db/fetch_user_federated_feed.sql"))
+      .bind(fediverse_id)
+      .bind(limit)
+      .bind(skip)
+      .fetch_all(pool)
+      .await?;
 
     Ok(post)
   }
@@ -137,16 +87,10 @@ impl PostPub {
   /// Fetches the count of the user's posts in their federated feed, i.e.
   /// what users on any server can see
   pub async fn count_user_federated_feed(fediverse_id: &str, pool: &Pool<Postgres>) -> Result<i64, Error> {
-    let count = sqlx::query_scalar(
-      "SELECT DISTINCT COUNT(p.*) from posts p
-    INNER JOIN users u
-    ON u.user_id = p.user_id
-    WHERE u.fediverse_id = $1
-    AND p.visibility IN ('public_federated')",
-    )
-    .bind(fediverse_id)
-    .fetch_one(pool)
-    .await?;
+    let count = sqlx::query_scalar(include_str!("../db/count_user_federated_feed.sql"))
+      .bind(fediverse_id)
+      .fetch_one(pool)
+      .await?;
 
     Ok(count)
   }
@@ -160,29 +104,13 @@ impl PostPub {
     skip: i64,
     pool: &Pool<Postgres>,
   ) -> Result<Vec<PostPub>, Error> {
-    let post = sqlx::query_as(
-      "SELECT DISTINCT p.*, u1.user_id as user_id, u1.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url from followers f
-      INNER JOIN users u1
-      ON u1.user_id = f.user_id
-      INNER JOIN users u2
-      ON u2.user_id = f.following_user_id
-      LEFT OUTER JOIN posts p
-      ON p.user_id = u1.user_id
-      WHERE u1.fediverse_id = $1
-      AND (
-        (p.visibility IN ('public_local', 'public_federated'))
-        OR (u2.fediverse_id = $2 AND p.visibility = 'followers_only')
-      )
-      ORDER BY p.created_at DESC
-      LIMIT $3
-      OFFSET $4",
-    )
-    .bind(target_user_fediverse_id)
-    .bind(own_user_fediverse_id)
-    .bind(limit)
-    .bind(skip)
-    .fetch_all(pool)
-    .await?;
+    let post = sqlx::query_as(include_str!("../db/fetch_user_public_feed.sql"))
+      .bind(target_user_fediverse_id)
+      .bind(own_user_fediverse_id)
+      .bind(limit)
+      .bind(skip)
+      .fetch_all(pool)
+      .await?;
 
     Ok(post)
   }
@@ -194,24 +122,11 @@ impl PostPub {
     own_user_fediverse_id: &str,
     pool: &Pool<Postgres>,
   ) -> Result<i64, Error> {
-    let count = sqlx::query_scalar(
-      "SELECT DISTINCT COUNT(p.*) from followers f
-      INNER JOIN users u1
-      ON u1.user_id = f.user_id
-      INNER JOIN users u2
-      ON u2.user_id = f.following_user_id
-      LEFT OUTER JOIN posts p
-      ON p.user_id = u1.user_id
-      WHERE u1.fediverse_id = $1
-      AND (
-        (p.visibility IN ('public_local', 'public_federated'))
-        OR (u2.fediverse_id = $2 AND p.visibility = 'followers_only')
-      )",
-    )
-    .bind(target_user_fediverse_id)
-    .bind(own_user_fediverse_id)
-    .fetch_one(pool)
-    .await?;
+    let count = sqlx::query_scalar(include_str!("../db/count_user_public_feed.sql"))
+      .bind(target_user_fediverse_id)
+      .bind(own_user_fediverse_id)
+      .fetch_one(pool)
+      .await?;
 
     Ok(count)
   }
@@ -222,45 +137,29 @@ impl PostPub {
     skip: i64,
     pool: &Pool<Postgres>,
   ) -> Result<Vec<PostPub>, Error> {
-    let post = sqlx::query_as(
-      "SELECT DISTINCT p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url from posts p
-      INNER JOIN users u
-      ON u.user_id = p.user_id
-      WHERE p.visibility IN ('public_local', 'public_federated')
-      ORDER BY p.created_at DESC
-      LIMIT $1
-      OFFSET $2",
-    )
-    .bind(limit)
-    .bind(skip)
-    .fetch_all(pool)
-    .await?;
+    let post = sqlx::query_as(include_str!("../db/fetch_global_federated_feed.sql"))
+      .bind(limit)
+      .bind(skip)
+      .fetch_all(pool)
+      .await?;
 
     Ok(post)
   }
 
   /// Fetches the post count for the global federated feed, i.e. what users not signed into this instance can see
   pub async fn count_global_federated_feed(pool: &Pool<Postgres>) -> Result<i64, Error> {
-    let count = sqlx::query_scalar(
-      "SELECT COUNT(DISTINCT p.*) from posts p
-      WHERE p.visibility IN ('public_local', 'public_federated')",
-    )
-    .fetch_one(pool)
-    .await?;
+    let count = sqlx::query_scalar(include_str!("../db/count_global_federated_feed.sql"))
+      .fetch_one(pool)
+      .await?;
 
     Ok(count)
   }
   /// Fetches the user's feed from their own perspective, i.e. all of the posts they have submitted
   pub async fn fetch_post(post_id: &Uuid, pool: &Pool<Postgres>) -> Result<Option<PostPub>, Error> {
-    let post = sqlx::query_as(
-      "SELECT p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url FROM posts p
-      INNER JOIN users u
-      ON u.user_id = p.user_id
-      WHERE p.post_id = $1",
-    )
-    .bind(post_id)
-    .fetch_optional(pool)
-    .await?;
+    let post = sqlx::query_as(include_str!("../db/fetch_post.sql"))
+      .bind(post_id)
+      .fetch_optional(pool)
+      .await?;
 
     Ok(post)
   }
