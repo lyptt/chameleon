@@ -6,5 +6,10 @@ export default function Progress({
   className,
   ...props
 }: ProgressHTMLAttributes<HTMLProgressElement>) {
-  return <progress className={cx(className, classNames.progress)} {...props} />
+  return (
+    <progress
+      className={cx('chameleon-progress', className, classNames.progress)}
+      {...props}
+    />
+  )
 }

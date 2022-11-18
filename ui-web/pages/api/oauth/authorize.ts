@@ -4,13 +4,15 @@ import fetch from 'node-fetch'
 import cookie from 'cookie'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
-import url from 'url'
 
 import { ISession } from '@/components/organisms/AuthContext'
 
 dayjs.extend(dayjsUtc)
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async function authorize(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (!('code' in req.query)) {
     // This shouldn't happen, if it does then try to authenticate again
     return res.redirect(

@@ -7,3 +7,38 @@
   background: white;
   height: 100vh;
 }
+
+.mobileNav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.content {
+  padding-left: 245px;
+}
+
+/* Desktop navigation enabled? */
+@media screen and (max-width: 800px), not (min-height: 581px) {
+  .nav {
+    display: none;
+  }
+
+  .mobileNav {
+    display: flex;
+  }
+
+  .content {
+    margin-bottom: 60px;
+    padding-left: 0;
+  }
+}
+
+/* Mobile navigation enabled? */
+@media screen and (min-width: 801px) and (min-height: 581px) {
+  .mobileNav {
+    display: none;
+  }
+}

@@ -113,7 +113,7 @@ export default function NewPostModal({
     <Modal
       isOpen={open}
       onRequestClose={handleClose}
-      className={cx(classNames.modal, className, {
+      className={cx('chameleon-modal-new-post', classNames.modal, className, {
         [classNames.opened]: opened,
         [classNames.showingOptions]: !selectingFiles,
       })}
@@ -121,11 +121,24 @@ export default function NewPostModal({
       contentLabel="Example Modal"
     >
       <ScrollLock>
-        <div className={classNames.content}>
-          <div className={classNames.titleBar}>
+        <div
+          className={cx(
+            'chameleon-modal-new-post__content',
+            classNames.content
+          )}
+        >
+          <div
+            className={cx(
+              'chameleon-modal-new-post__title-bar',
+              classNames.titleBar
+            )}
+          >
             {!selectingFiles && (
               <PlainButton
-                className={classNames.leftAction}
+                className={cx(
+                  'chameleon-modal-new-post__left-action',
+                  classNames.leftAction
+                )}
                 onClick={handleBack}
               >
                 <IoArrowBack />
@@ -135,7 +148,10 @@ export default function NewPostModal({
             {!selectingFiles && (
               <PlainButton
                 brand
-                className={classNames.rightAction}
+                className={cx(
+                  'chameleon-modal-new-post__right-action',
+                  classNames.rightAction
+                )}
                 onClick={handleSubmit}
               >
                 Share
@@ -145,8 +161,19 @@ export default function NewPostModal({
           {selectingFiles && (
             <Dropzone onDrop={onDrop}>
               {({ getRootProps, getInputProps }) => (
-                <div className={classNames.upload} {...getRootProps()}>
-                  <div className={classNames.uploadFeature}>
+                <div
+                  className={cx(
+                    'chameleon-modal-new-post__upload',
+                    classNames.upload
+                  )}
+                  {...getRootProps()}
+                >
+                  <div
+                    className={cx(
+                      'chameleon-modal-new-post__upload-feature',
+                      classNames.uploadFeature
+                    )}
+                  >
                     <IoImagesOutline />
                     <p>Drag your photos here</p>
                     <Button>Select from computer</Button>
@@ -166,33 +193,64 @@ export default function NewPostModal({
           {!selectingFiles && selectedFiles.length > 0 && (
             <>
               <img
-                className={classNames.preview}
+                className={cx(
+                  'chameleon-modal-new-post__preview',
+                  classNames.preview
+                )}
+                alt="Preview of your new photo"
                 ref={previewRef}
                 draggable={false}
               />
-              <div className={classNames.previewOptions}>
-                <div className={classNames.profileBar}>
+              <div
+                className={cx(
+                  'chameleon-modal-new-post__preview-options',
+                  classNames.previewOptions
+                )}
+              >
+                <div
+                  className={cx(
+                    'chameleon-modal-new-post__profile-bar',
+                    classNames.profileBar
+                  )}
+                >
                   <img
                     src={
                       profileState.profile?.avatar_url ?? transparentPixelUri
                     }
                     alt={profileState.profile?.handle ?? ''}
                   />
-                  <div className={classNames.name}>
+                  <div
+                    className={cx(
+                      'chameleon-modal-new-post__name',
+                      classNames.name
+                    )}
+                  >
                     {profileState.profile?.handle ?? ''}
                   </div>
                 </div>
                 <textarea
-                  className={classNames.captionField}
+                  className={cx(
+                    'chameleon-modal-new-post__caption-field',
+                    classNames.captionField
+                  )}
                   placeholder="Write a caption..."
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                 />
-                <div className={classNames.visibility}>
+                <div
+                  className={cx(
+                    'chameleon-modal-new-post__visibility',
+                    classNames.visibility
+                  )}
+                >
                   <div
-                    className={cx(classNames.radio, {
-                      [classNames.active]: visibility === 'public_federated',
-                    })}
+                    className={cx(
+                      'chameleon-modal-new-post__radio',
+                      classNames.radio,
+                      {
+                        [classNames.active]: visibility === 'public_federated',
+                      }
+                    )}
                   >
                     <input
                       type="radio"
@@ -202,15 +260,24 @@ export default function NewPostModal({
                       checked={visibility === 'public_federated'}
                       onChange={onVisibilityChanged}
                     />
-                    <div className={classNames.icon}>
+                    <div
+                      className={cx(
+                        'chameleon-modal-new-post__icon',
+                        classNames.icon
+                      )}
+                    >
                       <IoEarth />
                     </div>
                     <label htmlFor="public_federated">Public</label>
                   </div>
                   <div
-                    className={cx(classNames.radio, {
-                      [classNames.active]: visibility === 'public_local',
-                    })}
+                    className={cx(
+                      'chameleon-modal-new-post__radio',
+                      classNames.radio,
+                      {
+                        [classNames.active]: visibility === 'public_local',
+                      }
+                    )}
                   >
                     <input
                       id="public_local"
@@ -220,15 +287,24 @@ export default function NewPostModal({
                       checked={visibility === 'public_local'}
                       onChange={onVisibilityChanged}
                     />
-                    <div className={classNames.icon}>
+                    <div
+                      className={cx(
+                        'chameleon-modal-new-post__icon',
+                        classNames.icon
+                      )}
+                    >
                       <IoCafeOutline />
                     </div>
                     <label htmlFor="public_local">Local</label>
                   </div>
                   <div
-                    className={cx(classNames.radio, {
-                      [classNames.active]: visibility === 'followers_only',
-                    })}
+                    className={cx(
+                      'chameleon-modal-new-post__radio',
+                      classNames.radio,
+                      {
+                        [classNames.active]: visibility === 'followers_only',
+                      }
+                    )}
                   >
                     <input
                       type="radio"
@@ -238,15 +314,24 @@ export default function NewPostModal({
                       checked={visibility === 'followers_only'}
                       onChange={onVisibilityChanged}
                     />
-                    <div className={classNames.icon}>
+                    <div
+                      className={cx(
+                        'chameleon-modal-new-post__icon',
+                        classNames.icon
+                      )}
+                    >
                       <IoPeopleOutline />
                     </div>
                     <label htmlFor="followers_only">Followers</label>
                   </div>
                   <div
-                    className={cx(classNames.radio, {
-                      [classNames.active]: visibility === 'unlisted',
-                    })}
+                    className={cx(
+                      'chameleon-modal-new-post__radio',
+                      classNames.radio,
+                      {
+                        [classNames.active]: visibility === 'unlisted',
+                      }
+                    )}
                   >
                     <input
                       type="radio"
@@ -256,7 +341,12 @@ export default function NewPostModal({
                       checked={visibility === 'unlisted'}
                       onChange={onVisibilityChanged}
                     />
-                    <div className={classNames.icon}>
+                    <div
+                      className={cx(
+                        'chameleon-modal-new-post__icon',
+                        classNames.icon
+                      )}
+                    >
                       <IoLockOpen />
                     </div>
                     <label htmlFor="unlisted">Unlisted</label>

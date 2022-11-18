@@ -31,7 +31,10 @@
 
 .content {
   width: 100%;
-  height: 469px;
+  height: calc(100% - 161.5px);
+}
+
+.content img {
   object-fit: cover;
 }
 

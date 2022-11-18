@@ -15,7 +15,7 @@ export default function PlainButton({
 }: IPlainButtonProps) {
   return (
     <button
-      className={cx(classNames.button, className, {
+      className={cx('chameleon-button--plain', classNames.button, className, {
         [classNames.brand]: brand,
       })}
       {...props}

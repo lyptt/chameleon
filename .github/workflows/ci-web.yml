@@ -1,0 +1,43 @@
+name: CI Web
+
+on:
+  push:
+    branches:
+      - "dev"
+    tags:
+      - "**"
+    paths-ignore:
+      - "**/README.md"
+  pull_request:
+    branches: "**"
+    paths-ignore:
+      - "**/README.md"
+
+jobs:
+  build-ui:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: "16.x"
+
+      - name: Install dependencies
+        run: yarn
+        working-directory: ui-web
+
+      - name: Lint
+        run: yarn lint
+        working-directory: ui-web
+
+      - name: Style
+        run: yarn style
+        working-directory: ui-web
+
+      - name: Build
+        run: yarn build
+        working-directory: ui-web

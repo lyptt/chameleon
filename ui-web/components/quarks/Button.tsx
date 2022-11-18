@@ -8,7 +8,10 @@ export default function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button className={cx(classNames.button, className)} {...props}>
+    <button
+      className={cx('chameleon-button', classNames.button, className)}
+      {...props}
+    >
       {children}
     </button>
   )

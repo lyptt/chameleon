@@ -6,8 +6,12 @@ on:
       - "dev"
     tags:
       - "**"
+    paths-ignore:
+      - "**/README.md"
   pull_request:
     branches: "**"
+    paths-ignore:
+      - "**/README.md"
 
 jobs:
   build:
@@ -28,10 +32,7 @@ jobs:
         continue-on-error: false
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
+            ~/.cargo
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}

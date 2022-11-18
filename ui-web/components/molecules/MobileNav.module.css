@@ -1,30 +1,21 @@
-.container {
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  border-right: 0.5px solid #ccc;
-}
-
-.title {
-  margin: 0;
-  padding: 0;
-  line-height: 1;
-  font-family: 'Pacifico', serif;
-  font-weight: 400;
-  margin-top: 10px;
-  margin-bottom: 50px;
+.nav {
+  height: 60px;
+  background: white;
+  border-top: 0.5px solid #333;
 }
 
 .list {
   margin: 0;
   overflow-y: scroll;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 20px;
   flex: 1;
   padding: 0;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .list > * {
@@ -41,11 +32,8 @@
 
 .link {
   border-radius: 9999999px;
-  padding: 12px 18px;
-  padding-left: 52px;
   display: flex;
   align-items: center;
-  gap: 10px;
   position: relative;
   outline: none;
   border: none;
@@ -55,22 +43,18 @@
   font-weight: 500;
   font-family: 'Open Sans', 'sans-serif';
   cursor: pointer;
-  width: 100%;
   background: none;
-}
-
-.link.active {
-  font-weight: 600;
-}
-
-.link svg {
-  width: 28px;
-  height: 28px;
-  position: absolute;
-  left: 8px;
+  height: 100%;
+  flex: 1;
+  justify-content: center;
 }
 
 .link:hover,
 .link:focus-visible {
   background: #f9f9f9;
+}
+
+.link svg {
+  width: 28px;
+  height: 28px;
 }
