@@ -56,3 +56,11 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see https://www.gnu.org/licenses/.
+
+# Third party licenses
+
+A full list of third party licenses can be found in [THIRD_PARTY.md](THIRD_PARTY.md). This is generated via the following command:
+
+```bash
+cargo-about generate -c=about.toml docs/license.hbs > THIRD_PARTY.md
+```
