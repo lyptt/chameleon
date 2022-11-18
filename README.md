@@ -57,10 +57,12 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see https://www.gnu.org/licenses/.
 
-# Third party licenses
+# Licensing
 
-A full list of third party licenses can be found in [THIRD_PARTY.md](THIRD_PARTY.md). This is generated via the following command:
+A full list of third party licenses can be produced via the following command:
 
 ```bash
 cargo-about generate -c=about.toml docs/license.hbs > THIRD_PARTY.md
 ```
+
+LICENSE.md and THIRD_PARTY.md are included with all releases.

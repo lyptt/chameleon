@@ -41,6 +41,7 @@ jobs:
         run: |
           cargo install --locked cargo-audit || true
           cargo install --locked cargo-deny || true
+          cargo install --locked cargo-about || true
 
       - name: Lint (Check)
         uses: actions-rs/cargo@v1
@@ -66,6 +67,11 @@ jobs:
 
       - name: Build
         run: cargo build --all --release
+
+      - name: Generate third party licensing information
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cargo-about generate -c=about.toml docs/license.hbs > THIRD_PARTY.md
 
       - name: Release
         uses: softprops/action-gh-release@v1
