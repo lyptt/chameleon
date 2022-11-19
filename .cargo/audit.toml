@@ -1,0 +1,4 @@
+[advisories]
+# RUSTSEC-2022-0044 states that markdown is unmaintained, but in the real world only v0.3.0 and older are unmaintained.
+# Control over the markdown crate switched to wooorm @ https://github.com/wooorm/markdown-rs/ with v1.0.0-alpha.1.
+ignore = ["RUSTSEC-2022-0044"]

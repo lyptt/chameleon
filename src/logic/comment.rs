@@ -35,9 +35,7 @@ pub async fn create_comment(
     return Err(LogicErr::MissingRecord);
   }
 
-  let parser = pulldown_cmark::Parser::new(content_md);
-  let mut content_html = String::new();
-  pulldown_cmark::html::push_html(&mut content_html, parser);
+  let content_html = markdown::to_html(content_md);
 
   Comment::create_comment(user_id, post_id, content_md, &content_html, db)
     .await
