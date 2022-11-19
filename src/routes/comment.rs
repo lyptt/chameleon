@@ -2,7 +2,7 @@ use crate::{
   helpers::auth::{query_auth, require_auth},
   helpers::core::build_api_err,
   helpers::math::div_up,
-  logic::comment::{create_comment, delete_comment},
+  logic::comment::{create_comment, create_comment_like, delete_comment, delete_comment_like},
   model::{comment::Comment, comment_pub::CommentPub, response::ListResponse},
   net::jwt::JwtContext,
 };
@@ -89,4 +89,36 @@ pub async fn api_get_comments(
     total_items: comments_count,
     total_pages: div_up(comments_count, page_size) + 1,
   })
+}
+
+pub async fn api_create_comment_like(
+  db: web::Data<PgPool>,
+  ids: web::Path<(Uuid, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  match create_comment_like(&db, &ids.0, &ids.1, &props.uid).await {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_delete_comment_like(
+  db: web::Data<PgPool>,
+  ids: web::Path<(Uuid, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  match delete_comment_like(&db, &ids.0, &ids.1, &props.uid).await {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
 }

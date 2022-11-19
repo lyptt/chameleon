@@ -66,4 +66,39 @@ impl Comment {
       .fetch_one(pool)
       .await
   }
+
+  pub async fn create_comment_like(
+    user_id: &Uuid,
+    comment_id: &Uuid,
+    post_id: &Uuid,
+    pool: &Pool<Postgres>,
+  ) -> Result<(), Error> {
+    let comment_like_id = Uuid::new_v4();
+
+    sqlx::query("INSERT INTO comment_likes (comment_like_id, user_id, comment_id, post_id) VALUES($1, $2, $3, $4)")
+      .bind(comment_like_id)
+      .bind(user_id)
+      .bind(comment_id)
+      .bind(post_id)
+      .execute(pool)
+      .await?;
+
+    Ok(())
+  }
+
+  pub async fn delete_comment_like(
+    user_id: &Uuid,
+    comment_id: &Uuid,
+    post_id: &Uuid,
+    pool: &Pool<Postgres>,
+  ) -> Result<(), Error> {
+    sqlx::query("DELETE FROM comment_likes WHERE user_id = $1 AND comment_id = $2 AND post_id = $3")
+      .bind(user_id)
+      .bind(comment_id)
+      .bind(post_id)
+      .execute(pool)
+      .await?;
+
+    Ok(())
+  }
 }

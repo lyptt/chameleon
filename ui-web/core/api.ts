@@ -351,3 +351,39 @@ export async function deletePostComment(
     throw new Error('Request failed')
   }
 }
+
+export async function createPostCommentLike(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}/likes`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'POST',
+    }
+  )
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function deletePostCommentLike(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}/likes`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'DELETE',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}

@@ -43,6 +43,7 @@
   margin-right: 0.2rem;
   vertical-align: middle;
   margin-top: -0.2rem;
+  pointer-events: none;
 }
 
 .profileLink {

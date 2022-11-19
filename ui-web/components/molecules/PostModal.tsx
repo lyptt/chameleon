@@ -7,6 +7,7 @@ import {
   postActionAddPostComment,
   postActionDismissPost,
   postActionLoadComments,
+  postActionUpdateCommentLiked,
   postActionUpdateLiked,
   usePost,
 } from '@/components/organisms/PostContext'
@@ -20,7 +21,7 @@ import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
 import { useAuth } from '@/components/organisms/AuthContext'
-import { IPost } from '@/core/api'
+import { IComment, IPost } from '@/core/api'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -95,6 +96,16 @@ export default function PostModal({
       dispatch
     )
     setComment('')
+  }
+
+  const handleCommentLikeClicked = (comment: IComment) => {
+    postActionUpdateCommentLiked(
+      comment.liked ?? false,
+      comment.comment_id,
+      comment.post_id,
+      session?.access_token,
+      dispatch
+    )
   }
 
   const handleKeyUp = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -196,6 +207,7 @@ export default function PostModal({
                       key={comment.comment_id}
                       comment={comment}
                       onProfileLinkClicked={handleClose}
+                      onCommentLikeClicked={handleCommentLikeClicked}
                     />
                   ))}
                 </div>

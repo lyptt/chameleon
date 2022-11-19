@@ -1,5 +1,7 @@
 import {
   createPostComment,
+  createPostCommentLike,
+  deletePostCommentLike,
   fetchPost,
   fetchPostComments,
   IComment,
@@ -18,6 +20,7 @@ enum PostActionType {
   REFRESH_POST_COMMENTS_ERROR = 'REFRESH_POST_COMMENTS_ERROR',
   REFRESH_POST_COMMENTS_LOADED = 'REFRESH_POST_COMMENTS_LOADED',
   UPDATE_POST_LIKED = 'UPDATE_POST_LIKED',
+  UPDATE_COMMENT_LIKED = 'UPDATE_COMMENT_LIKED',
   DISMISS_POST = 'DISMISS_POST',
 }
 
@@ -27,6 +30,7 @@ interface PostAction {
   comments?: IListResponse<IComment>
   error?: any
   liked?: boolean
+  commentId?: string
 }
 
 export async function postActionLoadPost(
@@ -114,6 +118,32 @@ export async function postActionAddPostComment(
   try {
     await createPostComment(comment, postId, authToken)
     await postActionLoadComments(postId, 0, authToken, dispatch)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export async function postActionUpdateCommentLiked(
+  liked: boolean,
+  commentId: string,
+  postId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<PostAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: PostActionType.UPDATE_COMMENT_LIKED,
+    liked: !liked,
+    commentId,
+  })
+
+  try {
+    liked
+      ? await deletePostCommentLike(postId, commentId, authToken)
+      : await createPostCommentLike(postId, commentId, authToken)
   } catch (err) {
     console.error(err)
   }
@@ -221,6 +251,25 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
           likes: action.liked ? state.post.likes + 1 : state.post.likes - 1,
         },
       }
+    }
+    case PostActionType.UPDATE_COMMENT_LIKED: {
+      const index = state.comments.findIndex(
+        (comment) => comment.comment_id === action.commentId
+      )
+      if (index === -1) {
+        return state
+      }
+
+      const newComments = [...state.comments]
+      newComments[index] = {
+        ...newComments[index],
+        liked: action.liked,
+        likes: action.liked
+          ? newComments[index].likes + 1
+          : newComments[index].likes - 1,
+      }
+
+      return { ...state, comments: newComments }
     }
     default:
       return state

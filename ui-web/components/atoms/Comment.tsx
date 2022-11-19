@@ -19,11 +19,13 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 export interface ICommentProps extends HTMLAttributes<HTMLDivElement> {
   comment: IComment
   onProfileLinkClicked?: () => void
+  onCommentLikeClicked?: (comment: IComment) => void
 }
 
 export default function Comment({
   comment,
   onProfileLinkClicked,
+  onCommentLikeClicked,
   className,
   ...props
 }: ICommentProps) {
@@ -90,7 +92,12 @@ export default function Comment({
           classNames.actions
         )}
       >
-        <IconButton icon={IconButtonIcon.Like} active={comment.liked} small />
+        <IconButton
+          icon={IconButtonIcon.Like}
+          active={comment.liked}
+          small
+          onClick={() => onCommentLikeClicked?.(comment)}
+        />
       </div>
     </div>
   )
