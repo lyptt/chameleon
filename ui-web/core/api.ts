@@ -12,17 +12,6 @@ function buildDefaultHeaders(authToken: string): any {
   } as any
 }
 
-function buildFormHeaders(authToken: string): any {
-  return {
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-      Accept: 'application/json',
-    },
-    mode: 'cors',
-    credentials: 'include',
-  } as any
-}
-
 function buildUnauthenticatedHeaders(): any {
   return {
     headers: {
@@ -120,6 +109,21 @@ export interface IJob {
   updated_at: number
   status: JobStatus
   failed_count: number
+}
+
+export interface IComment {
+  comment_id: string
+  user_id: string
+  post_id: string
+  content_md: string
+  content_html: string
+  created_at: number
+  updated_at: number
+  user_handle: string
+  user_fediverse_id: string
+  user_avatar_url?: string
+  likes: number
+  liked?: boolean
 }
 
 export async function fetchProfile(authToken: string): Promise<IProfile> {
@@ -245,12 +249,37 @@ export async function getJobStatus(
 
 export async function fetchPost(
   postId: string,
-  authToken: string
+  authToken?: string
 ): Promise<IObjectResponse<IPost>> {
   const response = await fetch(`${Config.apiUri}/feed/${postId}`, {
-    ...buildDefaultHeaders(authToken),
+    ...(authToken
+      ? buildDefaultHeaders(authToken)
+      : buildUnauthenticatedHeaders()),
     method: 'GET',
   })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchPostComments(
+  postId: string,
+  authToken: string | undefined,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<IComment>> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments?page=${page}&page_size=${pageSize}`,
+    {
+      ...(authToken
+        ? buildDefaultHeaders(authToken)
+        : buildUnauthenticatedHeaders()),
+      method: 'GET',
+    }
+  )
 
   if (response.status !== 200) {
     throw new Error('Request failed')

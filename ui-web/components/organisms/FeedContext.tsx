@@ -161,7 +161,7 @@ export async function feedActionSubmitPost(
   }
 }
 
-export async function updatePostLiked(
+export async function feedActionUpdatePostLiked(
   liked: boolean,
   postId: string,
   authToken: string | undefined,
@@ -186,7 +186,7 @@ export async function updatePostLiked(
   }
 }
 
-export async function addPostComment(
+export async function feedActionAddPostComment(
   comment: string,
   postId: string,
   authToken: string | undefined,
@@ -207,6 +207,23 @@ export async function addPostComment(
   } catch (err) {
     console.error(err)
   }
+}
+
+export async function feedActionAddPostSoftComment(
+  comment: string,
+  postId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<FeedAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: FeedActionType.UPDATE_POST_COMMENTED,
+    comment,
+    postId,
+  })
 }
 
 export interface IFeedState {

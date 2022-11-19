@@ -16,6 +16,7 @@ import { FeedProvider } from '@/components/organisms/FeedContext'
 import { ProfileProvider } from '@/components/organisms/ProfileContext'
 import classNames from './MainLayout.module.css'
 import MobileNav from '@/components/molecules/MobileNav'
+import { PostProvider } from '../organisms/PostContext'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
@@ -50,14 +51,19 @@ export default function MainLayout(props: MainLayoutProps) {
     <AuthContext.Provider value={authContext}>
       <ProfileProvider>
         <FeedProvider>
-          <DefaultActionsDelegator />
-          <main className={cx('chameleon-main', classNames.layout)}>
-            <Nav className={cx('chameleon-main-nav', classNames.nav)} />
-            <MobileNav
-              className={cx('chameleon-main-mobile-nav', classNames.mobileNav)}
-            />
-            {childrenWithClassname}
-          </main>
+          <PostProvider>
+            <DefaultActionsDelegator />
+            <main className={cx('chameleon-main', classNames.layout)}>
+              <Nav className={cx('chameleon-main-nav', classNames.nav)} />
+              <MobileNav
+                className={cx(
+                  'chameleon-main-mobile-nav',
+                  classNames.mobileNav
+                )}
+              />
+              {childrenWithClassname}
+            </main>
+          </PostProvider>
         </FeedProvider>
       </ProfileProvider>
     </AuthContext.Provider>

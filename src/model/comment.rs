@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{Error, Pool, Postgres};
+use sqlx::{Error, FromRow, Pool, Postgres};
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, FromRow)]
 /// Represents a user's comment on a post
 pub struct Comment {
   pub comment_id: Uuid,
@@ -53,5 +53,17 @@ impl Comment {
       .await?;
 
     Ok(())
+  }
+
+  pub async fn fetch_comments_count(
+    post_id: &Uuid,
+    own_user_id: &Option<Uuid>,
+    pool: &Pool<Postgres>,
+  ) -> Result<i64, Error> {
+    sqlx::query_scalar(include_str!("../db/fetch_post_comments_count.sql"))
+      .bind(own_user_id)
+      .bind(post_id)
+      .fetch_one(pool)
+      .await
   }
 }

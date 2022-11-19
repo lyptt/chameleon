@@ -1,8 +1,68 @@
-.post {
+.overlay {
+  background: rgba(0, 0, 0, 0.65);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 200;
+}
+
+.modal {
+  position: fixed;
+  margin-right: -50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1.1, 1.1);
+  width: 80%;
+  height: calc(100% - 45px);
+  max-width: 1040px;
+  border-radius: 4px;
   background: white;
-  border: 0.5px solid #ccc;
-  border-radius: 8px;
+  transition: all 0.15s ease;
+  display: flex;
   user-select: none;
+}
+
+.close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+.close * {
+  color: white;
+}
+
+.modal.opened {
+  transform: translate(-50%, -50%) scale(1, 1);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+}
+
+.image {
+  height: 100%;
+  flex: 0.5;
+  background: black;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.image > img {
+  object-fit: contain;
+}
+
+.details {
+  height: 100%;
+  flex: 0.5;
+  border-left: solid 0.5px #ccc;
+  display: flex;
+  flex-direction: column;
 }
 
 .masthead {
@@ -11,6 +71,7 @@
   height: 56px;
   padding-left: 14px;
   padding-right: 14px;
+  border-bottom: solid 0.5px #ccc;
 }
 
 .avatar {
@@ -28,15 +89,6 @@
 .avatarName {
   font-size: 0.9rem;
   font-weight: 600;
-}
-
-.content {
-  aspect-ratio: 1;
-  width: 100%;
-}
-
-.content img {
-  object-fit: cover;
 }
 
 .actionBar {
@@ -91,17 +143,15 @@
 }
 
 .comments {
-  font-weight: 400;
-  color: #777;
-  font-size: 0.85rem;
-  margin: 0;
-  padding: 0;
-  outline: none;
-  appearance: none;
-  border: none;
-  background: none;
-  cursor: pointer;
-  margin-top: 0.5rem;
+  border-top: 0.5 px solid #ddd;
+  padding-top: 0.5rem;
+  flex: 1;
+  overflow-y: scroll;
+  user-select: text;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .commentBar {

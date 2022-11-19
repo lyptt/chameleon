@@ -1,6 +1,7 @@
 pub mod access_type;
 pub mod app;
 pub mod comment;
+pub mod comment_pub;
 pub mod follow;
 pub mod job;
 pub mod like;

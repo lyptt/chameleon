@@ -39,8 +39,12 @@ pub async fn get_user_posts(
     .map_err(map_db_err)
 }
 
-pub async fn get_post(post_id: &Uuid, db: &Pool<Postgres>) -> Result<Option<PostPub>, LogicErr> {
-  PostPub::fetch_post(post_id, db).await.map_err(map_db_err)
+pub async fn get_post(
+  post_id: &Uuid,
+  user_id: &Option<Uuid>,
+  db: &Pool<Postgres>,
+) -> Result<Option<PostPub>, LogicErr> {
+  PostPub::fetch_post(post_id, user_id, db).await.map_err(map_db_err)
 }
 
 pub async fn get_user_posts_count(handle: &str, db: &Pool<Postgres>) -> Result<i64, LogicErr> {

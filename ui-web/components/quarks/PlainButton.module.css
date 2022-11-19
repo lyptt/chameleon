@@ -24,6 +24,13 @@
   color: #999;
 }
 
+.button.faded,
+.button.faded:focus-visible,
+.button.faded:active,
+.button.faded:disabled {
+  color: var(--text-color-faded);
+}
+
 .button.brand {
   color: var(--brand-color);
 }
@@ -42,4 +49,9 @@
 .button > svg {
   width: 28px;
   height: 28px;
+}
+
+.button.thin {
+  padding: 0;
+  font-size: 0.7rem;
 }

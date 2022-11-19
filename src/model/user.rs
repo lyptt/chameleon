@@ -35,6 +35,17 @@ impl User {
     }
   }
 
+  pub async fn fetch_id_by_fediverse_id(fediverse_id: &String, pool: &Pool<Postgres>) -> Option<Uuid> {
+    match sqlx::query_scalar("SELECT user_id FROM users WHERE fediverse_id = $1")
+      .bind(fediverse_id)
+      .fetch_optional(pool)
+      .await
+    {
+      Ok(user) => user,
+      Err(_) => None,
+    }
+  }
+
   pub async fn fetch_by_fediverse_id(fediverse_id: &String, pool: &Pool<Postgres>) -> Result<Option<User>, Error> {
     let user = sqlx::query_as("SELECT * FROM users WHERE fediverse_id = $1")
       .bind(fediverse_id)

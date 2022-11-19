@@ -23,7 +23,6 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 export interface INewPostModal {
   className?: string
   open: boolean
-  onOpen?: () => void
   onCancel?: () => void
   onSubmit?: (visibility: string, file: File, contentMd: string) => void
 }
@@ -118,7 +117,7 @@ export default function NewPostModal({
         [classNames.showingOptions]: !selectingFiles,
       })}
       overlayClassName={classNames.overlay}
-      contentLabel="Example Modal"
+      contentLabel="New Post"
     >
       <ScrollLock>
         <div

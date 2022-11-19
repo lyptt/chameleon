@@ -100,7 +100,7 @@ impl PostPub {
   /// can see, or alternatively all the user's public posts
   pub async fn fetch_user_public_feed(
     target_user_fediverse_id: &str,
-    own_user_fediverse_id: &str,
+    own_user_fediverse_id: Option<&str>,
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
@@ -156,9 +156,14 @@ impl PostPub {
     Ok(count)
   }
   /// Fetches the user's feed from their own perspective, i.e. all of the posts they have submitted
-  pub async fn fetch_post(post_id: &Uuid, pool: &Pool<Postgres>) -> Result<Option<PostPub>, Error> {
+  pub async fn fetch_post(
+    post_id: &Uuid,
+    user_id: &Option<Uuid>,
+    pool: &Pool<Postgres>,
+  ) -> Result<Option<PostPub>, Error> {
     let post = sqlx::query_as(include_str!("../db/fetch_post.sql"))
       .bind(post_id)
+      .bind(user_id)
       .fetch_optional(pool)
       .await?;
 

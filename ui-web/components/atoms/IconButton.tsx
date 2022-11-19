@@ -9,13 +9,18 @@ import {
   IoPaperPlane,
   IoBookmarkOutline,
   IoBookmark,
+  IoClose,
+  IoStarOutline,
+  IoStar,
 } from 'react-icons/io5'
+import dayjs from 'dayjs'
 
 export enum IconButtonIcon {
   Like,
   Message,
   Share,
   Save,
+  Close,
 }
 
 export interface IIconButtonProps {
@@ -25,6 +30,7 @@ export interface IIconButtonProps {
   icon: IconButtonIcon
   title?: string
   active?: boolean
+  small?: boolean
 }
 
 function determineStyleClassName(icon: IconButtonIcon): string {
@@ -37,6 +43,8 @@ function determineStyleClassName(icon: IconButtonIcon): string {
       return classNames.share
     case IconButtonIcon.Save:
       return classNames.save
+    case IconButtonIcon.Close:
+      return classNames.close
   }
 }
 
@@ -46,7 +54,10 @@ export default function IconButton({
   icon,
   title,
   active,
+  small,
 }: IIconButtonProps) {
+  const date = dayjs()
+  const isLoveDay = date.date() === 14 && date.month() === 1
   return (
     <button
       className={cx(
@@ -54,19 +65,30 @@ export default function IconButton({
         classNames.button,
         className,
         determineStyleClassName(icon),
-        { [classNames.active]: active }
+        {
+          [classNames.active]: active,
+          [classNames.small]: small,
+          [classNames.loveIsInTheAir]: isLoveDay,
+        }
       )}
       title={title}
       onClick={onClick}
     >
-      {!active && icon === IconButtonIcon.Like && <IoHeartOutline />}
-      {active && icon === IconButtonIcon.Like && <IoHeart />}
+      {!active && icon === IconButtonIcon.Like && isLoveDay && (
+        <IoHeartOutline />
+      )}
+      {active && icon === IconButtonIcon.Like && isLoveDay && <IoHeart />}
+      {!active && icon === IconButtonIcon.Like && !isLoveDay && (
+        <IoStarOutline />
+      )}
+      {active && icon === IconButtonIcon.Like && !isLoveDay && <IoStar />}
       {!active && icon === IconButtonIcon.Message && <IoChatbubbleOutline />}
       {active && icon === IconButtonIcon.Message && <IoChatbubble />}
       {!active && icon === IconButtonIcon.Share && <IoPaperPlaneOutline />}
       {active && icon === IconButtonIcon.Share && <IoPaperPlane />}
       {!active && icon === IconButtonIcon.Save && <IoBookmarkOutline />}
       {active && icon === IconButtonIcon.Save && <IoBookmark />}
+      {icon === IconButtonIcon.Close && <IoClose />}
     </button>
   )
 }

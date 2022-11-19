@@ -74,7 +74,7 @@ export default function PostCard({
       <LazyImage
         className={cx('chameleon-post__content', classNames.content)}
         blurhash={post.content_blurhash}
-        srcSet={`${Config.cdn}/${post.content_image_uri_large} 2048w, ${Config.cdn}/${post.content_image_uri_medium} 1024w, ${Config.cdn}/${post.content_image_uri_small} 256w`}
+        srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
         src={`${Config.cdn}/${post.content_image_uri_medium}`}
       />
       <div className={cx('chameleon-post__action-bar', classNames.actionBar)}>
