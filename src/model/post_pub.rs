@@ -37,6 +37,7 @@ pub struct PostPub {
   pub content_blurhash: Option<String>,
   pub likes: i64,
   pub liked: Option<bool>,
+  pub comments: i64,
 }
 
 impl PostPub {

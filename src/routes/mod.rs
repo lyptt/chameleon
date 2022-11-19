@@ -1,3 +1,4 @@
+pub mod comment;
 pub mod follow;
 pub mod job;
 pub mod like;

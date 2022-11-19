@@ -23,6 +23,7 @@ use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
+use routes::comment::{api_create_comment, api_delete_comment};
 use routes::follow::{api_create_follow, api_delete_follow};
 use routes::job::api_job_query_status;
 use routes::like::{api_create_like, api_delete_like};
@@ -141,6 +142,16 @@ async fn main() -> std::io::Result<()> {
           .name("post_likes")
           .route(web::post().to(api_create_like))
           .route(web::delete().to(api_delete_like)),
+      )
+      .service(
+        web::resource("/api/feed/{post_id}/comments")
+          .name("post_comments")
+          .route(web::post().to(api_create_comment)),
+      )
+      .service(
+        web::resource("/api/feed/{post_id}/comments/{comment_id}")
+          .name("post_comment")
+          .route(web::delete().to(api_delete_comment)),
       )
       .service(
         web::resource("/api/profile")

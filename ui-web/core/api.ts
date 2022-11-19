@@ -97,6 +97,7 @@ export interface IPost {
   updated_at: number
   likes: number
   liked?: boolean
+  comments: number
 }
 
 export interface INewPost {
@@ -280,6 +281,42 @@ export async function unlikePost(
     ...buildDefaultHeaders(authToken),
     method: 'DELETE',
   })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function createPostComment(
+  content: string,
+  postId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/feed/${postId}/comments`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+    body: JSON.stringify({
+      content_md: content,
+    }),
+  })
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function deletePostComment(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'DELETE',
+    }
+  )
 
   if (response.status !== 200) {
     throw new Error('Request failed')

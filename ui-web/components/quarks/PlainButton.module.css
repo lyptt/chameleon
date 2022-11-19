@@ -1,5 +1,4 @@
 .button {
-  margin-top: 10px;
   outline: none;
   background: none;
   border: none;
@@ -20,7 +19,8 @@
 }
 
 .button:focus-visible,
-.button:active {
+.button:active,
+.button:disabled {
   color: #999;
 }
 
@@ -31,6 +31,12 @@
 .button.brand:focus-visible,
 .button.brand:active {
   color: var(--brand-color-light);
+}
+
+.button.brand:disabled {
+  color: var(--brand-color);
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .button > svg {

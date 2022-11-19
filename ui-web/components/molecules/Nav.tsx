@@ -43,11 +43,9 @@ function NavItem({
 }: INavItemProps) {
   return (
     <li>
-      <Link href={href}>
-        <a className={cx('chameleon-nav__link', classNames.link)}>
-          {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
-          <span>{title}</span>
-        </a>
+      <Link href={href} className={cx('chameleon-nav__link', classNames.link)}>
+        {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
+        <span>{title}</span>
       </Link>
     </li>
   )

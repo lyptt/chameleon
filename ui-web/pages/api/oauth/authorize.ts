@@ -38,12 +38,6 @@ export default async function authorize(
 
     const data = (await response.json()) as ISession
 
-    console.log({
-      path: '/',
-      expires: dayjs.unix(data.expires_at).toDate(),
-      domain: new URL(Config.fqdn!).hostname,
-    })
-
     return res
       .setHeader(
         'Set-Cookie',

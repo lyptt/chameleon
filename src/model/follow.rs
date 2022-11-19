@@ -37,4 +37,20 @@ impl Follow {
 
     Ok(())
   }
+
+  /// Fetches a boolean indicator of if the specified user follows the user that created the specified post
+  pub async fn user_follows_poster(post_id: &Uuid, user_id: &Uuid, pool: &Pool<Postgres>) -> bool {
+    sqlx::query_scalar(
+      "SELECT count(f.*) >= 1 AS following FROM followers f
+        INNER JOIN posts p
+        ON p.user_id = f.following_user_id
+        WHERE p.post_id = $1
+        AND f.user_id = $2",
+    )
+    .bind(post_id)
+    .bind(user_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(false)
+  }
 }

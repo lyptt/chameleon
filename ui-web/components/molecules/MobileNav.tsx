@@ -42,13 +42,12 @@ function MobileNavItem({
 }: INavItemProps) {
   return (
     <li>
-      <Link href={href}>
-        <a
-          className={cx('chameleon-mobile-nav__link', classNames.link)}
-          title={title}
-        >
-          {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
-        </a>
+      <Link
+        href={href}
+        className={cx('chameleon-mobile-nav__link', classNames.link)}
+        title={title}
+      >
+        {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
       </Link>
     </li>
   )

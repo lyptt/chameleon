@@ -1,5 +1,6 @@
 import PostCard from '@/components/molecules/PostCard'
 import {
+  addPostComment,
   feedActionLoadFeed,
   updatePostLiked,
   useFeed,
@@ -32,8 +33,6 @@ function determineScrollPercentage() {
     (document.documentElement || document.body.parentNode || document.body)
       .scrollTop
   const trackLength = documentHeight - windowHeight
-
-  console.log(trackLength, scrollTop, scrollTop / trackLength)
 
   return scrollTop / trackLength
 }
@@ -98,6 +97,10 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
     updatePostLiked(!post.liked, post.post_id, session?.access_token, dispatch)
   }
 
+  const handleCommentSubmitted = (post: IPost, comment: string) => {
+    addPostComment(comment, post.post_id, session?.access_token, dispatch)
+  }
+
   return (
     <section
       className={cx('chameleon-page-home', classNames.container, className)}
@@ -119,6 +122,7 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
               className={cx('chameleon-feed__post', classNames.post)}
               post={post}
               handlePostLiked={handlePostLiked}
+              handleCommentSubmitted={handleCommentSubmitted}
             />
           ))}
         {submitting && (

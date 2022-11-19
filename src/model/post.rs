@@ -123,4 +123,26 @@ impl Post {
 
     Ok(())
   }
+
+  pub async fn fetch_visibility_by_id(post_id: &Uuid, pool: &Pool<Postgres>) -> Option<AccessType> {
+    match sqlx::query_scalar("SELECT visibility FROM posts WHERE post_id = $1")
+      .bind(post_id)
+      .fetch_optional(pool)
+      .await
+    {
+      Ok(user) => user,
+      Err(_) => None,
+    }
+  }
+
+  pub async fn fetch_owner_by_id(post_id: &Uuid, pool: &Pool<Postgres>) -> Option<Uuid> {
+    match sqlx::query_scalar("SELECT user_id FROM posts WHERE post_id = $1")
+      .bind(post_id)
+      .fetch_optional(pool)
+      .await
+    {
+      Ok(user) => user,
+      Err(_) => None,
+    }
+  }
 }
