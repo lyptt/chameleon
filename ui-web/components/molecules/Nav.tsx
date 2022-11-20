@@ -2,7 +2,6 @@ import cx from 'classnames'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import UserButton from '../atoms/UserButton'
-import classNames from './Nav.module.css'
 import {
   IoHomeOutline,
   IoHome,
@@ -43,7 +42,7 @@ function NavItem({
 }: INavItemProps) {
   return (
     <li>
-      <Link href={href} className={cx('chameleon-nav__link', classNames.link)}>
+      <Link href={href} className={cx('chameleon-nav__link')}>
         {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
         <span>{title}</span>
       </Link>
@@ -75,15 +74,10 @@ export default function Nav({ className }: INavProps) {
 
   return (
     <>
-      <nav className={cx('chameleon-nav', className, classNames.container)}>
-        <div className={cx('chameleon-nav__content', classNames.nav)}>
-          <h1 className={cx('chameleon-nav__title', classNames.title)}>
-            Chameleon
-          </h1>
-          <ul
-            className={cx('chameleon-nav__list', classNames.list)}
-            role="list"
-          >
+      <nav className={cx('chameleon-nav', className)}>
+        <div className={cx('chameleon-nav__content')}>
+          <h1 className={cx('chameleon-nav__title')}>Chameleon</h1>
+          <ul className={cx('chameleon-nav__list')} role="list">
             <NavItem
               active={route === '/'}
               title="Home"
@@ -121,7 +115,7 @@ export default function Nav({ className }: INavProps) {
             />
             <li>
               <button
-                className={cx('chameleon-nav__post-button', classNames.link)}
+                className={cx('chameleon-nav__post-button')}
                 onClick={handleModalOpen}
               >
                 <IoAddCircleOutline />

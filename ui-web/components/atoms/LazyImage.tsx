@@ -7,7 +7,6 @@ import React, {
 import { useBlurhash } from '@/core/useBlurhash'
 import { useInView } from 'react-intersection-observer'
 import cx from 'classnames'
-import classNames from './LazyImage.module.css'
 
 export interface ILazyImageProps
   extends DetailedHTMLProps<
@@ -40,9 +39,9 @@ export function LazyImage({
 
   return (
     <div
-      className={cx('chameleon-image', classNames.container, className, {
-        [classNames.loaded]: imgLoaded,
-        [classNames.faded]: imgFaded,
+      className={cx('chameleon-image', className, {
+        'chameleon-image--loaded': imgLoaded,
+        'chameleon-image--faded': imgFaded,
       })}
     >
       <img
@@ -53,7 +52,7 @@ export function LazyImage({
         onLoad={handleOnLoad}
       />
       <div
-        className={cx('chameleon-image__overlay', classNames.overlay)}
+        className={cx('chameleon-image__overlay')}
         style={{
           backgroundImage: `url("${blurUrl}")`,
           backgroundSize:

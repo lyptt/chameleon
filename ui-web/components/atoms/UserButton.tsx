@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { useAuth } from '../organisms/AuthContext'
-import classNames from './UserButton.module.css'
 import cx from 'classnames'
 import { useProfile } from '../organisms/ProfileContext'
 import { IoLogInOutline } from 'react-icons/io5'
@@ -25,17 +24,13 @@ export default function UserButton({ className, active }: IUserButtonProps) {
           className={cx(
             'chameleon-user-button',
             className,
-            classNames.button,
-            classNames.authenticated,
-            { [classNames.active]: active }
+            'chameleon-user-button--authenticated',
+            { 'chameleon-user-button--active': active }
           )}
         >
           {!loading && !!profile && (
             <img
-              className={cx(
-                'chameleon-user-button__profile-image',
-                classNames.img
-              )}
+              className={cx('chameleon-user-button__profile-image')}
               src={profile.avatar_url || transparentPixelUri}
               alt={profile.handle || 'You'}
             />
@@ -46,8 +41,8 @@ export default function UserButton({ className, active }: IUserButtonProps) {
       {!auth.authenticated && (
         <a
           href="/api/oauth/authorize"
-          className={cx('chameleon-user-button', className, classNames.button, {
-            [classNames.active]: active,
+          className={cx('chameleon-user-button', className, {
+            'chameleon-user-button--active': active,
           })}
         >
           <IoLogInOutline />

@@ -1,5 +1,4 @@
 import { HTMLAttributes, useState } from 'react'
-import classNames from './MobileNav.module.css'
 import cx from 'classnames'
 import { INewPost, AccessType } from '@/core/api'
 import Link from 'next/link'
@@ -44,7 +43,7 @@ function MobileNavItem({
     <li>
       <Link
         href={href}
-        className={cx('chameleon-mobile-nav__link', classNames.link)}
+        className={cx('chameleon-mobile-nav__link')}
         title={title}
       >
         {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
@@ -79,11 +78,8 @@ export default function MobileNav({
 
   return (
     <>
-      <nav className={cx('chameleon-mobile-nav', classNames.nav, className)}>
-        <ul
-          className={cx('chameleon-mobile-nav__list', classNames.list)}
-          role="list"
-        >
+      <nav className={cx('chameleon-mobile-nav', className)}>
+        <ul className={cx('chameleon-mobile-nav__list')} role="list">
           <MobileNavItem
             active={route === '/'}
             title="Home"
@@ -120,7 +116,10 @@ export default function MobileNav({
             activeIcon={IoHeart}
           />
           <li>
-            <button className={classNames.link} onClick={handleModalOpen}>
+            <button
+              className="chameleon-mobile_nav__link"
+              onClick={handleModalOpen}
+            >
               <IoAddCircleOutline />
             </button>
           </li>

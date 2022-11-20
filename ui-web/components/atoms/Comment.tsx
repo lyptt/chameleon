@@ -1,5 +1,4 @@
 import { HTMLAttributes } from 'react'
-import classNames from './Comment.module.css'
 import cx from 'classnames'
 import { IComment } from '@/core/api'
 import Link from 'next/link'
@@ -39,44 +38,27 @@ export default function Comment({
   }
 
   return (
-    <div
-      className={cx(className, 'chameleon-comment', classNames.comment)}
-      {...props}
-    >
+    <div className={cx(className, 'chameleon-comment')} {...props}>
       <Link
         href={`/users/${comment.user_fediverse_id}`}
         onClick={onProfileLinkClicked}
-        className={cx(
-          'chameleon-comment__avatar-image',
-          classNames.avatarImage
-        )}
+        className={cx('chameleon-comment__avatar-image')}
       >
         <img
           src={comment.user_avatar_url || transparentPixelUri}
           alt={comment.user_handle}
         />
       </Link>
-      <p
-        className={cx(
-          className,
-          'chameleon-comment__content',
-          classNames.content
-        )}
-      >
+      <p className={cx(className, 'chameleon-comment__content')}>
         <Link
           href={`/users/${comment.user_fediverse_id}`}
           onClick={onProfileLinkClicked}
-          className={cx(
-            'chameleon-comment__profile-link',
-            classNames.profileLink
-          )}
+          className={cx('chameleon-comment__profile-link')}
         >
           {comment.user_handle}
         </Link>
         <span dangerouslySetInnerHTML={{ __html: comment.content_html }} />
-        <div
-          className={cx(className, 'chameleon-comment__meta', classNames.meta)}
-        >
+        <div className={cx(className, 'chameleon-comment__meta')}>
           <span>{relativeDate}</span>
           {comment.likes === 1 && <strong>1 like</strong>}
           {comment.likes > 1 && <strong>{comment.likes} likes</strong>}
@@ -85,13 +67,7 @@ export default function Comment({
           </PlainButton>
         </div>
       </p>
-      <div
-        className={cx(
-          className,
-          'chameleon-comment__actions',
-          classNames.actions
-        )}
-      >
+      <div className={cx(className, 'chameleon-comment__actions')}>
         <IconButton
           icon={IconButtonIcon.Like}
           active={comment.liked}

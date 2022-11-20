@@ -1,4 +1,3 @@
-import classNames from './IconButton.module.css'
 import cx from 'classnames'
 import {
   IoHeartOutline,
@@ -36,15 +35,15 @@ export interface IIconButtonProps {
 function determineStyleClassName(icon: IconButtonIcon): string {
   switch (icon) {
     case IconButtonIcon.Like:
-      return classNames.like
+      return 'chameleon-icon-button--like'
     case IconButtonIcon.Message:
-      return classNames.message
+      return 'chameleon-icon-button--message'
     case IconButtonIcon.Share:
-      return classNames.share
+      return 'chameleon-icon-button--share'
     case IconButtonIcon.Save:
-      return classNames.save
+      return 'chameleon-icon-button--save'
     case IconButtonIcon.Close:
-      return classNames.close
+      return 'chameleon-icon-button--close'
   }
 }
 
@@ -62,13 +61,13 @@ export default function IconButton({
     <button
       className={cx(
         'chameleon-icon-button',
-        classNames.button,
+
         className,
         determineStyleClassName(icon),
         {
-          [classNames.active]: active,
-          [classNames.small]: small,
-          [classNames.loveIsInTheAir]: isLoveDay,
+          'chameleon-icon-button--active': active,
+          'chameleon-icon-button--small': small,
+          'chameleon-icon-button--love-is-in-the-air': isLoveDay,
         }
       )}
       title={title}

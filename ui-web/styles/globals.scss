@@ -1,0 +1,21 @@
+@import "core/variables";
+@import "core/fonts";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: $font-family, sans-serif;
+  background: rgb(250, 250, 250);
+  color: var(--text-color);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  display: inline-block;
+}

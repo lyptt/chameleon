@@ -9,7 +9,6 @@ import {
 import Progress from '@/components/quarks/Progress'
 import Head from 'next/head'
 import { HTMLAttributes, useCallback, useEffect, useState } from 'react'
-import classNames from './Home.module.css'
 import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
@@ -133,9 +132,7 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
   }
 
   return (
-    <section
-      className={cx('chameleon-page-home', classNames.container, className)}
-    >
+    <section className={cx('chameleon-page-home', className)}>
       <Head>
         <title>Chameleon</title>
         <meta
@@ -144,13 +141,13 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className={cx('chameleon-feed', classNames.feed)}>
+      <div className={cx('chameleon-feed')}>
         {(!loading || feed.length > 0) &&
           feed &&
           feed.map((post) => (
             <PostCard
               key={post.post_id}
-              className={cx('chameleon-feed__post', classNames.post)}
+              className={cx('chameleon-feed__post')}
               post={post}
               handlePostLiked={handlePostLiked}
               handleCommentSubmitted={handleCommentSubmitted}
@@ -159,18 +156,16 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
           ))}
         {submitting && (
           <Progress
-            className={cx('chameleon-home__progress', classNames.progress)}
+            className={cx('chameleon-home__progress')}
             value={submittingImageProgress}
             max={1}
           />
         )}
         {feed.length > 0 && !noMorePages && !loadingFailed && (
-          <ActivityIndicator
-            className={cx('chameleon-home__indicator', classNames.indicator)}
-          />
+          <ActivityIndicator className={cx('chameleon-home__indicator')} />
         )}
         {loadingFailed && (
-          <p className={cx('chameleon-home__indicator', classNames.indicator)}>
+          <p className={cx('chameleon-home__indicator')}>
             We had trouble fetching more posts, please try again later.
           </p>
         )}

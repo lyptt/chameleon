@@ -1,10 +1,9 @@
 import Head from 'next/head'
-import classNames from './Home.module.css'
 import cx from 'classnames'
 
 export default function ProfilePage() {
   return (
-    <section className={cx('chameleon-page-profile', classNames.container)}>
+    <section className={cx('chameleon-page-profile')}>
       <Head>
         <title>Chameleon</title>
         <meta

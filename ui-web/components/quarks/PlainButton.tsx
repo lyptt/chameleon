@@ -1,5 +1,4 @@
 import { ButtonHTMLAttributes } from 'react'
-import classNames from './PlainButton.module.css'
 import cx from 'classnames'
 
 export interface IPlainButtonProps
@@ -19,10 +18,10 @@ export default function PlainButton({
 }: IPlainButtonProps) {
   return (
     <button
-      className={cx('chameleon-button--plain', classNames.button, className, {
-        [classNames.brand]: brand,
-        [classNames.faded]: faded,
-        [classNames.thin]: thin,
+      className={cx('chameleon-button--plain', className, {
+        'chameleon-button--plain-brand': brand,
+        'chameleon-button--plain-faded': faded,
+        'chameleon-button--plain-thin': thin,
       })}
       {...props}
     >
