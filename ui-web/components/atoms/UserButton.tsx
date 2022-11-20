@@ -20,28 +20,27 @@ export default function UserButton({ className, active }: IUserButtonProps) {
   return (
     <>
       {auth.authenticated && (
-        <Link href="/profile">
-          <a
-            className={cx(
-              'chameleon-user-button',
-              className,
-              classNames.button,
-              classNames.authenticated,
-              { [classNames.active]: active }
-            )}
-          >
-            {!loading && !!profile && (
-              <img
-                className={cx(
-                  'chameleon-user-button__profile-image',
-                  classNames.img
-                )}
-                src={profile.avatar_url || transparentPixelUri}
-                alt={profile.handle || 'You'}
-              />
-            )}
-            <span>Profile</span>
-          </a>
+        <Link
+          href="/profile"
+          className={cx(
+            'chameleon-user-button',
+            className,
+            classNames.button,
+            classNames.authenticated,
+            { [classNames.active]: active }
+          )}
+        >
+          {!loading && !!profile && (
+            <img
+              className={cx(
+                'chameleon-user-button__profile-image',
+                classNames.img
+              )}
+              src={profile.avatar_url || transparentPixelUri}
+              alt={profile.handle || 'You'}
+            />
+          )}
+          <span>Profile</span>
         </Link>
       )}
       {!auth.authenticated && (

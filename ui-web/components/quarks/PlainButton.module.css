@@ -1,5 +1,4 @@
 .button {
-  margin-top: 10px;
   outline: none;
   background: none;
   border: none;
@@ -20,8 +19,16 @@
 }
 
 .button:focus-visible,
-.button:active {
+.button:active,
+.button:disabled {
   color: #999;
+}
+
+.button.faded,
+.button.faded:focus-visible,
+.button.faded:active,
+.button.faded:disabled {
+  color: var(--text-color-faded);
 }
 
 .button.brand {
@@ -33,7 +40,18 @@
   color: var(--brand-color-light);
 }
 
+.button.brand:disabled {
+  color: var(--brand-color);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .button > svg {
   width: 28px;
   height: 28px;
+}
+
+.button.thin {
+  padding: 0;
+  font-size: 0.7rem;
 }

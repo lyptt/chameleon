@@ -9,7 +9,7 @@ use crate::{
   cdn::cdn_store::Cdn,
   helpers::{
     activitypub::handle_activitypub_collection_metadata_get,
-    auth::require_auth,
+    auth::{query_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
   },
@@ -17,7 +17,12 @@ use crate::{
     create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
     upload_post_file, NewPostRequest, NewPostResponse,
   },
-  model::response::{JobResponse, ListResponse, ObjectResponse},
+  model::{
+    access_type::AccessType,
+    follow::Follow,
+    response::{JobResponse, ListResponse, ObjectResponse},
+    user::User,
+  },
   net::jwt::JwtContext,
   settings::SETTINGS,
   work_queue::queue::Queue,
@@ -108,8 +113,17 @@ pub async fn api_get_user_own_feed(
   })
 }
 
-pub async fn api_get_post(db: web::Data<PgPool>, post_id: web::Path<Uuid>) -> impl Responder {
-  let post = match get_post(&post_id, &db).await {
+pub async fn api_get_post(
+  db: web::Data<PgPool>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let current_user_id = match query_auth(&jwt, &db).await {
+    Some(props) => User::fetch_id_by_fediverse_id(&props.sub, &db).await,
+    None => None,
+  };
+
+  let post = match get_post(&post_id, &current_user_id, &db).await {
     Ok(post) => match post {
       Some(post) => post,
       None => return build_api_not_found(post_id.to_string()),
@@ -117,7 +131,29 @@ pub async fn api_get_post(db: web::Data<PgPool>, post_id: web::Path<Uuid>) -> im
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  HttpResponse::Ok().json(ObjectResponse { data: post })
+  if post.visibility == AccessType::PublicFederated
+    || post.visibility == AccessType::PublicLocal
+    || post.visibility == AccessType::Unlisted
+  {
+    return HttpResponse::Ok().json(ObjectResponse { data: post });
+  }
+
+  match current_user_id {
+    Some(current_user_id) => {
+      if post.user_id == current_user_id {
+        return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      if post.visibility == AccessType::FollowersOnly
+        && Follow::user_follows_poster(&post.post_id, &current_user_id, &db).await
+      {
+        return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      HttpResponse::NotFound().finish()
+    }
+    None => HttpResponse::NotFound().finish(),
+  }
 }
 
 pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQuery>) -> impl Responder {

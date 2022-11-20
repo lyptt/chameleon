@@ -1,4 +1,4 @@
-SELECT DISTINCT p.*, u1.user_id as user_id, u1.handle as user_handle, u1.fediverse_id as user_fediverse_id, u1.avatar_url as user_avatar_url, count(distinct l.like_id) as likes, count(l2.like_id) >= 1 as liked FROM followers f
+SELECT DISTINCT p.*, u1.user_id as user_id, u1.handle as user_handle, u1.fediverse_id as user_fediverse_id, u1.avatar_url as user_avatar_url, count(distinct l.like_id) as likes, count(l2.like_id) >= 1 as liked, count(distinct c.comment_id) as comments FROM followers f
 INNER JOIN users u1
 ON u1.user_id = f.user_id
 INNER JOIN users u2
@@ -7,6 +7,8 @@ LEFT OUTER JOIN posts p
 ON p.user_id = u1.user_id
 LEFT OUTER JOIN likes l
 ON l.post_id = p.post_id
+LEFT OUTER JOIN comments c
+ON c.post_id = p.post_id
 LEFT OUTER JOIN (
   SELECT count(distinct l.like_id), l.like_id, l.post_id, l.user_id
   FROM likes l

@@ -11,6 +11,7 @@ import {
   fetchPost,
   likePost,
   unlikePost,
+  createPostComment,
 } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 import retry from 'async-retry'
@@ -32,6 +33,7 @@ enum FeedActionType {
   SUBMIT_POST_COMPLETED = 'SUBMIT_POST_COMPLETED',
   SUBMIT_POST_DISMISS_ERROR = 'SUBMIT_POST_DISMISS_ERROR',
   UPDATE_POST_LIKED = 'UPDATE_POST_LIKED',
+  UPDATE_POST_COMMENTED = 'UPDATE_POST_COMMENTED',
 }
 
 interface FeedAction {
@@ -46,6 +48,7 @@ interface FeedAction {
   progress?: number
   postId?: string
   liked?: boolean
+  comment?: string
 }
 
 export async function feedActionLoadFeed(
@@ -158,7 +161,7 @@ export async function feedActionSubmitPost(
   }
 }
 
-export async function updatePostLiked(
+export async function feedActionUpdatePostLiked(
   liked: boolean,
   postId: string,
   authToken: string | undefined,
@@ -181,6 +184,46 @@ export async function updatePostLiked(
   } catch (err) {
     console.error(err)
   }
+}
+
+export async function feedActionAddPostComment(
+  comment: string,
+  postId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<FeedAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: FeedActionType.UPDATE_POST_COMMENTED,
+    comment,
+    postId,
+  })
+
+  try {
+    await createPostComment(comment, postId, authToken)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export async function feedActionAddPostSoftComment(
+  comment: string,
+  postId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<FeedAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: FeedActionType.UPDATE_POST_COMMENTED,
+    comment,
+    postId,
+  })
 }
 
 export interface IFeedState {
@@ -346,6 +389,25 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         ...feed[postIdx],
         liked: action.liked,
         likes: action.liked ? feed[postIdx].likes + 1 : feed[postIdx].likes - 1,
+      }
+
+      return { ...state, feed }
+    }
+    case FeedActionType.UPDATE_POST_COMMENTED: {
+      if (action.comment === undefined) {
+        return state
+      }
+      const postIdx = state.feed.findIndex(
+        (post) => post.post_id === action.postId
+      )
+      if (postIdx === -1) {
+        return state
+      }
+
+      const feed = [...state.feed]
+      feed[postIdx] = {
+        ...feed[postIdx],
+        comments: feed[postIdx].comments + 1,
       }
 
       return { ...state, feed }

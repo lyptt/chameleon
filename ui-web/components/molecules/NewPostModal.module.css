@@ -54,6 +54,7 @@
   top: 14px;
   transform: translateY(-50%);
   left: 0px;
+  margin-top: 10px;
 }
 
 .titleBar .rightAction {
@@ -61,6 +62,7 @@
   top: 11px;
   transform: translateY(-50%);
   right: 4px;
+  margin-top: 10px;
 }
 
 .upload {
@@ -88,6 +90,10 @@
   padding: 0;
   font-size: 1.4rem;
   font-weight: 300;
+}
+
+.uploadFeature > button {
+  margin-top: 10px;
 }
 
 .upload form {

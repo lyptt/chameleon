@@ -8,6 +8,8 @@ import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
 import { LazyImage } from '@/components/atoms/LazyImage'
+import PlainButton from '@/components/quarks/PlainButton'
+import { KeyboardEvent, useState } from 'react'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -16,6 +18,8 @@ export interface IPostCardProps {
   className?: string
   post: IPost
   handlePostLiked?: (post: IPost) => void
+  handleCommentSubmitted?: (post: IPost, comment: string) => void
+  handlePostExpanded?: (post: IPost) => void
 }
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
@@ -24,35 +28,53 @@ export default function PostCard({
   className,
   post,
   handlePostLiked,
+  handleCommentSubmitted,
+  handlePostExpanded,
 }: IPostCardProps) {
+  const [comment, setComment] = useState('')
+
+  const handleKeyUp = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      if (!comment.length) {
+        return
+      }
+
+      event.preventDefault()
+      handleCommentSubmitted?.(post, comment)
+      setComment('')
+    } else {
+      setComment((event.target as any).value || '')
+    }
+  }
+
+  const handlePostClicked = () => handleCommentSubmitted?.(post, comment)
+
   return (
     <article className={cx('chameleon-post', className, classNames.post)}>
       <div className={cx('chameleon-post__masthead', classNames.masthead)}>
-        <Link href={`/users/${post.user_fediverse_id}`}>
-          <a className={cx('chameleon-post__avatar', classNames.avatar)}>
-            <img
-              className={cx(
-                'chameleon-post__avatar-image',
-                classNames.avatarImage
-              )}
-              src={post.user_avatar_url || transparentPixelUri}
-              alt={post.user_handle}
-            />
-            <div
-              className={cx(
-                'chameleon-post__avatar-name',
-                classNames.avatarName
-              )}
-            >
-              {post.user_handle}
-            </div>
-          </a>
+        <Link
+          href={`/users/${post.user_fediverse_id}`}
+          className={cx('chameleon-post__avatar', classNames.avatar)}
+        >
+          <img
+            className={cx(
+              'chameleon-post__avatar-image',
+              classNames.avatarImage
+            )}
+            src={post.user_avatar_url || transparentPixelUri}
+            alt={post.user_handle}
+          />
+          <div
+            className={cx('chameleon-post__avatar-name', classNames.avatarName)}
+          >
+            {post.user_handle}
+          </div>
         </Link>
       </div>
       <LazyImage
         className={cx('chameleon-post__content', classNames.content)}
         blurhash={post.content_blurhash}
-        srcSet={`${Config.cdn}/${post.content_image_uri_large} 2048w, ${Config.cdn}/${post.content_image_uri_medium} 1024w, ${Config.cdn}/${post.content_image_uri_small} 256w`}
+        srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
         src={`${Config.cdn}/${post.content_image_uri_medium}`}
       />
       <div className={cx('chameleon-post__action-bar', classNames.actionBar)}>
@@ -98,9 +120,44 @@ export default function PostCard({
           {post.likes === 1 && '1 like'}
           {post.likes > 1 && `${post.likes} likes`}
         </p>
+        {post.comments > 0 && (
+          <button
+            className={cx('chameleon-post__comments', classNames.comments)}
+            onClick={() => handlePostExpanded?.(post)}
+          >
+            {post.comments === 1 && <>View comments</>}
+            {post.comments > 1 && <>View all {post.comments} comments</>}
+          </button>
+        )}
         <p className={cx('chameleon-post__date', classNames.date)}>
           {dayjs.utc(post.created_at).fromNow()}
         </p>
+        <div
+          className={cx('chameleon-post__comment-bar', classNames.commentBar)}
+        >
+          <input
+            id={`post-comment-${post.post_id}`}
+            className={cx(
+              'chameleon-post__comment-bar-field',
+              classNames.commentBarField
+            )}
+            placeholder="Add a comment..."
+            onKeyUp={handleKeyUp}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <PlainButton
+            brand
+            className={cx(
+              'chameleon-post__comment-bar-post-button',
+              classNames.commentBarPostButton
+            )}
+            onClick={handlePostClicked}
+            disabled={!comment.length}
+          >
+            Post!
+          </PlainButton>
+        </div>
       </div>
     </article>
   )

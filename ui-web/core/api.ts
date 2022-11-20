@@ -12,17 +12,6 @@ function buildDefaultHeaders(authToken: string): any {
   } as any
 }
 
-function buildFormHeaders(authToken: string): any {
-  return {
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-      Accept: 'application/json',
-    },
-    mode: 'cors',
-    credentials: 'include',
-  } as any
-}
-
 function buildUnauthenticatedHeaders(): any {
   return {
     headers: {
@@ -97,6 +86,7 @@ export interface IPost {
   updated_at: number
   likes: number
   liked?: boolean
+  comments: number
 }
 
 export interface INewPost {
@@ -119,6 +109,21 @@ export interface IJob {
   updated_at: number
   status: JobStatus
   failed_count: number
+}
+
+export interface IComment {
+  comment_id: string
+  user_id: string
+  post_id: string
+  content_md: string
+  content_html: string
+  created_at: number
+  updated_at: number
+  user_handle: string
+  user_fediverse_id: string
+  user_avatar_url?: string
+  likes: number
+  liked?: boolean
 }
 
 export async function fetchProfile(authToken: string): Promise<IProfile> {
@@ -244,12 +249,37 @@ export async function getJobStatus(
 
 export async function fetchPost(
   postId: string,
-  authToken: string
+  authToken?: string
 ): Promise<IObjectResponse<IPost>> {
   const response = await fetch(`${Config.apiUri}/feed/${postId}`, {
-    ...buildDefaultHeaders(authToken),
+    ...(authToken
+      ? buildDefaultHeaders(authToken)
+      : buildUnauthenticatedHeaders()),
     method: 'GET',
   })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchPostComments(
+  postId: string,
+  authToken: string | undefined,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<IComment>> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments?page=${page}&page_size=${pageSize}`,
+    {
+      ...(authToken
+        ? buildDefaultHeaders(authToken)
+        : buildUnauthenticatedHeaders()),
+      method: 'GET',
+    }
+  )
 
   if (response.status !== 200) {
     throw new Error('Request failed')
@@ -280,6 +310,78 @@ export async function unlikePost(
     ...buildDefaultHeaders(authToken),
     method: 'DELETE',
   })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function createPostComment(
+  content: string,
+  postId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/feed/${postId}/comments`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+    body: JSON.stringify({
+      content_md: content,
+    }),
+  })
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function deletePostComment(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'DELETE',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function createPostCommentLike(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}/likes`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'POST',
+    }
+  )
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function deletePostCommentLike(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}/likes`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'DELETE',
+    }
+  )
 
   if (response.status !== 200) {
     throw new Error('Request failed')

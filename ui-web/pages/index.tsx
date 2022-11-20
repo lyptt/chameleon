@@ -1,7 +1,9 @@
 import PostCard from '@/components/molecules/PostCard'
 import {
+  feedActionAddPostComment,
+  feedActionAddPostSoftComment,
   feedActionLoadFeed,
-  updatePostLiked,
+  feedActionUpdatePostLiked,
   useFeed,
 } from '@/components/organisms/FeedContext'
 import Progress from '@/components/quarks/Progress'
@@ -13,6 +15,8 @@ import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
 import { IPost } from '@/core/api'
+import { postActionLoadPost, usePost } from '@/components/organisms/PostContext'
+import PostModal from '@/components/molecules/PostModal'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -33,14 +37,13 @@ function determineScrollPercentage() {
       .scrollTop
   const trackLength = documentHeight - windowHeight
 
-  console.log(trackLength, scrollTop, scrollTop / trackLength)
-
   return scrollTop / trackLength
 }
 
 export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
   const { session } = useAuth()
   const { state, dispatch } = useFeed()
+  const { dispatch: postDispatch } = usePost()
   const {
     loading,
     loadingFailed,
@@ -95,7 +98,38 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
   }, [loading, feed, session, noMorePages, page, listInView])
 
   const handlePostLiked = (post: IPost) => {
-    updatePostLiked(!post.liked, post.post_id, session?.access_token, dispatch)
+    feedActionUpdatePostLiked(
+      !post.liked,
+      post.post_id,
+      session?.access_token,
+      dispatch
+    )
+  }
+
+  const handleCommentSubmitted = (
+    post: IPost,
+    comment: string,
+    skipWebRequest?: boolean
+  ) => {
+    if (skipWebRequest) {
+      feedActionAddPostSoftComment(
+        comment,
+        post.post_id,
+        session?.access_token,
+        dispatch
+      )
+    } else {
+      feedActionAddPostComment(
+        comment,
+        post.post_id,
+        session?.access_token,
+        dispatch
+      )
+    }
+  }
+
+  const handlePostExpanded = (post: IPost) => {
+    postActionLoadPost(post.post_id, session?.access_token, postDispatch)
   }
 
   return (
@@ -119,6 +153,8 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
               className={cx('chameleon-feed__post', classNames.post)}
               post={post}
               handlePostLiked={handlePostLiked}
+              handleCommentSubmitted={handleCommentSubmitted}
+              handlePostExpanded={handlePostExpanded}
             />
           ))}
         {submitting && (
@@ -139,6 +175,10 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
           </p>
         )}
       </div>
+      <PostModal
+        onPostLiked={handlePostLiked}
+        onCommentSubmitted={handleCommentSubmitted}
+      />
     </section>
   )
 }

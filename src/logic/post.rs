@@ -39,8 +39,12 @@ pub async fn get_user_posts(
     .map_err(map_db_err)
 }
 
-pub async fn get_post(post_id: &Uuid, db: &Pool<Postgres>) -> Result<Option<PostPub>, LogicErr> {
-  PostPub::fetch_post(post_id, db).await.map_err(map_db_err)
+pub async fn get_post(
+  post_id: &Uuid,
+  user_id: &Option<Uuid>,
+  db: &Pool<Postgres>,
+) -> Result<Option<PostPub>, LogicErr> {
+  PostPub::fetch_post(post_id, user_id, db).await.map_err(map_db_err)
 }
 
 pub async fn get_user_posts_count(handle: &str, db: &Pool<Postgres>) -> Result<i64, LogicErr> {
@@ -58,9 +62,7 @@ pub async fn get_global_posts_count(db: &Pool<Postgres>) -> Result<i64, LogicErr
 }
 
 pub async fn create_post(db: &Pool<Postgres>, req: &NewPostRequest, user_id: &Uuid) -> Result<Uuid, LogicErr> {
-  let parser = pulldown_cmark::Parser::new(&req.content_md);
-  let mut content_html = String::new();
-  pulldown_cmark::html::push_html(&mut content_html, parser);
+  let content_html = markdown::to_html(&req.content_md);
 
   Post::create_post(user_id, &req.content_md, &content_html, &req.visibility, db)
     .await

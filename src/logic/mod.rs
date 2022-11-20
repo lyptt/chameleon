@@ -1,5 +1,6 @@
 use std::{error::Error, fmt::Display};
 
+pub mod comment;
 pub mod follow;
 pub mod like;
 pub mod post;

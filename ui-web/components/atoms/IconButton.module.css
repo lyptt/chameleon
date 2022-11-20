@@ -18,5 +18,14 @@
 }
 
 .button.like.active {
+  color: rgb(247, 191, 38);
+}
+
+.button.loveIsInTheAir.like.active {
   color: rgb(255, 64, 0);
+}
+
+.button.small {
+  width: 14px;
+  height: 14px;
 }
