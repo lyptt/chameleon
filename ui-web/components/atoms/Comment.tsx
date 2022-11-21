@@ -42,7 +42,7 @@ export default function Comment({
       <Link
         href={`/users/${comment.user_fediverse_id}`}
         onClick={onProfileLinkClicked}
-        className={cx('chameleon-comment__avatar-image')}
+        className={cx('chameleon-link', 'chameleon-comment__avatar-image')}
       >
         <img
           src={comment.user_avatar_url || transparentPixelUri}
@@ -53,7 +53,7 @@ export default function Comment({
         <Link
           href={`/users/${comment.user_fediverse_id}`}
           onClick={onProfileLinkClicked}
-          className={cx('chameleon-comment__profile-link')}
+          className={cx('chameleon-link', 'chameleon-comment__profile-link')}
         >
           {comment.user_handle}
         </Link>
