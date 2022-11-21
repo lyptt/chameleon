@@ -1,13 +1,45 @@
 import { ButtonHTMLAttributes } from 'react'
 import cx from 'classnames'
 
+export interface IButtonProps extends ButtonHTMLAttributes<any> {
+  bold?: boolean
+  href?: string
+}
+
 export default function Button({
   className,
   children,
+  bold,
+  href,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: IButtonProps) {
+  if (!!href) {
+    return (
+      <a
+        href={href}
+        className={cx(
+          'chameleon-button',
+          { 'chameleon-button--bold': bold },
+          className
+        )}
+        draggable={false}
+        {...props}
+      >
+        {children}
+      </a>
+    )
+  }
+
   return (
-    <button className={cx('chameleon-button', className)} {...props}>
+    <button
+      className={cx(
+        'chameleon-button',
+        { 'chameleon-button--bold': bold },
+        className
+      )}
+      draggable={false}
+      {...props}
+    >
       {children}
     </button>
   )

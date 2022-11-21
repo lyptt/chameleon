@@ -17,6 +17,7 @@ import { ProfileProvider } from '@/components/organisms/ProfileContext'
 import MobileNav from '@/components/molecules/MobileNav'
 import { PostProvider } from '../organisms/PostContext'
 import { ThemeContext, ThemeProvider } from '../organisms/ThemeContext'
+import { useRouter } from 'next/router'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
@@ -37,6 +38,11 @@ export default function MainLayout({
   children,
   theme,
 }: MainLayoutProps) {
+  const { route } = useRouter()
+
+  const isBuiltInRoute =
+    route.startsWith('/_') || route === '/404' || route === '/error'
+
   const [authContext] = useState(
     defaultAuthContext ?? buildAuthContext(getDocumentCookie())
   )
@@ -59,9 +65,38 @@ export default function MainLayout({
             <PostProvider>
               <DefaultActionsDelegator />
               <main className={cx('chameleon-main', theme)}>
-                <Nav className={cx('chameleon-main-nav')} />
-                <MobileNav className={cx('chameleon-main-mobile-nav')} />
-                {childrenWithClassname}
+                {isBuiltInRoute && (
+                  <>
+                    <div
+                      className={cx('chameleon-main__spacer-left')}
+                      aria-hidden="true"
+                    ></div>
+                    <div className={cx('chameleon-main-side-nav')} />
+                    {childrenWithClassname}
+                    <div className={cx('chameleon-main-nav')} />
+                    <div className={cx('chameleon-main-mobile-nav')} />
+                    <div
+                      className={cx('chameleon-main__spacer-right')}
+                      aria-hidden="true"
+                    ></div>
+                  </>
+                )}
+                {!isBuiltInRoute && (
+                  <>
+                    <div
+                      className={cx('chameleon-main__spacer-left')}
+                      aria-hidden="true"
+                    ></div>
+                    <div className={cx('chameleon-main-side-nav')} />
+                    {childrenWithClassname}
+                    <Nav className={cx('chameleon-main-nav')} />
+                    <MobileNav className={cx('chameleon-main-mobile-nav')} />
+                    <div
+                      className={cx('chameleon-main__spacer-right')}
+                      aria-hidden="true"
+                    ></div>
+                  </>
+                )}
               </main>
             </PostProvider>
           </FeedProvider>

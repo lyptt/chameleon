@@ -1,0 +1,86 @@
+.#{$theme-class} {
+  .chameleon-nav__title-link {
+    text-decoration: none;
+  }
+
+  .chameleon-nav__title {
+    color: transparent;
+    width: 168px;
+    height: 52px;
+    background-size: contain;
+    background-repeat: no-repeat;
+
+    @media (prefers-color-scheme: light) {
+      background-image: url('/images/logo-light.svg');
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background-image: url('/images/logo-dark.svg');
+    }
+  }
+
+  .chameleon-nav__separator {
+    appearance: none;
+    border: none;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-dark;
+    }
+  }
+
+  .chameleon-nav__item {
+    list-style-type: none;
+    position: relative;
+  }
+
+  .chameleon-nav__item::before {
+    content: '\200B';
+    display: inline;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .chameleon-nav__link {
+    text-decoration: none;
+    font-size: 1rem;
+    line-height: 1;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-black-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-black-dark;
+    }
+  }
+
+  .chameleon-nav__link--active {
+    font-weight: 500;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark;
+    }
+  }
+
+  .chameleon-nav__login-cta {
+    font-size: 0.8rem;
+    opacity: 0.85;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-black-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-black-dark;
+    }
+  }
+}

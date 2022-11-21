@@ -3,7 +3,12 @@
 }
 
 html,
-body {
+body,
+#__next {
   padding: 0;
   margin: 0;
+  min-height: 100vh;
+  display: flex;
+  width: 100%;
+  background: white;
 }

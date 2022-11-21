@@ -1,0 +1,56 @@
+.chameleon-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.chameleon-nav__title {
+  user-select: none;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 24px;
+  line-height: 1;
+  display: block;
+}
+
+.chameleon-nav__separator {
+  width: 100%;
+  height: 0.5px;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 0.5px;
+}
+
+.chameleon-nav__list {
+  margin: 0;
+  padding: 0;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  user-select: none;
+}
+
+.chameleon-nav__link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.chameleon-nav__link-icon {
+  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+}
+
+.chameleon-nav__login-cta {
+  margin: 0;
+  padding: 0;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.chameleon-nav__login-button {
+  margin-bottom: 10px;
+}

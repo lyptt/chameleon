@@ -1,5 +1,76 @@
 .chameleon-main {
-  display: grid; 
-  grid-template-columns: 275px 1fr 275px; 
-  gap: 0px 20px; 
+  flex: 1;
+  width: 100%;
+}
+
+@include mq($from: tablet, $until: desktop) {
+  .chameleon-main {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    min-height: 100vh;
+    padding-top: 20px;
+  }
+
+  .chameleon-main-mobile-nav {
+    display: none;
+  }
+
+  .chameleon-main-nav {
+    width: 275px;
+  }
+
+  .chameleon-main__content {
+    flex: 1;
+  }
+
+  .chameleon-main-side-nav {
+    display: none;
+  }
+}
+
+@include mq($until: desktop) {
+  .chameleon-main__spacer-left,
+  .chameleon-main__spacer-right {
+    display: none;
+  }
+}
+
+@include mq($from: desktop) {
+  .chameleon-main {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    min-height: 100vh;
+    padding-top: 20px;
+  }
+
+  .chameleon-main-mobile-nav {
+    display: none;
+  }
+
+  .chameleon-main__spacer-left {
+    margin-left: auto;
+  }
+
+  .chameleon-main__spacer-right {
+    margin-right: auto;
+  }
+
+  .chameleon-main-nav {
+    width: 275px;
+  }
+
+  .chameleon-main-nav {
+    width: 275px;
+  }
+
+  .chameleon-main__content {
+    flex: 1;
+    max-width: 600px;
+  }
+
+  .chameleon-main-side-nav {
+    width: 275px;
+  }
 }
