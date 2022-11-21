@@ -1,3 +1,122 @@
 .chameleon-post {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+
+  @include mq($until: desktop) {
+    border-bottom: 1px solid;
+  }
+
+  @include mq($from: desktop) {
+    border: 1px solid;
+  }
+}
+
+.chameleon-post__masthead {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.chameleon-post__avatar {
+  user-select: none;
+}
+
+.chameleon-post__avatar,
+.chameleon-post__avatar-image {
+  width: 44px;
+  height: 44px;
+}
+
+.chameleon-post__profile-name {
+  margin-right: auto;
+}
+
+.chameleon-post__masthead-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  user-select: none;
+}
+
+.chameleon-post__masthead-post-details {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.chameleon-post__masthead-post-details-visibility,
+.chameleon-post__masthead-post-details-visibility-image {
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+}
+
+.chameleon-post__image-content {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.chameleon-post__body {
+  margin: 20px;
+  margin-bottom: 5px;
+  user-select: none;
+}
+
+.chameleon-post__action-bar {
+  padding: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chameleon-post__comments {
+  height: 32px;
+}
+
+.chameleon-post__boost {
+  height: 34px;
+}
+
+.chameleon-post__like {
+  height: 30px;
+}
+
+.chameleon-post__save {
+  height: 30px;
+}
+
+.chameleon-post__share {
+  height: 24px;
+}
+
+.chameleon-post__options {
+  width: 30px;
+}
+
+.chameleon-post__comments,
+.chameleon-post__boost,
+.chameleon-post__like,
+.chameleon-post__save,
+.chameleon-post__share,
+.chameleon-post__options {
+  .chameleon-post__action-icon {
+    width: 34px;
+  }
+}
+
+.chameleon-post__action-icon {
+  width: 100%;
+  height: 100%;
 }

@@ -184,8 +184,8 @@ export default function PostModal({
                       active={post.liked}
                       onClick={handlePostLiked}
                     />
-                    <IconButton icon={IconButtonIcon.Message} />
-                    <IconButton icon={IconButtonIcon.Share} />
+                    <IconButton icon={IconButtonIcon.Reply} />
+                    <IconButton icon={IconButtonIcon.Boost} />
                     <IconButton
                       className="chameleon-modal-post__save"
                       icon={IconButtonIcon.Save}

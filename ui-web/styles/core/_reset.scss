@@ -10,5 +10,12 @@ body,
   min-height: 100vh;
   display: flex;
   width: 100%;
-  background: white;
+
+  @media (prefers-color-scheme: light) {
+    background: white;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background: black;
+  }
 }

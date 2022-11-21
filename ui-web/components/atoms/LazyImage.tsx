@@ -14,6 +14,7 @@ export interface ILazyImageProps
     HTMLImageElement
   > {
   blurhash?: string | null
+  contentClassName?: string
 }
 
 export function LazyImage({
@@ -21,6 +22,7 @@ export function LazyImage({
   blurhash,
   style,
   className,
+  contentClassName,
   alt,
   ...rest
 }: ILazyImageProps) {
@@ -45,6 +47,7 @@ export function LazyImage({
       })}
     >
       <img
+        className={cx('chameleon-image__content', contentClassName)}
         ref={ref}
         alt={alt}
         {...rest}

@@ -15,7 +15,8 @@ import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
 import { IPost } from '@/core/api'
 import { postActionLoadPost, usePost } from '@/components/organisms/PostContext'
-import PostModal from '@/components/molecules/PostModal'
+import StatusBar from '@/components/molecules/StatusBar'
+import { IoHome } from 'react-icons/io5'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -105,32 +106,6 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
     )
   }
 
-  const handleCommentSubmitted = (
-    post: IPost,
-    comment: string,
-    skipWebRequest?: boolean
-  ) => {
-    if (skipWebRequest) {
-      feedActionAddPostSoftComment(
-        comment,
-        post.post_id,
-        session?.access_token,
-        dispatch
-      )
-    } else {
-      feedActionAddPostComment(
-        comment,
-        post.post_id,
-        session?.access_token,
-        dispatch
-      )
-    }
-  }
-
-  const handlePostExpanded = (post: IPost) => {
-    postActionLoadPost(post.post_id, session?.access_token, postDispatch)
-  }
-
   return (
     <section className={cx('chameleon-page-home', className)}>
       <Head>
@@ -141,39 +116,35 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="chameleon-feed">
-        {(!loading || feed.length > 0) &&
-          feed &&
-          feed.map((post) => (
-            <PostCard
-              key={post.post_id}
-              className="chameleon-feed__post"
-              post={post}
-              handlePostLiked={handlePostLiked}
-              handleCommentSubmitted={handleCommentSubmitted}
-              handlePostExpanded={handlePostExpanded}
-            />
-          ))}
-        {submitting && (
-          <Progress
-            className="chameleon-home__progress"
-            value={submittingImageProgress}
-            max={1}
+      <StatusBar className="chameleon-page-home__status-bar">
+        <IoHome />
+        <span>Home</span>
+      </StatusBar>
+      {(!loading || feed.length > 0) &&
+        feed &&
+        feed.map((post) => (
+          <PostCard
+            key={post.post_id}
+            className="chameleon-feed__post"
+            post={post}
+            handlePostLiked={handlePostLiked}
           />
-        )}
-        {feed.length > 0 && !noMorePages && !loadingFailed && (
-          <ActivityIndicator className="chameleon-home__indicator" />
-        )}
-        {loadingFailed && (
-          <p className="chameleon-home__indicator">
-            We had trouble fetching more posts, please try again later.
-          </p>
-        )}
-      </div>
-      <PostModal
-        onPostLiked={handlePostLiked}
-        onCommentSubmitted={handleCommentSubmitted}
-      />
+        ))}
+      {submitting && (
+        <Progress
+          className="chameleon-home__progress"
+          value={submittingImageProgress}
+          max={1}
+        />
+      )}
+      {feed.length > 0 && !noMorePages && !loadingFailed && (
+        <ActivityIndicator className="chameleon-home__indicator" />
+      )}
+      {loadingFailed && (
+        <p className="chameleon-home__indicator">
+          We had trouble fetching more posts, please try again later.
+        </p>
+      )}
     </section>
   )
 }

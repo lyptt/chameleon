@@ -6,19 +6,40 @@ import IconButton, { IconButtonIcon } from '@/components/atoms/IconButton'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
+import dayjsLocalizedFormat from 'dayjs/plugin/localizedFormat'
 import { LazyImage } from '@/components/atoms/LazyImage'
-import PlainButton from '@/components/quarks/PlainButton'
-import { KeyboardEvent, useState } from 'react'
+import { IoEarth } from 'react-icons/io5'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
+dayjs.extend(dayjsLocalizedFormat)
+
+const localeObject = {
+  relativeTime: {
+    // relative time format strings, keep %s %d as the same
+    future: 'in %s', // e.g. in 2 hours, %s been replaced with 2hours
+    past: '%s ago',
+    s: 's',
+    m: 'min',
+    mm: '%dm',
+    h: 'h',
+    hh: '%dh',
+    d: 'd',
+    dd: '%dd',
+    M: 'm',
+    MM: '%dm',
+    y: 'y',
+    yy: '%dy',
+  },
+}
+
+dayjs.locale('en-mini', localeObject)
+dayjs.locale('en')
 
 export interface IPostCardProps {
   className?: string
   post: IPost
   handlePostLiked?: (post: IPost) => void
-  handleCommentSubmitted?: (post: IPost, comment: string) => void
-  handlePostExpanded?: (post: IPost) => void
 }
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
@@ -27,26 +48,15 @@ export default function PostCard({
   className,
   post,
   handlePostLiked,
-  handleCommentSubmitted,
-  handlePostExpanded,
 }: IPostCardProps) {
-  const [comment, setComment] = useState('')
-
-  const handleKeyUp = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      if (!comment.length) {
-        return
-      }
-
-      event.preventDefault()
-      handleCommentSubmitted?.(post, comment)
-      setComment('')
-    } else {
-      setComment((event.target as any).value || '')
-    }
+  let relativeDate = ''
+  if (dayjs.utc(post.created_at).isBefore(dayjs.utc().subtract(3, 'days'))) {
+    relativeDate = dayjs.utc(post.created_at).local().format('L')
+  } else {
+    relativeDate = dayjs()
+      .locale('en-mini')
+      .to(dayjs.utc(post.created_at).local(), true)
   }
-
-  const handlePostClicked = () => handleCommentSubmitted?.(post, comment)
 
   return (
     <article className={cx('chameleon-post', className)}>
@@ -60,80 +70,82 @@ export default function PostCard({
             src={post.user_avatar_url || transparentPixelUri}
             alt={post.user_handle}
           />
-          <div className="chameleon-post__avatar-name">{post.user_handle}</div>
         </Link>
+        <div className="chameleon-post__masthead-details">
+          <Link
+            href={`/users/${post.user_handle}`}
+            className="chameleon-post__profile-name"
+          >
+            {post.user_handle}
+          </Link>
+          <div className="chameleon-post__profile-handle">
+            {post.user_fediverse_id}
+          </div>
+        </div>
+        <div className="chameleon-post__masthead-post-details">
+          <div className="chameleon-post__masthead-post-details-visibility">
+            <IoEarth className="chameleon-post__masthead-post-details-visibility-image" />
+          </div>
+          <div className="chameleon-post__masthead-post-details-date">
+            {relativeDate}
+          </div>
+        </div>
       </div>
-      <LazyImage
-        className="chameleon-post__content"
-        blurhash={post.content_blurhash}
-        srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
-        src={`${Config.cdn}/${post.content_image_uri_medium}`}
-      />
+      <Link className="chameleon-post__image-link" href={post.uri}>
+        <LazyImage
+          className="chameleon-post__image"
+          contentClassName="chameleon-post__image-content"
+          blurhash={post.content_blurhash}
+          srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
+          src={`${Config.cdn}/${post.content_image_uri_medium}`}
+        />
+      </Link>
+      {post.content_html.trim().length > 0 && (
+        <Link
+          className="chameleon-post__body"
+          dangerouslySetInnerHTML={{ __html: post.content_html }}
+          href={post.uri}
+        />
+      )}
       <div className="chameleon-post__action-bar">
-        <div className="chameleon-post__tools">
-          <IconButton
-            icon={IconButtonIcon.Like}
-            active={post.liked}
-            onClick={() => handlePostLiked?.(post)}
-          />
-          <IconButton icon={IconButtonIcon.Message} />
-          <IconButton icon={IconButtonIcon.Share} />
-          <IconButton
-            className="chameleon-post__save"
-            icon={IconButtonIcon.Save}
-          />
-        </div>
-        <p className="chameleon-post__stats">
-          {post.likes === 0 && (
-            <>
-              <span className="chameleon-post__stats--thin-text">
-                Be the first to
-              </span>{' '}
-              <a
-                href=""
-                className="chameleon-post__stats--cta"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handlePostLiked?.(post)
-                }}
-              >
-                like this
-              </a>
-            </>
+        <IconButton
+          className="chameleon-post__comments"
+          contentClassName="chameleon-post__action-icon"
+          icon={IconButtonIcon.Reply}
+        >
+          {post.comments > 0 && (
+            <span className="chameleon-post__comment-count">
+              {post.comments}+
+            </span>
           )}
-          {post.likes === 1 && '1 like'}
-          {post.likes > 1 && `${post.likes} likes`}
-        </p>
-        {post.comments > 0 && (
-          <button
-            className="chameleon-post__comments"
-            onClick={() => handlePostExpanded?.(post)}
-          >
-            {post.comments === 1 && <>View comments</>}
-            {post.comments > 1 && <>View all {post.comments} comments</>}
-          </button>
-        )}
-        <p className="chameleon-post__date">
-          {dayjs.utc(post.created_at).fromNow()}
-        </p>
-        <div className="chameleon-post__comment-bar">
-          <input
-            id={`post-comment-${post.post_id}`}
-            className="chameleon-post__comment-bar-field"
-            placeholder="Add a comment..."
-            onKeyUp={handleKeyUp}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          <PlainButton
-            brand
-            className="chameleon-post__comment-bar-post-button"
-            onClick={handlePostClicked}
-            disabled={!comment.length}
-          >
-            Post!
-          </PlainButton>
-        </div>
+        </IconButton>
+        <IconButton
+          className="chameleon-post__boost"
+          contentClassName="chameleon-post__action-icon"
+          icon={IconButtonIcon.Boost}
+        />
+        <IconButton
+          className="chameleon-post__like"
+          contentClassName="chameleon-post__action-icon"
+          icon={IconButtonIcon.Like}
+          active={post.liked}
+          onClick={() => handlePostLiked?.(post)}
+        />
+        <IconButton
+          className="chameleon-post__save"
+          contentClassName="chameleon-post__action-icon"
+          icon={IconButtonIcon.Save}
+        />
+        <IconButton
+          className="chameleon-post__share"
+          contentClassName="chameleon-post__action-icon"
+          icon={IconButtonIcon.Share}
+        />
+        <IconButton
+          className="chameleon-post__options"
+          contentClassName="chameleon-post__action-icon"
+          icon={IconButtonIcon.OptionsHorizontal}
+        />
       </div>
     </article>
   )

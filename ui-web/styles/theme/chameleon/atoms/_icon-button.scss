@@ -5,4 +5,16 @@
     border: none;
     cursor: pointer;
   }
+
+  .chameleon-icon-button--like.chameleon-icon-button--active {
+    .chameleon-icon-button__content {
+      color: rgb(255, 187, 0);
+    }
+  }
+
+  .chameleon-icon-button--like.chameleon-icon-button--love-is-in-the-air.chameleon-icon-button--active {
+    .chameleon-icon-button__content {
+      color: rgb(255, 68, 0);
+    }
+  }
 }

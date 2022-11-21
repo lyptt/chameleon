@@ -1,0 +1,44 @@
+.#{$theme-class} {
+  .chameleon-status-bar {
+    font-size: 1rem;
+    font-weight: 400;
+
+    @include mq($from: desktop) {
+      border-radius: 4px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: white;
+      color: black;
+
+      @include mq($until: desktop) {
+        border-color: $brand-faded-light;
+      }
+
+      @include mq($from: desktop) {
+        box-shadow: 0px 2px 4px 0px rgba(198, 198, 198, 0.5);
+        border-color: $brand-light;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+      color: white;
+
+      @include mq($until: desktop) {
+        border-color: $brand-extra-faded-dark;
+      }
+
+      @include mq($from: desktop) {
+        border: none;
+      }
+    }
+
+    @include mq($until: desktop) {
+      border-radius: 0;
+      border-top: none;
+      border-right: none;
+      border-left: none;
+    }
+  }
+}

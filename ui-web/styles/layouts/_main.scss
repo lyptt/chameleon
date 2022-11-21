@@ -7,7 +7,7 @@
   .chameleon-main {
     display: flex;
     flex-direction: row;
-    gap: 20px;
+    gap: 0;
     min-height: 100vh;
     padding-top: 55px;
   }
@@ -22,6 +22,11 @@
 
   .chameleon-main-nav {
     width: 54px;
+    position: sticky;
+    top: 55px;
+    right: 0;
+    bottom: 0;
+    height: calc(100vh - 55px);
   }
 
   .chameleon-main__content {
@@ -37,7 +42,7 @@
   .chameleon-main {
     display: flex;
     flex-direction: row;
-    gap: 20px;
+    gap: 0;
     min-height: 100vh;
     padding-top: 55px;
   }
@@ -52,6 +57,11 @@
 
   .chameleon-main-nav {
     width: 200px;
+    position: sticky;
+    top: 55px;
+    right: 0;
+    bottom: 0;
+    height: calc(100vh - 55px);
   }
 
   .chameleon-main__content {
@@ -93,10 +103,20 @@
 
   .chameleon-main-nav {
     width: 275px;
+    position: sticky;
+    top: 20px;
+    right: 0;
+    bottom: 0;
+    height: calc(100vh - 20px);
   }
 
   .chameleon-main-side-nav {
     width: 275px;
+    position: sticky;
+    top: 20px;
+    left: 0;
+    bottom: 0;
+    height: calc(100vh - 20px);
   }
 
   .chameleon-main__content {

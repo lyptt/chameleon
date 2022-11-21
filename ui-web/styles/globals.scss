@@ -7,6 +7,7 @@
 @import 'quarks/button';
 @import 'quarks/plain-button';
 @import 'quarks/link';
+@import 'quarks/lazy-image';
 @import 'atoms/search-field';
 @import 'atoms/icon-button';
 @import 'atoms/user-profile-card';
@@ -14,4 +15,6 @@
 @import 'molecules/mobile-nav';
 @import 'molecules/toolbox';
 @import 'molecules/post-card';
+@import 'molecules/status-bar';
 @import 'layouts/main';
+@import 'pages/home';
