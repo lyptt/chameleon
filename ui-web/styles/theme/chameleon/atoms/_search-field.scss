@@ -28,12 +28,20 @@
       border: 1px solid $brand-faded-alt-light;
       background: $brand-faded-light;
       color: $brand-dark-light;
+
+      &::placeholder {
+        color: $brand-dark-light;
+      }
     }
 
     @media (prefers-color-scheme: dark) {
       border: none;
       background: $brand-faded-dark;
       color: $brand-dark-dark;
+
+      &::placeholder {
+        color: $brand-dark-dark;
+      }
     }
   }
 
