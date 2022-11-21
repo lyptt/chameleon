@@ -1,4 +1,17 @@
 .#{$theme-class} {
+  @include mq($until: desktop) {
+    .chameleon-nav {
+      @media (prefers-color-scheme: light) {
+        background: $brand-extra-faded-light;
+        border-left-color: $brand-faded-light;
+      }
+      @media (prefers-color-scheme: dark) {
+        background: $brand-extra-faded-dark;
+        border-left-color: $brand-faded-dark;
+      }
+    }
+  }
+
   .chameleon-nav__title-link {
     text-decoration: none;
   }
@@ -29,6 +42,15 @@
 
     @media (prefers-color-scheme: dark) {
       background: $brand-dark;
+    }
+
+    @include mq($until: desktop) {
+      @media (prefers-color-scheme: light) {
+        background: $brand-faded-light;
+      }
+      @media (prefers-color-scheme: dark) {
+        background: $brand-faded-dark;
+      }
     }
   }
 

@@ -45,7 +45,7 @@ function NavItem({
       >
         {active && <ActiveIcon className={cx('chameleon-nav__link-icon')} />}{' '}
         {!active && <InactiveIcon className={cx('chameleon-nav__link-icon')} />}{' '}
-        <span>{title}</span>
+        <span className="chameleon-nav__link-text">{title}</span>
       </Link>
     </li>
   )
@@ -79,7 +79,10 @@ export default function Nav({ className }: INavProps) {
         <Link className="chameleon-nav__title-link" href="/">
           <h1 className="chameleon-nav__title">Chameleon</h1>
         </Link>
-        <hr className="chameleon-nav__separator" aria-hidden="true" />
+        <hr
+          className="chameleon-nav__separator chameleon-nav__link-separator"
+          aria-hidden="true"
+        />
         <ul className="chameleon-nav__list" role="list">
           <NavItem
             active={route === '/'}
@@ -122,7 +125,7 @@ export default function Nav({ className }: INavProps) {
         {!session && (
           <>
             <p className="chameleon-nav__login-cta">
-              Sign in to follow profiles or hashtags, favourite, share and reply
+              Sign in to follow profiles or hashtags, favorite, share and reply
               to posts, or interact from your account on a different server.
             </p>
             <Button

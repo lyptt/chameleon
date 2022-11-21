@@ -23,6 +23,8 @@ import {
 } from '@/components/organisms/FeedContext'
 import NewPostModal from './NewPostModal'
 import UserButton from '../atoms/UserButton'
+import Button from '../quarks/Button'
+import PlainButton from '../quarks/PlainButton'
 
 interface INavItemProps {
   active?: boolean
@@ -79,54 +81,27 @@ export default function MobileNav({
   return (
     <>
       <nav className={cx('chameleon-mobile-nav', className)}>
-        <ul className={cx('chameleon-mobile-nav__list')} role="list">
-          <MobileNavItem
-            active={route === '/'}
-            title="Home"
-            href="/"
-            inactiveIcon={IoHomeOutline}
-            activeIcon={IoHome}
-          />
-          <MobileNavItem
-            active={route === '/search'}
-            title="Search"
-            href="/search"
-            inactiveIcon={IoSearchOutline}
-            activeIcon={IoSearch}
-          />
-          <MobileNavItem
-            active={route === '/explore'}
-            title="Explore"
-            href="/explore"
-            inactiveIcon={IoCompassOutline}
-            activeIcon={IoCompass}
-          />
-          <MobileNavItem
-            active={route === '/messages'}
-            title="Messages"
-            href="/messages"
-            inactiveIcon={IoPaperPlaneOutline}
-            activeIcon={IoPaperPlane}
-          />
-          <MobileNavItem
-            active={route === '/notifications'}
-            title="Notifications"
-            href="/notifications"
-            inactiveIcon={IoHeartOutline}
-            activeIcon={IoHeart}
-          />
-          <li>
-            <button
-              className="chameleon-mobile_nav__link"
-              onClick={handleModalOpen}
+        <Link className="chameleon-mobile-nav__title-link" href="/">
+          <h1 className="chameleon-mobile-nav__title">Chameleon</h1>
+        </Link>
+        {!session && (
+          <>
+            <Button
+              href="/api/oauth/authorize"
+              className="chameleon-mobile-nav__login-button"
+              bold
             >
-              <IoAddCircleOutline />
-            </button>
-          </li>
-          <li>
-            <UserButton active={route === '/profile'} />
-          </li>
-        </ul>
+              Sign in
+            </Button>
+            <PlainButton
+              href="/api/oauth/authorize"
+              className="chameleon-mobile__register-button"
+              brand
+            >
+              Create account
+            </PlainButton>
+          </>
+        )}
       </nav>
 
       <NewPostModal

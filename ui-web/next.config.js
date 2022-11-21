@@ -4,7 +4,7 @@ const nextConfig = {
   swcMinify: true,
   sassOptions: {
     additionalData: !!process.env.SHOW_BREAKPOINTS
-      ? `$mq-show-breakpoints: (mobile, tablet, desktop, wide);`
+      ? `$mq-show-breakpoints: (mobileMini, mobile, tablet, desktop, wide);`
       : '',
   },
 }
