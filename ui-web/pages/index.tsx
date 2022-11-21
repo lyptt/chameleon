@@ -141,13 +141,13 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className={cx('chameleon-feed')}>
+      <div className="chameleon-feed">
         {(!loading || feed.length > 0) &&
           feed &&
           feed.map((post) => (
             <PostCard
               key={post.post_id}
-              className={cx('chameleon-feed__post')}
+              className="chameleon-feed__post"
               post={post}
               handlePostLiked={handlePostLiked}
               handleCommentSubmitted={handleCommentSubmitted}
@@ -156,16 +156,16 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
           ))}
         {submitting && (
           <Progress
-            className={cx('chameleon-home__progress')}
+            className="chameleon-home__progress"
             value={submittingImageProgress}
             max={1}
           />
         )}
         {feed.length > 0 && !noMorePages && !loadingFailed && (
-          <ActivityIndicator className={cx('chameleon-home__indicator')} />
+          <ActivityIndicator className="chameleon-home__indicator" />
         )}
         {loadingFailed && (
-          <p className={cx('chameleon-home__indicator')}>
+          <p className="chameleon-home__indicator">
             We had trouble fetching more posts, please try again later.
           </p>
         )}

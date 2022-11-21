@@ -130,7 +130,7 @@ export default function PostModal({
         <div {...props}>
           <>
             {contentEl}{' '}
-            <div className={cx('chameleon-modal-post__close')}>
+            <div className="chameleon-modal-post__close">
               <IconButton icon={IconButtonIcon.Close} title="Close" />
             </div>
           </>
@@ -139,35 +139,35 @@ export default function PostModal({
       contentLabel="View Post"
     >
       <ScrollLock>
-        <div className={cx('chameleon-modal-post__content')}>
+        <div className="chameleon-modal-post__content">
           {post && (
             <LazyImage
-              className={cx('chameleon-modal-post__image')}
+              className="chameleon-modal-post__image"
               srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
               src={`${Config.cdn}/${post.content_image_uri_medium}`}
             />
           )}
-          {!post && <div className={cx('chameleon-modal-post__image')}></div>}
-          <div className={cx('chameleon-modal-post__details')}>
+          {!post && <div className="chameleon-modal-post__image"></div>}
+          <div className="chameleon-modal-post__details">
             {!!post && (
               <>
-                <div className={cx('chameleon-modal-post__masthead')}>
+                <div className="chameleon-modal-post__masthead">
                   <Link
                     href={`/users/${post.user_fediverse_id}`}
                     onClick={handleClose}
-                    className={cx('chameleon-modal-post__avatar')}
+                    className="chameleon-modal-post__avatar"
                   >
                     <img
-                      className={cx('chameleon-modal-post__avatar-image')}
+                      className="chameleon-modal-post__avatar-image"
                       src={post.user_avatar_url || transparentPixelUri}
                       alt={post.user_handle}
                     />
-                    <div className={cx('chameleon-modal-post__avatar-name')}>
+                    <div className="chameleon-modal-post__avatar-name">
                       {post.user_handle}
                     </div>
                   </Link>
                 </div>
-                <div className={cx('chameleon-modal-post__comments')}>
+                <div className="chameleon-modal-post__comments">
                   {comments.map((comment) => (
                     <Comment
                       key={comment.comment_id}
@@ -177,8 +177,8 @@ export default function PostModal({
                     />
                   ))}
                 </div>
-                <div className={cx('chameleon-modal-post__action-bar')}>
-                  <div className={cx('chameleon-modal-post__tools')}>
+                <div className="chameleon-modal-post__action-bar">
+                  <div className="chameleon-modal-post__tools">
                     <IconButton
                       icon={IconButtonIcon.Like}
                       active={post.liked}
@@ -187,11 +187,11 @@ export default function PostModal({
                     <IconButton icon={IconButtonIcon.Message} />
                     <IconButton icon={IconButtonIcon.Share} />
                     <IconButton
-                      className={cx('chameleon-modal-post__save')}
+                      className="chameleon-modal-post__save"
                       icon={IconButtonIcon.Save}
                     />
                   </div>
-                  <p className={cx('chameleon-modal-post__stats')}>
+                  <p className="chameleon-modal-post__stats">
                     {post.likes === 0 && (
                       <>
                         <span
@@ -203,7 +203,7 @@ export default function PostModal({
                         </span>{' '}
                         <a
                           href=""
-                          className={cx('chameleon-modal-post__stats--cta')}
+                          className="chameleon-modal-post__stats--cta"
                           onClick={(e) => {
                             e.preventDefault()
                             handlePostLiked()
@@ -216,13 +216,13 @@ export default function PostModal({
                     {post.likes === 1 && '1 like'}
                     {post.likes > 1 && `${post.likes} likes`}
                   </p>
-                  <p className={cx('chameleon-modal-post__date')}>
+                  <p className="chameleon-modal-post__date">
                     {dayjs.utc(post.created_at).fromNow()}
                   </p>
-                  <div className={cx('chameleon-modal-post__comment-bar')}>
+                  <div className="chameleon-modal-post__comment-bar">
                     <input
                       id={`post-comment-${post.post_id}`}
-                      className={cx('chameleon-modal-post__comment-bar-field')}
+                      className="chameleon-modal-post__comment-bar-field"
                       placeholder="Add a comment..."
                       onKeyUp={handleKeyUp}
                       value={comment}

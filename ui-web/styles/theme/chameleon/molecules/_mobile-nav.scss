@@ -2,8 +2,9 @@
   .chameleon-mobile-nav {
     @media (prefers-color-scheme: light) {
       background: $brand-extra-faded-light;
-      border-bottom-color: $brand-faded-light;
+      border-bottom-color: $brand-light;
     }
+
     @media (prefers-color-scheme: dark) {
       background: $brand-extra-faded-dark;
       border-bottom-color: $brand-faded-dark;

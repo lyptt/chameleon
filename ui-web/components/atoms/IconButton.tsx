@@ -11,6 +11,7 @@ import {
   IoClose,
   IoStarOutline,
   IoStar,
+  IoEllipsisVertical,
 } from 'react-icons/io5'
 import dayjs from 'dayjs'
 
@@ -20,10 +21,12 @@ export enum IconButtonIcon {
   Share,
   Save,
   Close,
+  Options,
 }
 
 export interface IIconButtonProps {
   className?: string
+  contentClassName?: string
   href?: string
   onClick?: () => void
   icon: IconButtonIcon
@@ -44,11 +47,14 @@ function determineStyleClassName(icon: IconButtonIcon): string {
       return 'chameleon-icon-button--save'
     case IconButtonIcon.Close:
       return 'chameleon-icon-button--close'
+    case IconButtonIcon.Options:
+      return 'chameleon-icon-button--options'
   }
 }
 
 export default function IconButton({
   className,
+  contentClassName,
   onClick,
   icon,
   title,
@@ -74,20 +80,65 @@ export default function IconButton({
       onClick={onClick}
     >
       {!active && icon === IconButtonIcon.Like && isLoveDay && (
-        <IoHeartOutline />
+        <IoHeartOutline
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
       )}
-      {active && icon === IconButtonIcon.Like && isLoveDay && <IoHeart />}
+      {active && icon === IconButtonIcon.Like && isLoveDay && (
+        <IoHeart
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
       {!active && icon === IconButtonIcon.Like && !isLoveDay && (
-        <IoStarOutline />
+        <IoStarOutline
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
       )}
-      {active && icon === IconButtonIcon.Like && !isLoveDay && <IoStar />}
-      {!active && icon === IconButtonIcon.Message && <IoChatbubbleOutline />}
-      {active && icon === IconButtonIcon.Message && <IoChatbubble />}
-      {!active && icon === IconButtonIcon.Share && <IoPaperPlaneOutline />}
-      {active && icon === IconButtonIcon.Share && <IoPaperPlane />}
-      {!active && icon === IconButtonIcon.Save && <IoBookmarkOutline />}
-      {active && icon === IconButtonIcon.Save && <IoBookmark />}
-      {icon === IconButtonIcon.Close && <IoClose />}
+      {active && icon === IconButtonIcon.Like && !isLoveDay && (
+        <IoStar
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {!active && icon === IconButtonIcon.Message && (
+        <IoChatbubbleOutline
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {active && icon === IconButtonIcon.Message && (
+        <IoChatbubble
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {!active && icon === IconButtonIcon.Share && (
+        <IoPaperPlaneOutline
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {active && icon === IconButtonIcon.Share && (
+        <IoPaperPlane
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {!active && icon === IconButtonIcon.Save && (
+        <IoBookmarkOutline
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {active && icon === IconButtonIcon.Save && (
+        <IoBookmark
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Close && (
+        <IoClose
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Options && (
+        <IoEllipsisVertical
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
     </button>
   )
 }

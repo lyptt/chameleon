@@ -3,28 +3,14 @@ import cx from 'classnames'
 import { INewPost, AccessType } from '@/core/api'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import {
-  IoHomeOutline,
-  IoHome,
-  IoCompass,
-  IoCompassOutline,
-  IoHeart,
-  IoHeartOutline,
-  IoPaperPlane,
-  IoPaperPlaneOutline,
-  IoSearch,
-  IoSearchOutline,
-  IoAddCircleOutline,
-} from 'react-icons/io5'
 import { useAuth } from '@/components/organisms/AuthContext'
 import {
   useFeed,
   feedActionSubmitPost,
 } from '@/components/organisms/FeedContext'
 import NewPostModal from './NewPostModal'
-import UserButton from '../atoms/UserButton'
-import Button from '../quarks/Button'
-import PlainButton from '../quarks/PlainButton'
+import Button from '@/components/quarks/Button'
+import PlainButton from '@/components/quarks/PlainButton'
 
 interface INavItemProps {
   active?: boolean
@@ -43,11 +29,7 @@ function MobileNavItem({
 }: INavItemProps) {
   return (
     <li>
-      <Link
-        href={href}
-        className={cx('chameleon-mobile-nav__link')}
-        title={title}
-      >
+      <Link href={href} className="chameleon-mobile-nav__link" title={title}>
         {active && <ActiveIcon />} {!active && <InactiveIcon />}{' '}
       </Link>
     </li>

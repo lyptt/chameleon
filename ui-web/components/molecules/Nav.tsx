@@ -10,11 +10,14 @@ import {
 } from 'react-icons/io5'
 import NewPostModal from './NewPostModal'
 import { useState } from 'react'
-import { feedActionSubmitPost, useFeed } from '../organisms/FeedContext'
-import { useAuth } from '../organisms/AuthContext'
+import {
+  feedActionSubmitPost,
+  useFeed,
+} from '@/components/organisms/FeedContext'
+import { useAuth } from '@/components/organisms/AuthContext'
 import { AccessType, INewPost } from '@/core/api'
-import Button from '../quarks/Button'
-import PlainButton from '../quarks/PlainButton'
+import Button from '@/components/quarks/Button'
+import PlainButton from '@/components/quarks/PlainButton'
 
 export interface INavProps {
   className?: string
@@ -36,15 +39,15 @@ function NavItem({
   activeIcon: ActiveIcon,
 }: INavItemProps) {
   return (
-    <li className={cx('chameleon-nav__item')}>
+    <li className="chameleon-nav__item">
       <Link
         href={href}
         className={cx('chameleon-nav__link', {
           'chameleon-nav__link--active': active,
         })}
       >
-        {active && <ActiveIcon className={cx('chameleon-nav__link-icon')} />}{' '}
-        {!active && <InactiveIcon className={cx('chameleon-nav__link-icon')} />}{' '}
+        {active && <ActiveIcon className="chameleon-nav__link-icon" />}{' '}
+        {!active && <InactiveIcon className="chameleon-nav__link-icon" />}{' '}
         <span className="chameleon-nav__link-text">{title}</span>
       </Link>
     </li>

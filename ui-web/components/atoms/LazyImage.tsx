@@ -52,7 +52,7 @@ export function LazyImage({
         onLoad={handleOnLoad}
       />
       <div
-        className={cx('chameleon-image__overlay')}
+        className="chameleon-image__overlay"
         style={{
           backgroundImage: `url("${blurUrl}")`,
           backgroundSize:

@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
 import dayjsLocalizedFormat from 'dayjs/plugin/localizedFormat'
-import PlainButton from '../quarks/PlainButton'
+import PlainButton from '@/components/quarks/PlainButton'
 import IconButton, { IconButtonIcon } from './IconButton'
 
 dayjs.extend(dayjsUtc)

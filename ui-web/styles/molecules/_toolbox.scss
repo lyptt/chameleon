@@ -1,0 +1,28 @@
+.chameleon-toolbox {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 20px);
+  overflow-y: scroll;
+}
+
+.chameleon-toolbox__search-field {
+  margin-bottom: 20px;
+}
+
+.chameleon-toolbox__server-info-block {
+  margin: 0;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.chameleon-toolbox__server-info-spacer {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.chameleon-toolbox__server-info-block--trailing {
+  margin-bottom: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}

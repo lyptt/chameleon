@@ -4,6 +4,8 @@ import cx from 'classnames'
 export interface IButtonProps extends ButtonHTMLAttributes<any> {
   bold?: boolean
   href?: string
+  target?: string
+  rel?: string
 }
 
 export default function Button({

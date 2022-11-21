@@ -3,7 +3,7 @@
     .chameleon-nav {
       @media (prefers-color-scheme: light) {
         background: $brand-extra-faded-light;
-        border-left-color: $brand-faded-light;
+        border-left-color: $brand-light;
       }
       @media (prefers-color-scheme: dark) {
         background: $brand-extra-faded-dark;

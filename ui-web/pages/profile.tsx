@@ -3,7 +3,7 @@ import cx from 'classnames'
 
 export default function ProfilePage() {
   return (
-    <section className={cx('chameleon-page-profile')}>
+    <section className="chameleon-page-profile">
       <Head>
         <title>Chameleon</title>
         <meta

@@ -15,9 +15,13 @@ import DefaultActionsDelegator from '@/components/organisms/DefaultActionsDelega
 import { FeedProvider } from '@/components/organisms/FeedContext'
 import { ProfileProvider } from '@/components/organisms/ProfileContext'
 import MobileNav from '@/components/molecules/MobileNav'
-import { PostProvider } from '../organisms/PostContext'
-import { ThemeContext, ThemeProvider } from '../organisms/ThemeContext'
+import { PostProvider } from '@/components/organisms/PostContext'
+import {
+  ThemeContext,
+  ThemeProvider,
+} from '@/components/organisms/ThemeContext'
 import { useRouter } from 'next/router'
+import Toolbox from '@/components/molecules/Toolbox'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
@@ -68,15 +72,15 @@ export default function MainLayout({
                 {isBuiltInRoute && (
                   <>
                     <div
-                      className={cx('chameleon-main__spacer-left')}
+                      className="chameleon-main__spacer-left"
                       aria-hidden="true"
                     ></div>
-                    <div className={cx('chameleon-main-side-nav')} />
+                    <div className="chameleon-main-side-nav" />
                     {childrenWithClassname}
-                    <div className={cx('chameleon-main-nav')} />
-                    <div className={cx('chameleon-main-mobile-nav')} />
+                    <div className="chameleon-main-nav" />
+                    <div className="chameleon-main-mobile-nav" />
                     <div
-                      className={cx('chameleon-main__spacer-right')}
+                      className="chameleon-main__spacer-right"
                       aria-hidden="true"
                     ></div>
                   </>
@@ -84,15 +88,15 @@ export default function MainLayout({
                 {!isBuiltInRoute && (
                   <>
                     <div
-                      className={cx('chameleon-main__spacer-left')}
+                      className="chameleon-main__spacer-left"
                       aria-hidden="true"
                     ></div>
-                    <div className={cx('chameleon-main-side-nav')} />
+                    <Toolbox className="chameleon-main-side-nav" />
                     {childrenWithClassname}
-                    <Nav className={cx('chameleon-main-nav')} />
-                    <MobileNav className={cx('chameleon-main-mobile-nav')} />
+                    <Nav className="chameleon-main-nav" />
+                    <MobileNav className="chameleon-main-mobile-nav" />
                     <div
-                      className={cx('chameleon-main__spacer-right')}
+                      className="chameleon-main__spacer-right"
                       aria-hidden="true"
                     ></div>
                   </>
