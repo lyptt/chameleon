@@ -84,64 +84,62 @@ export default function Toolbox({
           </>
         )}
       </div>
-      {!session && (
-        <>
-          <span
-            className="chameleon-toolbox__server-info-spacer"
-            aria-hidden="true"
-          />
-          <p className="chameleon-toolbox__server-info-block chameleon-toolbox__server-info-block--trailing">
-            {fqdnSimplified}{' '}
-            <Link
-              className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
-              href="/about"
-            >
-              About
-            </Link>
-            ·
-            <Link
-              className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
-              href="/users"
-            >
-              Profiles directory
-            </Link>
-            ·
-            <Link
-              className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
-              href="/policies/privacy-policy"
-            >
-              Privacy policy
-            </Link>
-          </p>
-          <p className="chameleon-toolbox__server-info-block chameleon-toolbox__server-info-block--trailing">
-            <span className="chameleon-toolbox__server-info-block--bold">
-              Chameleon:
-            </span>
-            <Link
-              className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
-              href="/apps/mobile"
-            >
-              Get the app
-            </Link>
-            ·
-            <Link
-              className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
-              href="/help/keyboard-shortcuts"
-            >
-              Keyboard shortcuts
-            </Link>
-            ·
-            <Link
-              className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
-              href="https://github.com/lyptt/chameleon"
-              target="blank"
-              rel="noreferrer noopener"
-            >
-              View source code
-            </Link>
-          </p>
-        </>
-      )}
+      <div className="chameleon-toolbox__footer">
+        <span
+          className="chameleon-toolbox__server-info-spacer"
+          aria-hidden="true"
+        />
+        <p className="chameleon-toolbox__server-info-block chameleon-toolbox__server-info-block--trailing">
+          {fqdnSimplified}{' '}
+          <Link
+            className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
+            href="/about"
+          >
+            About
+          </Link>
+          ·
+          <Link
+            className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
+            href="/users"
+          >
+            Profiles directory
+          </Link>
+          ·
+          <Link
+            className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
+            href="/policies/privacy-policy"
+          >
+            Privacy policy
+          </Link>
+        </p>
+        <p className="chameleon-toolbox__server-info-block chameleon-toolbox__server-info-block--trailing">
+          <span className="chameleon-toolbox__server-info-block--bold">
+            Chameleon:
+          </span>
+          <Link
+            className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
+            href="/apps/mobile"
+          >
+            Get the app
+          </Link>
+          ·
+          <Link
+            className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
+            href="/help/keyboard-shortcuts"
+          >
+            Keyboard shortcuts
+          </Link>
+          ·
+          <Link
+            className="chameleon-toolbox__server-info-block-link chameleon-toolbox__server-info-block--trailing-link"
+            href="https://github.com/lyptt/chameleon"
+            target="blank"
+            rel="noreferrer noopener"
+          >
+            View source code
+          </Link>
+        </p>
+      </div>
     </aside>
   )
 }

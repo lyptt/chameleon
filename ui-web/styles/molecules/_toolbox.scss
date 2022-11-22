@@ -4,6 +4,12 @@
   overflow-y: scroll;
 }
 
+.chameleon-toolbox__footer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .chameleon-toolbox__search-field {
   margin-bottom: 20px;
 }
@@ -11,7 +17,7 @@
 .chameleon-toolbox__server-info-block {
   margin: 0;
   padding: 0;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .chameleon-toolbox__server-info-spacer {
@@ -20,12 +26,12 @@
 }
 
 .chameleon-toolbox__server-info-block--trailing {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
 
 .chameleon-toolbox__user-profile {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
