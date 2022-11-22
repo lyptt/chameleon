@@ -8,14 +8,7 @@ import {
   IoNotifications,
   IoPeople,
 } from 'react-icons/io5'
-import NewPostModal from './NewPostModal'
-import { useState } from 'react'
-import {
-  feedActionSubmitPost,
-  useFeed,
-} from '@/components/organisms/FeedContext'
 import { useAuth } from '@/components/organisms/AuthContext'
-import { AccessType, INewPost } from '@/core/api'
 import Button from '@/components/quarks/Button'
 import PlainButton from '@/components/quarks/PlainButton'
 
@@ -57,24 +50,6 @@ function NavItem({
 export default function Nav({ className }: INavProps) {
   const { route } = useRouter()
   const { session } = useAuth()
-  const { dispatch } = useFeed()
-  const [newPostModalOpen, setNewPostModalOpen] = useState(false)
-
-  const handleModalOpen = () => setNewPostModalOpen(true)
-  const handleModalClose = () => setNewPostModalOpen(false)
-  const handleModalSubmit = (
-    visibility: string,
-    file: File,
-    contentMd: string
-  ) => {
-    setNewPostModalOpen(false)
-    const newPost: INewPost = {
-      content_md: contentMd,
-      visibility: visibility as AccessType,
-    }
-
-    feedActionSubmitPost(newPost, file, session?.access_token, dispatch)
-  }
 
   return (
     <>
@@ -148,11 +123,6 @@ export default function Nav({ className }: INavProps) {
           </>
         )}
       </nav>
-      <NewPostModal
-        open={newPostModalOpen}
-        onCancel={handleModalClose}
-        onSubmit={handleModalSubmit}
-      />
     </>
   )
 }

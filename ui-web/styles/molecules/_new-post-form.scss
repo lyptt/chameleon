@@ -1,0 +1,47 @@
+.chameleon-form-new-post {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid;
+  margin-bottom: 14px;
+  min-height: 200px;
+}
+
+.chameleon-form-new-post__upload {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.chameleon-form-new-post__preview {
+  width: 100%;
+  object-fit: cover;
+  object-position: center center;
+  aspect-ratio: 1/1;
+}
+
+.chameleon-form-new-post__preview-options {
+  display: flex;
+  flex-direction: column;
+}
+
+.chameleon-form-new-post__caption-field {
+  border: none;
+  padding: 10px;
+  height: 120px;
+  font-size: 0.9rem;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.chameleon-form-new-post__button-stack {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.chameleon-form-new-post__left-action,
+.chameleon-form-new-post__right-action {
+  flex: 0.5;
+}

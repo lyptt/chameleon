@@ -40,12 +40,7 @@ export function LazyImage({
   }, [])
 
   return (
-    <div
-      className={cx('chameleon-image', className, {
-        'chameleon-image--loaded': imgLoaded,
-        'chameleon-image--faded': imgFaded,
-      })}
-    >
+    <div className={cx('chameleon-image', className)}>
       <img
         className={cx('chameleon-image__content', contentClassName)}
         ref={ref}
@@ -55,7 +50,10 @@ export function LazyImage({
         onLoad={handleOnLoad}
       />
       <div
-        className="chameleon-image__overlay"
+        className={cx('chameleon-image__overlay', {
+          'chameleon-image__overlay--loaded': imgLoaded,
+          'chameleon-image__overlay--faded': imgFaded,
+        })}
         style={{
           backgroundImage: `url("${blurUrl}")`,
           backgroundSize:

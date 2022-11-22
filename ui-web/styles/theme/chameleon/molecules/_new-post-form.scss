@@ -1,0 +1,48 @@
+.#{$theme-class} {
+  .chameleon-form-new-post {
+    user-select: none;
+    border-radius: 4px;
+
+    @media (prefers-color-scheme: light) {
+      background: white;
+      border-color: $brand-faded-alt-light;
+      color: black;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-extra-faded-dark;
+      border: none;
+      color: white;
+    }
+  }
+
+  .chameleon-form-new-post__preview {
+    background: black;
+
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+  }
+
+  .chameleon-form-new-post__caption-field {
+    font-family: $font-family;
+    resize: none;
+    outline: none;
+
+    @media (prefers-color-scheme: light) {
+      background: white;
+      border-color: $brand-faded-light;
+      color: black;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+      border: none;
+      color: white;
+    }
+  }
+
+  .chameleon-form-new-post__left-action,
+  .chameleon-form-new-post__right-action {
+    outline: none;
+  }
+}
