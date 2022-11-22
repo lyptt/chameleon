@@ -12,6 +12,7 @@ import Button from '@/components/quarks/Button'
 import Dropzone from 'react-dropzone'
 import PlainButton from '@/components/quarks/PlainButton'
 import { useProfile } from '@/components/organisms/ProfileContext'
+import IconButton, { IconButtonIcon } from '../atoms/IconButton'
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
 
@@ -117,13 +118,28 @@ export default function NewPostModal({
               ref={previewRef}
               draggable={false}
             />
-            <div className="chameleon-form-new-post__preview-options">
+            <div className="chameleon-form-new-post__preview-content">
               <textarea
                 className="chameleon-form-new-post__caption-field"
                 placeholder="Write a caption..."
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
               />
+            </div>
+            <div className="chameleon-form-new-post__preview-options">
+              <IconButton
+                className="chameleon-form-new-post__visibility-button"
+                contentClassName="chameleon-form-new-post__visibility-button-icon"
+                icon={IconButtonIcon.VisibilityFederated}
+              />
+              <span
+                className={cx('chameleon-form-new-post__character-count', {
+                  'chameleon-form-new-post__character-count--empty':
+                    !!caption && caption.length > 500,
+                })}
+              >
+                {500 - (caption?.length || 0)}
+              </span>
             </div>
           </>
         )}
@@ -142,6 +158,7 @@ export default function NewPostModal({
             bold
             className="chameleon-form-new-post__right-action"
             onClick={handleSubmit}
+            disabled={!!caption && caption.length > 500}
           >
             {visibility === 'public_local' || visibility === 'public_federated'
               ? 'Publish!'

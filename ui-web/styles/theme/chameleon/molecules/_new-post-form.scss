@@ -29,20 +29,44 @@
     outline: none;
 
     @media (prefers-color-scheme: light) {
-      background: white;
+      background: transparent;
       border-color: $brand-faded-light;
       color: black;
     }
 
     @media (prefers-color-scheme: dark) {
-      background: $brand-faded-dark;
+      background: transparent;
       border: none;
-      color: white;
+      color: black;
     }
   }
 
   .chameleon-form-new-post__left-action,
   .chameleon-form-new-post__right-action {
     outline: none;
+  }
+
+  .chameleon-form-new-post__preview-content {
+    background: white;
+  }
+
+  .chameleon-form-new-post__preview-options {
+    @media (prefers-color-scheme: light) {
+      background: $brand-faded-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-light;
+    }
+  }
+
+  .chameleon-form-new-post__character-count {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $brand-black-light;
+  }
+
+  .chameleon-form-new-post__character-count--empty {
+    color: rgb(255, 77, 0);
   }
 }

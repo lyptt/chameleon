@@ -1,12 +1,14 @@
-.chameleon-image__overlay {
-  opacity: 1;
-  transition: opacity 0.16s ease;
-}
+.#{$theme-class} {
+  .chameleon-image__overlay {
+    opacity: 1;
+    transition: opacity 0.16s ease;
+  }
 
-.chameleon-image__overlay--loaded {
-  opacity: 0;
-}
+  .chameleon-image__overlay--loaded {
+    opacity: 0;
+  }
 
-.chameleon-image__overlay--faded {
-  display: none;
+  .chameleon-image__overlay--faded {
+    display: none;
+  }
 }

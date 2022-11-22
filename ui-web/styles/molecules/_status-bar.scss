@@ -1,4 +1,8 @@
 .chameleon-status-bar {
+  z-index: 100;
+}
+
+.chameleon-status-bar__content {
   display: flex;
   height: 50px;
   align-items: center;
@@ -7,5 +11,15 @@
   padding-right: 20px;
   gap: 8px;
   user-select: none;
-  z-index: 100;
+  z-index: 10;
+  position: relative;
+}
+
+.chameleon-status-bar__backdrop {
+  position: absolute;
+  top: -20px;
+  left: -2px;
+  right: -2px;
+  height: 24px;
+  pointer-events: none;
 }

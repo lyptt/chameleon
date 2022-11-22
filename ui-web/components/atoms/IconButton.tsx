@@ -9,6 +9,7 @@ import {
   IoRepeat,
   IoEllipsisHorizontal,
   IoShareSocial,
+  IoEarth,
 } from 'react-icons/io5'
 import dayjs from 'dayjs'
 
@@ -21,6 +22,7 @@ export enum IconButtonIcon {
   Close,
   Options,
   OptionsHorizontal,
+  VisibilityFederated,
 }
 
 export interface IIconButtonProps {
@@ -52,6 +54,8 @@ function determineStyleClassName(icon: IconButtonIcon): string {
     case IconButtonIcon.Options:
     case IconButtonIcon.OptionsHorizontal:
       return 'chameleon-icon-button--options'
+    case IconButtonIcon.VisibilityFederated:
+      return 'chameleon-icon-button--visibility-federated'
   }
 }
 
@@ -125,6 +129,11 @@ export default function IconButton({
       )}
       {icon === IconButtonIcon.OptionsHorizontal && (
         <IoEllipsisHorizontal
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.VisibilityFederated && (
+        <IoEarth
           className={cx('chameleon-icon-button__content', contentClassName)}
         />
       )}

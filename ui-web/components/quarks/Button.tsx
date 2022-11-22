@@ -13,6 +13,7 @@ export default function Button({
   children,
   bold,
   href,
+  disabled,
   ...props
 }: IButtonProps) {
   if (!!href) {
@@ -22,6 +23,8 @@ export default function Button({
         className={cx(
           'chameleon-button',
           { 'chameleon-button--bold': bold },
+          { 'chameleon-button--enabled': !disabled },
+          { 'chameleon-button--disabled': disabled },
           className
         )}
         draggable={false}
@@ -37,9 +40,12 @@ export default function Button({
       className={cx(
         'chameleon-button',
         { 'chameleon-button--bold': bold },
+        { 'chameleon-button--enabled': !disabled },
+        { 'chameleon-button--disabled': disabled },
         className
       )}
       draggable={false}
+      disabled={disabled}
       {...props}
     >
       {children}

@@ -16,6 +16,7 @@
     font-size: 0.8rem;
     font-weight: 400;
     user-select: none;
+    transition: all 0.15s ease;
 
     @media (prefers-color-scheme: light) {
       background: linear-gradient(
@@ -31,6 +32,25 @@
         rgb(14, 131, 82) 0%,
         rgb(9, 172, 104) 100%
       );
+    }
+  }
+
+  .chameleon-button--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .chameleon-button--enabled {
+    &:active {
+      background: rgb(41, 140, 99);
+
+      &::before {
+        box-shadow: 0px 1px 0px 0px rgba(0, 0, 0, 0.5) inset;
+      }
+
+      &::after {
+        display: none;
+      }
     }
 
     &::before {
@@ -57,18 +77,6 @@
       border-bottom-right-radius: 4px;
       box-shadow: 0px -1px 0px 0px rgba(0, 0, 0, 0.5) inset;
       pointer-events: none;
-    }
-
-    &:active {
-      background: rgb(41, 140, 99);
-
-      &::before {
-        box-shadow: 0px 1px 0px 0px rgba(0, 0, 0, 0.5) inset;
-      }
-
-      &::after {
-        display: none;
-      }
     }
   }
 
