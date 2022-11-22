@@ -20,6 +20,7 @@ export default function Toolbox({
 }: HTMLProps<HTMLDivElement>) {
   const { session } = useAuth()
   const { dispatch } = useFeed()
+  const { route } = useRouter()
   const handleModalSubmit = (
     visibility: string,
     file: File,
@@ -77,10 +78,12 @@ export default function Toolbox({
         {!!session && (
           <>
             <UserProfileCard className="chameleon-toolbox__user-profile" />
-            <NewPostForm
-              className="chameleon-toolbox__new-post-form"
-              onSubmit={handleModalSubmit}
-            />
+            {route === '/' && (
+              <NewPostForm
+                className="chameleon-toolbox__new-post-form"
+                onSubmit={handleModalSubmit}
+              />
+            )}
           </>
         )}
       </div>

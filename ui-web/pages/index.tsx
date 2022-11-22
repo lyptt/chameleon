@@ -1,7 +1,5 @@
 import PostCard from '@/components/molecules/PostCard'
 import {
-  feedActionAddPostComment,
-  feedActionAddPostSoftComment,
   feedActionLoadFeed,
   feedActionUpdatePostLiked,
   useFeed,
@@ -14,7 +12,6 @@ import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
 import { IPost } from '@/core/api'
-import { postActionLoadPost, usePost } from '@/components/organisms/PostContext'
 import StatusBar from '@/components/molecules/StatusBar'
 import { IoHome } from 'react-icons/io5'
 
@@ -40,10 +37,11 @@ function determineScrollPercentage() {
   return scrollTop / trackLength
 }
 
-export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
+export default function HomePage({
+  className,
+}: HTMLAttributes<HTMLDivElement>) {
   const { session } = useAuth()
   const { state, dispatch } = useFeed()
-  const { dispatch: postDispatch } = usePost()
   const {
     loading,
     loadingFailed,

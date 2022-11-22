@@ -183,7 +183,13 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
       return {
         ...state,
         loading: true,
+        comments: [],
         loadingFailed: false,
+        initialCommentLoadComplete: false,
+        commentsLoading: false,
+        commentsLoadingFailed: false,
+        page: 0,
+        noMorePages: false,
       }
     case PostActionType.REFRESH_POST_ERROR:
       return {

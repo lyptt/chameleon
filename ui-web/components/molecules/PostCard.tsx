@@ -39,6 +39,7 @@ dayjs.locale('en')
 export interface IPostCardProps {
   className?: string
   post: IPost
+  linkToPost?: boolean
   handlePostLiked?: (post: IPost) => void
 }
 
@@ -47,6 +48,7 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 export default function PostCard({
   className,
   post,
+  linkToPost = true,
   handlePostLiked,
 }: IPostCardProps) {
   let relativeDate = ''
@@ -57,6 +59,21 @@ export default function PostCard({
       .locale('en-mini')
       .to(dayjs.utc(post.created_at).local(), true)
   }
+
+  const postUri =
+    post.uri.indexOf('http') === 0
+      ? post.uri
+      : `${Config.fqdn}/users/${post.user_handle}/${post.uri}`
+
+  const image = (
+    <LazyImage
+      className="chameleon-post__image"
+      contentClassName="chameleon-post__image-content"
+      blurhash={post.content_blurhash}
+      srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
+      src={`${Config.cdn}/${post.content_image_uri_medium}`}
+    />
+  )
 
   return (
     <article className={cx('chameleon-post', className)}>
@@ -91,21 +108,28 @@ export default function PostCard({
           </div>
         </div>
       </div>
-      <Link className="chameleon-post__image-link" href={post.uri}>
-        <LazyImage
-          className="chameleon-post__image"
-          contentClassName="chameleon-post__image-content"
-          blurhash={post.content_blurhash}
-          srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
-          src={`${Config.cdn}/${post.content_image_uri_medium}`}
-        />
-      </Link>
+      {linkToPost && (
+        <Link className="chameleon-post__image-link" href={postUri}>
+          {image}
+        </Link>
+      )}
+      {!linkToPost && image}
       {post.content_html.trim().length > 0 && (
-        <Link
-          className="chameleon-post__body"
-          dangerouslySetInnerHTML={{ __html: post.content_html }}
-          href={post.uri}
-        />
+        <>
+          {linkToPost && (
+            <Link
+              className="chameleon-post__body"
+              dangerouslySetInnerHTML={{ __html: post.content_html }}
+              href={postUri}
+            />
+          )}
+          {!linkToPost && (
+            <div
+              className="chameleon-post__body"
+              dangerouslySetInnerHTML={{ __html: post.content_html }}
+            />
+          )}
+        </>
       )}
       <div className="chameleon-post__action-bar">
         <IconButton

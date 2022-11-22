@@ -1,80 +1,136 @@
-import { HTMLAttributes } from 'react'
+import { IComment, IPost } from '@/core/api'
+import Config from '@/core/config'
 import cx from 'classnames'
-import { IComment } from '@/core/api'
 import Link from 'next/link'
+import IconButton, { IconButtonIcon } from '@/components/atoms/IconButton'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
 import dayjsLocalizedFormat from 'dayjs/plugin/localizedFormat'
-import PlainButton from '@/components/quarks/PlainButton'
-import IconButton, { IconButtonIcon } from './IconButton'
+import { LazyImage } from '@/components/atoms/LazyImage'
+import { IoEarth } from 'react-icons/io5'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
 dayjs.extend(dayjsLocalizedFormat)
 
-const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
-
-export interface ICommentProps extends HTMLAttributes<HTMLDivElement> {
-  comment: IComment
-  onProfileLinkClicked?: () => void
-  onCommentLikeClicked?: (comment: IComment) => void
+const localeObject = {
+  relativeTime: {
+    // relative time format strings, keep %s %d as the same
+    future: 'in %s', // e.g. in 2 hours, %s been replaced with 2hours
+    past: '%s ago',
+    s: 's',
+    m: 'min',
+    mm: '%dm',
+    h: 'h',
+    hh: '%dh',
+    d: 'd',
+    dd: '%dd',
+    M: 'm',
+    MM: '%dm',
+    y: 'y',
+    yy: '%dy',
+  },
 }
 
+dayjs.locale('en-mini', localeObject)
+dayjs.locale('en')
+
+export interface ICommentProps {
+  className?: string
+  comment: IComment
+  handleCommentLiked?: (comment: IComment) => void
+}
+
+const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
+
 export default function Comment({
-  comment,
-  onProfileLinkClicked,
-  onCommentLikeClicked,
   className,
-  ...props
+  comment,
+  handleCommentLiked,
 }: ICommentProps) {
   let relativeDate = ''
-  if (
-    dayjs.utc(comment.created_at).isBefore(dayjs.utc().subtract(1, 'month'))
-  ) {
+  if (dayjs.utc(comment.created_at).isBefore(dayjs.utc().subtract(3, 'days'))) {
     relativeDate = dayjs.utc(comment.created_at).local().format('L')
   } else {
-    relativeDate = dayjs().to(dayjs.utc(comment.created_at).local())
+    relativeDate = dayjs()
+      .locale('en-mini')
+      .to(dayjs.utc(comment.created_at).local(), true)
   }
 
   return (
-    <div className={cx(className, 'chameleon-comment')} {...props}>
-      <Link
-        href={`/users/${comment.user_fediverse_id}`}
-        onClick={onProfileLinkClicked}
-        className={cx('chameleon-link', 'chameleon-comment__avatar-image')}
-      >
-        <img
-          src={comment.user_avatar_url || transparentPixelUri}
-          alt={comment.user_handle}
-        />
-      </Link>
-      <p className={cx(className, 'chameleon-comment__content')}>
+    <article className={cx('chameleon-comment', className)}>
+      <div className="chameleon-comment__masthead">
         <Link
           href={`/users/${comment.user_fediverse_id}`}
-          onClick={onProfileLinkClicked}
-          className={cx('chameleon-link', 'chameleon-comment__profile-link')}
+          className="chameleon-comment__avatar"
         >
-          {comment.user_handle}
+          <img
+            className="chameleon-comment__avatar-image"
+            src={comment.user_avatar_url || transparentPixelUri}
+            alt={comment.user_handle}
+          />
         </Link>
-        <span dangerouslySetInnerHTML={{ __html: comment.content_html }} />
-        <div className={cx(className, 'chameleon-comment__meta')}>
-          <span>{relativeDate}</span>
-          {comment.likes === 1 && <strong>1 like</strong>}
-          {comment.likes > 1 && <strong>{comment.likes} likes</strong>}
-          <PlainButton thin faded>
-            Reply
-          </PlainButton>
+        <div className="chameleon-comment__masthead-details">
+          <Link
+            href={`/users/${comment.user_handle}`}
+            className="chameleon-comment__profile-name"
+          >
+            {comment.user_handle}
+          </Link>
+          <div className="chameleon-comment__profile-handle">
+            {comment.user_fediverse_id}
+          </div>
         </div>
-      </p>
-      <div className={cx(className, 'chameleon-comment__actions')}>
+        <div className="chameleon-comment__masthead-comment-details">
+          <div className="chameleon-comment__masthead-comment-details-visibility">
+            <IoEarth className="chameleon-comment__masthead-comment-details-visibility-image" />
+          </div>
+          <div className="chameleon-comment__masthead-comment-details-date">
+            {relativeDate}
+          </div>
+        </div>
+      </div>
+      {comment.content_html.trim().length > 0 && (
+        <div
+          className="chameleon-comment__body"
+          dangerouslySetInnerHTML={{ __html: comment.content_html }}
+        />
+      )}
+      <div className="chameleon-comment__action-bar">
         <IconButton
+          className="chameleon-comment__comments"
+          contentClassName="chameleon-comment__action-icon"
+          icon={IconButtonIcon.Reply}
+        />
+        <IconButton
+          className="chameleon-comment__boost"
+          contentClassName="chameleon-comment__action-icon"
+          icon={IconButtonIcon.Boost}
+        />
+        <IconButton
+          className="chameleon-comment__like"
+          contentClassName="chameleon-comment__action-icon"
           icon={IconButtonIcon.Like}
           active={comment.liked}
-          small
-          onClick={() => onCommentLikeClicked?.(comment)}
+          onClick={() => handleCommentLiked?.(comment)}
+        />
+        <IconButton
+          className="chameleon-comment__save"
+          contentClassName="chameleon-comment__action-icon"
+          icon={IconButtonIcon.Save}
+        />
+        <IconButton
+          className="chameleon-comment__share"
+          contentClassName="chameleon-comment__action-icon"
+          icon={IconButtonIcon.Share}
+        />
+        <IconButton
+          className="chameleon-comment__options"
+          contentClassName="chameleon-comment__action-icon"
+          icon={IconButtonIcon.OptionsHorizontal}
         />
       </div>
-    </div>
+    </article>
   )
 }

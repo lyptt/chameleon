@@ -21,7 +21,7 @@ export interface INewPostFormProps {
   onSubmit?: (visibility: string, file: File, contentMd: string) => void
 }
 
-export default function NewPostModal({
+export default function NewPostForm({
   className,
   onSubmit,
 }: INewPostFormProps) {
