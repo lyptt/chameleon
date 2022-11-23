@@ -1,11 +1,12 @@
 .#{$theme-class} {
   .chameleon-comment {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+
     @media (prefers-color-scheme: light) {
       background: white;
       border-color: $brand-light;
-      border-top: none;
-      border-left: none;
-      border-right: none;
       box-shadow: 0px 2px 4px 0px rgba(198, 198, 198, 0.5);
     }
 
@@ -17,13 +18,10 @@
 
     @media (prefers-color-scheme: dark) {
       background: $brand-faded-dark;
+      border-color: $brand-extra-faded-dark;
 
-      @include mq($until: desktop) {
-        border-color: $brand-extra-faded-dark;
-      }
-
-      @include mq($from: desktop) {
-        border: none;
+      &:first-of-type {
+        border-top: 1px solid $brand-extra-faded-dark;
       }
     }
   }

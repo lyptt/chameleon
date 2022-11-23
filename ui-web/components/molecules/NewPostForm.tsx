@@ -1,20 +1,9 @@
 import cx from 'classnames'
-import { ChangeEvent, useCallback, useState } from 'react'
-import {
-  IoArrowBack,
-  IoCafeOutline,
-  IoEarth,
-  IoImagesOutline,
-  IoLockOpen,
-  IoPeopleOutline,
-} from 'react-icons/io5'
+import { useCallback, useState } from 'react'
 import Button from '@/components/quarks/Button'
 import Dropzone from 'react-dropzone'
 import PlainButton from '@/components/quarks/PlainButton'
-import { useProfile } from '@/components/organisms/ProfileContext'
 import IconButton, { IconButtonIcon } from '../atoms/IconButton'
-
-const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
 
 export interface INewPostFormProps {
   className?: string
@@ -25,7 +14,6 @@ export default function NewPostForm({
   className,
   onSubmit,
 }: INewPostFormProps) {
-  const { state: profileState } = useProfile()
   const [selectingFiles, setSelectingFiles] = useState(true)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [visibility, setVisibility] = useState<string | undefined>(
@@ -78,14 +66,10 @@ export default function NewPostForm({
     setSelectedFiles(acceptedFiles)
   }
 
-  const onVisibilityChanged = (e: ChangeEvent<HTMLInputElement>) => {
-    setVisibility(e.target.value)
-  }
-
   return (
     <>
       <form
-        className="chameleon-form-new-post"
+        className={cx('chameleon-form-new-post', className)}
         onSubmit={(e) => e.preventDefault()}
       >
         {selectingFiles && (

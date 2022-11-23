@@ -5,7 +5,7 @@ import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
-import { IComment } from '@/core/api'
+import { IComment, IPost } from '@/core/api'
 import StatusBar from '@/components/molecules/StatusBar'
 import { IoChevronBack } from 'react-icons/io5'
 import { useRouter } from 'next/router'
@@ -14,6 +14,8 @@ import {
   postActionLoadPost,
   postActionLoadComments,
   postActionUpdateCommentLiked,
+  postActionSelectComment,
+  postActionSelectPost,
 } from '@/components/organisms/PostContext'
 import Comment from '@/components/atoms/Comment'
 
@@ -146,6 +148,14 @@ export default function PostPage({
     )
   }
 
+  const handlePostReplied = (post: IPost) => {
+    postActionSelectPost(post, dispatch)
+  }
+
+  const handleCommentReplied = (comment: IComment) => {
+    postActionSelectComment(comment, dispatch)
+  }
+
   return (
     <section className={cx('chameleon-page-post', className)}>
       <Head>
@@ -168,6 +178,7 @@ export default function PostPage({
           })}
           post={post}
           linkToPost={false}
+          handlePostReplied={handlePostReplied}
         />
       )}
       {!commentsLoading && comments.length > 0 && (
@@ -177,6 +188,7 @@ export default function PostPage({
               key={comment.comment_id}
               comment={comment}
               handleCommentLiked={handleCommentLiked}
+              handleCommentReplied={handleCommentReplied}
             />
           ))}
         </div>

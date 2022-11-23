@@ -40,6 +40,7 @@ export interface ICommentProps {
   className?: string
   comment: IComment
   handleCommentLiked?: (comment: IComment) => void
+  handleCommentReplied?: (comment: IComment) => void
 }
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
@@ -48,6 +49,7 @@ export default function Comment({
   className,
   comment,
   handleCommentLiked,
+  handleCommentReplied,
 }: ICommentProps) {
   let relativeDate = ''
   if (dayjs.utc(comment.created_at).isBefore(dayjs.utc().subtract(3, 'days'))) {
@@ -102,6 +104,7 @@ export default function Comment({
           className="chameleon-comment__comments"
           contentClassName="chameleon-comment__action-icon"
           icon={IconButtonIcon.Reply}
+          onClick={() => handleCommentReplied?.(comment)}
         />
         <IconButton
           className="chameleon-comment__boost"

@@ -15,6 +15,7 @@ export default function PlainButton({
   faded,
   thin,
   href,
+  disabled,
   ...props
 }: IPlainButtonProps) {
   if (!!href) {
@@ -25,6 +26,8 @@ export default function PlainButton({
           'chameleon-plain-button--brand': brand,
           'chameleon-plain-button--faded': faded,
           'chameleon-plain-button--thin': thin,
+          'chameleon-button--enabled': !disabled,
+          'chameleon-button--disabled': disabled,
         })}
         draggable={false}
         {...props}
@@ -40,8 +43,11 @@ export default function PlainButton({
         'chameleon-plain-button--brand': brand,
         'chameleon-plain-button--faded': faded,
         'chameleon-plain-button--thin': thin,
+        'chameleon-plain-button--enabled': !disabled,
+        'chameleon-plain-button--disabled': disabled,
       })}
       draggable={false}
+      disabled={disabled}
       {...props}
     >
       {children}

@@ -13,15 +13,22 @@ import {
   useFeed,
 } from '@/components/organisms/FeedContext'
 import { AccessType, INewPost } from '@/core/api'
+import {
+  postActionAddPostComment,
+  postActionDeselect,
+  usePost,
+} from '../organisms/PostContext'
+import NewCommentForm from './NewCommentForm'
 
 export default function Toolbox({
   className,
   ...props
 }: HTMLProps<HTMLDivElement>) {
   const { session } = useAuth()
-  const { dispatch } = useFeed()
+  const { dispatch: feedDispatch } = useFeed()
+  const { state: postState, dispatch: postDispatch } = usePost()
   const { route } = useRouter()
-  const handleModalSubmit = (
+  const handlePostSubmit = (
     visibility: string,
     file: File,
     contentMd: string
@@ -31,8 +38,24 @@ export default function Toolbox({
       visibility: visibility as AccessType,
     }
 
-    feedActionSubmitPost(newPost, file, session?.access_token, dispatch)
+    feedActionSubmitPost(newPost, file, session?.access_token, feedDispatch)
   }
+
+  const handleCommentSubmit = (comment: string, _visibility: string) => {
+    const postId = postState.post?.post_id
+    if (!postId) {
+      return postActionDeselect(postDispatch)
+    }
+
+    postActionAddPostComment(
+      comment,
+      postId,
+      session?.access_token,
+      postDispatch
+    )
+  }
+
+  const handleCommentCancel = () => postActionDeselect(postDispatch)
 
   const fqdnUrl = new URL(Config.fqdn || 'about:blank')
   const fqdnSimplified = fqdnUrl.hostname
@@ -81,7 +104,16 @@ export default function Toolbox({
             {route === '/' && (
               <NewPostForm
                 className="chameleon-toolbox__new-post-form"
-                onSubmit={handleModalSubmit}
+                onSubmit={handlePostSubmit}
+              />
+            )}
+            {route === '/users/[userId]/[postId]' && (
+              <NewCommentForm
+                className="chameleon-toolbox__new-comment-form"
+                onSubmit={handleCommentSubmit}
+                onCancel={handleCommentCancel}
+                comment={postState.selectedComment}
+                post={postState.selectedPost}
               />
             )}
           </>

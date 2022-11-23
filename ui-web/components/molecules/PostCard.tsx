@@ -41,6 +41,7 @@ export interface IPostCardProps {
   post: IPost
   linkToPost?: boolean
   handlePostLiked?: (post: IPost) => void
+  handlePostReplied?: (post: IPost) => void
 }
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
@@ -50,6 +51,7 @@ export default function PostCard({
   post,
   linkToPost = true,
   handlePostLiked,
+  handlePostReplied,
 }: IPostCardProps) {
   let relativeDate = ''
   if (dayjs.utc(post.created_at).isBefore(dayjs.utc().subtract(3, 'days'))) {
@@ -136,6 +138,7 @@ export default function PostCard({
           className="chameleon-post__comments"
           contentClassName="chameleon-post__action-icon"
           icon={IconButtonIcon.Reply}
+          onClick={() => handlePostReplied?.(post)}
         >
           {post.comments > 0 && (
             <span className="chameleon-post__comment-count">

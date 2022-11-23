@@ -32,7 +32,14 @@
         rgb(100, 100, 100) 100%
       );
     }
+  }
 
+  .chameleon-plain-button--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .chameleon-plain-button--enabled {
     &::before {
       position: absolute;
       top: 0;
