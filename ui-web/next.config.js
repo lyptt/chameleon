@@ -7,6 +7,10 @@ const nextConfig = {
       ? `$mq-show-breakpoints: (mobileMini, mobile, tablet, desktop, wide);`
       : '',
   },
+
+  experimental: {
+    scrollRestoration: true,
+  },
 }
 
 module.exports = nextConfig

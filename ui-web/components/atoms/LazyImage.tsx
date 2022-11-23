@@ -7,6 +7,7 @@ import React, {
 import { useBlurhash } from '@/core/useBlurhash'
 import { useInView } from 'react-intersection-observer'
 import cx from 'classnames'
+import dayjs from 'dayjs'
 
 export interface ILazyImageProps
   extends DetailedHTMLProps<
@@ -30,14 +31,18 @@ export function LazyImage({
   const [imgFaded, setImgFaded] = useState(false)
   const [ref, inView] = useInView({ rootMargin: '110%' })
   const blurUrl = useBlurhash(inView && !imgFaded ? blurhash : null)
+  const [initialLoadDate] = useState(new Date())
 
   const handleOnLoad = useCallback(() => {
     setImgLoaded(true)
-
-    setTimeout(() => {
+    if (dayjs().isAfter(dayjs(initialLoadDate).add(1, 'second'))) {
+      setTimeout(() => {
+        setImgFaded(true)
+      }, 160)
+    } else {
       setImgFaded(true)
-    }, 160)
-  }, [])
+    }
+  }, [initialLoadDate])
 
   return (
     <div className={cx('chameleon-image', className)}>
