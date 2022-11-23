@@ -18,7 +18,8 @@
     "paths": {
       "@/pages/*": ["pages/*"],
       "@/components/*": ["components/*"],
-      "@/core/*": ["core/*"]
+      "@/core/*": ["core/*"],
+      "@/styles/*": ["styles/*"],
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

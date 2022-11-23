@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32px" height="33px" viewBox="0 0 32 33" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>logo-dark-mini</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Logos" transform="translate(-72.000000, -345.000000)" fill-rule="nonzero">
+            <g id="logo-dark-mini" transform="translate(72.000000, 345.000000)">
+                <g id="chameleon-svgrepo-com" transform="translate(15.428652, 16.089985) scale(-1, 1) translate(-15.428652, -16.089985) ">
+                    <path d="M19.4458488,7.57732604 C16.0875978,3.46260892 11.2052126,0.652547485 5.66594446,0.0210853445 C5.5685152,0.00680880916 5.46977524,0 5.36928767,0 C4.20953003,0 3.26909744,0.94510664 3.26909744,2.11117012 L3.26909744,8.57953882 C0.993709308,7.477976 -0.0938759406,15.3447863 0.00634169237,32.1799696 C3.29519752,32.1799696 9.49519717,32.1799696 18.6063406,32.1799696 C25.3722125,32.1799696 30.8573047,26.6648342 30.8573047,19.8621749 C30.8573047,13.3443874 25.8198191,8.01155236 19.4458488,7.57732604 Z" id="Path" fill="#6ABC9A"></path>
+                    <g id="Group" transform="translate(11.857305, 12.000000)">
+                        <circle id="Oval" fill="#34A27A" cx="4" cy="4" r="4"></circle>
+                        <circle id="Oval" fill="#333E48" cx="2.73968162" cy="2.91496382" r="1.16028944"></circle>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

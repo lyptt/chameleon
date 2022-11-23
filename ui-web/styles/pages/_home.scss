@@ -1,0 +1,21 @@
+.chameleon-page-home {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 30px;
+
+  @include mq($from: desktop) {
+    gap: 30px;
+  }
+}
+
+.chameleon-page-home__status-bar {
+  position: sticky;
+  top: 20px;
+  left: 0;
+  right: 0;
+
+  @include mq($until: desktop) {
+    top: 55px;
+  }
+}

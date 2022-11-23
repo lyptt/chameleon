@@ -1,0 +1,39 @@
+.#{$theme-class} {
+  .chameleon-button {
+    appearance: none;
+    border: none;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    position: relative;
+    cursor: pointer;
+    font-family: 'chameleonfont', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    user-select: none;
+    transition: all 0.15s ease;
+    transition-property: opacity;
+    background: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark;
+    }
+  }
+
+  .chameleon-button--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .chameleon-button--bold {
+    font-weight: 600;
+  }
+}

@@ -9,11 +9,15 @@ import {
   FeedType,
   useFeed,
 } from '@/components/organisms/FeedContext'
+import { useRouter } from 'next/router'
+import { postActionDismissPost, usePost } from './PostContext'
 
 export default function DefaultActionsDelegator() {
   const { session } = useAuth()
   const { state: profileState, dispatch: profileDispatch } = useProfile()
   const { state: feedState, dispatch: feedDispatch } = useFeed()
+  const { state: postState, dispatch: postDispatch } = usePost()
+  const { route, query } = useRouter()
 
   useEffect(() => {
     if (
@@ -43,6 +47,12 @@ export default function DefaultActionsDelegator() {
 
     feedActionLoadFeed(0, session?.access_token, feedDispatch)
   }, [session, feedState, feedDispatch])
+
+  useEffect(() => {
+    if (route !== '/users/[userId]/[postId]' && !!postState.post) {
+      postActionDismissPost(postDispatch)
+    }
+  }, [postState, postDispatch, route])
 
   return <></>
 }

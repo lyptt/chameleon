@@ -1,7 +1,5 @@
 import PostCard from '@/components/molecules/PostCard'
 import {
-  feedActionAddPostComment,
-  feedActionAddPostSoftComment,
   feedActionLoadFeed,
   feedActionUpdatePostLiked,
   useFeed,
@@ -9,14 +7,17 @@ import {
 import Progress from '@/components/quarks/Progress'
 import Head from 'next/head'
 import { HTMLAttributes, useCallback, useEffect, useState } from 'react'
-import classNames from './Home.module.css'
 import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
 import { IPost } from '@/core/api'
-import { postActionLoadPost, usePost } from '@/components/organisms/PostContext'
-import PostModal from '@/components/molecules/PostModal'
+import StatusBar from '@/components/molecules/StatusBar'
+import { IoHome } from 'react-icons/io5'
+import {
+  postActionSelectPost,
+  usePost,
+} from '@/components/organisms/PostContext'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -40,7 +41,9 @@ function determineScrollPercentage() {
   return scrollTop / trackLength
 }
 
-export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
+export default function HomePage({
+  className,
+}: HTMLAttributes<HTMLDivElement>) {
   const { session } = useAuth()
   const { state, dispatch } = useFeed()
   const { dispatch: postDispatch } = usePost()
@@ -106,36 +109,11 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
     )
   }
 
-  const handleCommentSubmitted = (
-    post: IPost,
-    comment: string,
-    skipWebRequest?: boolean
-  ) => {
-    if (skipWebRequest) {
-      feedActionAddPostSoftComment(
-        comment,
-        post.post_id,
-        session?.access_token,
-        dispatch
-      )
-    } else {
-      feedActionAddPostComment(
-        comment,
-        post.post_id,
-        session?.access_token,
-        dispatch
-      )
-    }
-  }
-
-  const handlePostExpanded = (post: IPost) => {
-    postActionLoadPost(post.post_id, session?.access_token, postDispatch)
-  }
+  const handlePostSelected = (post: IPost) => () =>
+    postActionSelectPost(post, postDispatch)
 
   return (
-    <section
-      className={cx('chameleon-page-home', classNames.container, className)}
-    >
+    <section className={cx('chameleon-page-home', className)}>
       <Head>
         <title>Chameleon</title>
         <meta
@@ -144,41 +122,36 @@ export default function Home({ className }: HTMLAttributes<HTMLDivElement>) {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className={cx('chameleon-feed', classNames.feed)}>
-        {(!loading || feed.length > 0) &&
-          feed &&
-          feed.map((post) => (
-            <PostCard
-              key={post.post_id}
-              className={cx('chameleon-feed__post', classNames.post)}
-              post={post}
-              handlePostLiked={handlePostLiked}
-              handleCommentSubmitted={handleCommentSubmitted}
-              handlePostExpanded={handlePostExpanded}
-            />
-          ))}
-        {submitting && (
-          <Progress
-            className={cx('chameleon-home__progress', classNames.progress)}
-            value={submittingImageProgress}
-            max={1}
+      <StatusBar className="chameleon-page-home__status-bar">
+        <IoHome />
+        <span>Home</span>
+      </StatusBar>
+      {(!loading || feed.length > 0) &&
+        feed &&
+        feed.map((post) => (
+          <PostCard
+            key={post.post_id}
+            className="chameleon-feed__post"
+            post={post}
+            handlePostLiked={handlePostLiked}
+            handlePostReplied={handlePostSelected(post)}
           />
-        )}
-        {feed.length > 0 && !noMorePages && !loadingFailed && (
-          <ActivityIndicator
-            className={cx('chameleon-home__indicator', classNames.indicator)}
-          />
-        )}
-        {loadingFailed && (
-          <p className={cx('chameleon-home__indicator', classNames.indicator)}>
-            We had trouble fetching more posts, please try again later.
-          </p>
-        )}
-      </div>
-      <PostModal
-        onPostLiked={handlePostLiked}
-        onCommentSubmitted={handleCommentSubmitted}
-      />
+        ))}
+      {submitting && (
+        <Progress
+          className="chameleon-home__progress"
+          value={submittingImageProgress}
+          max={1}
+        />
+      )}
+      {feed.length > 0 && !noMorePages && !loadingFailed && (
+        <ActivityIndicator className="chameleon-home__indicator" />
+      )}
+      {loadingFailed && (
+        <p className="chameleon-home__indicator">
+          We had trouble fetching more posts, please try again later.
+        </p>
+      )}
     </section>
   )
 }

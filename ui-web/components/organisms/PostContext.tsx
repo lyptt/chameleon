@@ -21,6 +21,9 @@ enum PostActionType {
   REFRESH_POST_COMMENTS_LOADED = 'REFRESH_POST_COMMENTS_LOADED',
   UPDATE_POST_LIKED = 'UPDATE_POST_LIKED',
   UPDATE_COMMENT_LIKED = 'UPDATE_COMMENT_LIKED',
+  SELECT_COMMENT = 'SELECT_COMMENT',
+  SELECT_POST = 'SELECT_POST',
+  DESELECT = 'DESELECT',
   DISMISS_POST = 'DISMISS_POST',
 }
 
@@ -31,6 +34,8 @@ interface PostAction {
   error?: any
   liked?: boolean
   commentId?: string
+  comment?: IComment
+  post?: IPost
 }
 
 export async function postActionLoadPost(
@@ -105,6 +110,24 @@ export function postActionUpdateLiked(
   })
 }
 
+export async function postActionSelectComment(
+  comment: IComment,
+  dispatch: React.Dispatch<PostAction>
+) {
+  dispatch({ type: PostActionType.SELECT_COMMENT, comment })
+}
+
+export async function postActionSelectPost(
+  post: IPost,
+  dispatch: React.Dispatch<PostAction>
+) {
+  dispatch({ type: PostActionType.SELECT_POST, post })
+}
+
+export async function postActionDeselect(dispatch: React.Dispatch<PostAction>) {
+  dispatch({ type: PostActionType.DESELECT })
+}
+
 export async function postActionAddPostComment(
   comment: string,
   postId: string,
@@ -114,6 +137,8 @@ export async function postActionAddPostComment(
   if (!authToken) {
     return
   }
+
+  dispatch({ type: PostActionType.DESELECT })
 
   try {
     await createPostComment(comment, postId, authToken)
@@ -136,14 +161,14 @@ export async function postActionUpdateCommentLiked(
 
   dispatch({
     type: PostActionType.UPDATE_COMMENT_LIKED,
-    liked: !liked,
+    liked: liked,
     commentId,
   })
 
   try {
     liked
-      ? await deletePostCommentLike(postId, commentId, authToken)
-      : await createPostCommentLike(postId, commentId, authToken)
+      ? await createPostCommentLike(postId, commentId, authToken)
+      : await deletePostCommentLike(postId, commentId, authToken)
   } catch (err) {
     console.error(err)
   }
@@ -160,6 +185,8 @@ export interface IPostState {
   page: number
   totalPages?: number
   noMorePages: boolean
+  selectedComment?: IComment
+  selectedPost?: IPost
 }
 
 const initialState: IPostState = {
@@ -171,6 +198,8 @@ const initialState: IPostState = {
   commentsLoadingFailed: false,
   page: 0,
   noMorePages: false,
+  selectedComment: undefined,
+  selectedPost: undefined,
 }
 
 export const PostContext = createContext(
@@ -183,7 +212,15 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
       return {
         ...state,
         loading: true,
+        comments: [],
         loadingFailed: false,
+        initialCommentLoadComplete: false,
+        commentsLoading: false,
+        commentsLoadingFailed: false,
+        page: 0,
+        noMorePages: false,
+        selectedComment: undefined,
+        selectedPost: undefined,
       }
     case PostActionType.REFRESH_POST_ERROR:
       return {
@@ -208,6 +245,8 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
         commentsLoadingFailed: false,
         page: 0,
         noMorePages: false,
+        selectedComment: undefined,
+        selectedPost: undefined,
       }
     case PostActionType.REFRESH_POST_COMMENTS_LOADING:
       return {
@@ -271,6 +310,22 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
 
       return { ...state, comments: newComments }
     }
+    case PostActionType.SELECT_COMMENT:
+      return {
+        ...state,
+        selectedComment: action.comment,
+      }
+    case PostActionType.SELECT_POST:
+      return {
+        ...state,
+        selectedPost: action.post,
+      }
+    case PostActionType.DESELECT:
+      return {
+        ...state,
+        selectedComment: undefined,
+        selectedPost: undefined,
+      }
     default:
       return state
   }

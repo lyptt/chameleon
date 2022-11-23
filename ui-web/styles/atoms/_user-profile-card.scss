@@ -1,0 +1,29 @@
+.chameleon-user-profile-card {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+.chameleon-user-profile-card__profile-avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.chameleon-user-profile-card__profile-image {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+}
+
+.chameleon-user-profile-card__details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 5px;
+  padding-top: 3px;
+}
+
+.chameleon-user-profile-card__options-button-content {
+  width: 30px;
+  height: 30px;
+}

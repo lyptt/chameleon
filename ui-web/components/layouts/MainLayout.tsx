@@ -14,13 +14,19 @@ import AuthContext, {
 import DefaultActionsDelegator from '@/components/organisms/DefaultActionsDelegator'
 import { FeedProvider } from '@/components/organisms/FeedContext'
 import { ProfileProvider } from '@/components/organisms/ProfileContext'
-import classNames from './MainLayout.module.css'
 import MobileNav from '@/components/molecules/MobileNav'
-import { PostProvider } from '../organisms/PostContext'
+import { PostProvider } from '@/components/organisms/PostContext'
+import {
+  ThemeContext,
+  ThemeProvider,
+} from '@/components/organisms/ThemeContext'
+import { useRouter } from 'next/router'
+import Toolbox from '@/components/molecules/Toolbox'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
   children: ReactNode
+  theme?: string
 }
 
 function getDocumentCookie() {
@@ -31,8 +37,16 @@ function getDocumentCookie() {
   return window.document.cookie
 }
 
-export default function MainLayout(props: MainLayoutProps) {
-  const { defaultAuthContext, children } = props
+export default function MainLayout({
+  defaultAuthContext,
+  children,
+  theme,
+}: MainLayoutProps) {
+  const { route } = useRouter()
+
+  const isBuiltInRoute =
+    route.startsWith('/_') || route === '/404' || route === '/error'
+
   const [authContext] = useState(
     defaultAuthContext ?? buildAuthContext(getDocumentCookie())
   )
@@ -43,29 +57,55 @@ export default function MainLayout(props: MainLayoutProps) {
     }
 
     return cloneElement(child, {
-      className: cx('chameleon-main__content', classNames.content),
+      className: cx('chameleon-main__content'),
     } as any)
   })
 
   return (
     <AuthContext.Provider value={authContext}>
-      <ProfileProvider>
-        <FeedProvider>
-          <PostProvider>
-            <DefaultActionsDelegator />
-            <main className={cx('chameleon-main', classNames.layout)}>
-              <Nav className={cx('chameleon-main-nav', classNames.nav)} />
-              <MobileNav
-                className={cx(
-                  'chameleon-main-mobile-nav',
-                  classNames.mobileNav
+      <ThemeProvider value={{ theme }}>
+        <ProfileProvider>
+          <FeedProvider>
+            <PostProvider>
+              <DefaultActionsDelegator />
+              <main className={cx('chameleon-main', theme)}>
+                {isBuiltInRoute && (
+                  <>
+                    <div
+                      className="chameleon-main__spacer-left"
+                      aria-hidden="true"
+                    ></div>
+                    <div className="chameleon-main-side-nav" />
+                    {childrenWithClassname}
+                    <div className="chameleon-main-nav" />
+                    <div className="chameleon-main-mobile-nav" />
+                    <div
+                      className="chameleon-main__spacer-right"
+                      aria-hidden="true"
+                    ></div>
+                  </>
                 )}
-              />
-              {childrenWithClassname}
-            </main>
-          </PostProvider>
-        </FeedProvider>
-      </ProfileProvider>
+                {!isBuiltInRoute && (
+                  <>
+                    <div
+                      className="chameleon-main__spacer-left"
+                      aria-hidden="true"
+                    ></div>
+                    <Toolbox className="chameleon-main-side-nav" />
+                    {childrenWithClassname}
+                    <Nav className="chameleon-main-nav" />
+                    <MobileNav className="chameleon-main-mobile-nav" />
+                    <div
+                      className="chameleon-main__spacer-right"
+                      aria-hidden="true"
+                    ></div>
+                  </>
+                )}
+              </main>
+            </PostProvider>
+          </FeedProvider>
+        </ProfileProvider>
+      </ThemeProvider>
     </AuthContext.Provider>
   )
 }

@@ -1,60 +1,73 @@
-import classNames from './IconButton.module.css'
 import cx from 'classnames'
 import {
-  IoHeartOutline,
   IoHeart,
-  IoChatbubbleOutline,
-  IoChatbubble,
-  IoPaperPlaneOutline,
-  IoPaperPlane,
-  IoBookmarkOutline,
   IoBookmark,
   IoClose,
-  IoStarOutline,
   IoStar,
+  IoEllipsisVertical,
+  IoArrowUndo,
+  IoRepeat,
+  IoEllipsisHorizontal,
+  IoShareSocial,
+  IoEarth,
 } from 'react-icons/io5'
 import dayjs from 'dayjs'
 
 export enum IconButtonIcon {
   Like,
-  Message,
-  Share,
+  Reply,
+  Boost,
   Save,
+  Share,
   Close,
+  Options,
+  OptionsHorizontal,
+  VisibilityFederated,
 }
 
 export interface IIconButtonProps {
   className?: string
+  contentClassName?: string
   href?: string
   onClick?: () => void
   icon: IconButtonIcon
   title?: string
   active?: boolean
   small?: boolean
+  children?: any
 }
 
 function determineStyleClassName(icon: IconButtonIcon): string {
   switch (icon) {
     case IconButtonIcon.Like:
-      return classNames.like
-    case IconButtonIcon.Message:
-      return classNames.message
-    case IconButtonIcon.Share:
-      return classNames.share
+      return 'chameleon-icon-button--like'
+    case IconButtonIcon.Reply:
+      return 'chameleon-icon-button--reply'
+    case IconButtonIcon.Boost:
+      return 'chameleon-icon-button--boost'
     case IconButtonIcon.Save:
-      return classNames.save
+      return 'chameleon-icon-button--save'
+    case IconButtonIcon.Share:
+      return 'chameleon-icon-button--share'
     case IconButtonIcon.Close:
-      return classNames.close
+      return 'chameleon-icon-button--close'
+    case IconButtonIcon.Options:
+    case IconButtonIcon.OptionsHorizontal:
+      return 'chameleon-icon-button--options'
+    case IconButtonIcon.VisibilityFederated:
+      return 'chameleon-icon-button--visibility-federated'
   }
 }
 
 export default function IconButton({
   className,
+  contentClassName,
   onClick,
   icon,
   title,
   active,
   small,
+  children,
 }: IIconButtonProps) {
   const date = dayjs()
   const isLoveDay = date.date() === 14 && date.month() === 1
@@ -62,33 +75,69 @@ export default function IconButton({
     <button
       className={cx(
         'chameleon-icon-button',
-        classNames.button,
+
         className,
         determineStyleClassName(icon),
         {
-          [classNames.active]: active,
-          [classNames.small]: small,
-          [classNames.loveIsInTheAir]: isLoveDay,
+          'chameleon-icon-button--active': active,
+          'chameleon-icon-button--small': small,
+          'chameleon-icon-button--love-is-in-the-air': isLoveDay,
         }
       )}
       title={title}
       onClick={onClick}
     >
-      {!active && icon === IconButtonIcon.Like && isLoveDay && (
-        <IoHeartOutline />
+      {icon === IconButtonIcon.Like && isLoveDay && (
+        <IoHeart
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
       )}
-      {active && icon === IconButtonIcon.Like && isLoveDay && <IoHeart />}
-      {!active && icon === IconButtonIcon.Like && !isLoveDay && (
-        <IoStarOutline />
+      {icon === IconButtonIcon.Like && !isLoveDay && (
+        <IoStar
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
       )}
-      {active && icon === IconButtonIcon.Like && !isLoveDay && <IoStar />}
-      {!active && icon === IconButtonIcon.Message && <IoChatbubbleOutline />}
-      {active && icon === IconButtonIcon.Message && <IoChatbubble />}
-      {!active && icon === IconButtonIcon.Share && <IoPaperPlaneOutline />}
-      {active && icon === IconButtonIcon.Share && <IoPaperPlane />}
-      {!active && icon === IconButtonIcon.Save && <IoBookmarkOutline />}
-      {active && icon === IconButtonIcon.Save && <IoBookmark />}
-      {icon === IconButtonIcon.Close && <IoClose />}
+      {icon === IconButtonIcon.Reply && (
+        <IoArrowUndo
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Boost && (
+        <IoRepeat
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Save && (
+        <IoBookmark
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Share && (
+        <IoShareSocial
+          className={cx('chameleon-icon-button__share', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Close && (
+        <IoClose
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.Options && (
+        <IoEllipsisVertical
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.OptionsHorizontal && (
+        <IoEllipsisHorizontal
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {icon === IconButtonIcon.VisibilityFederated && (
+        <IoEarth
+          className={cx('chameleon-icon-button__content', contentClassName)}
+        />
+      )}
+      {children}
     </button>
   )
 }

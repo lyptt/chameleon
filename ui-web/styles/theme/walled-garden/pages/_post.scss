@@ -1,0 +1,29 @@
+.#{$theme-class} {
+  .chameleon-page-post__post--comments-available {
+    margin-bottom: 30px;
+  }
+
+  .chameleon-page-post__comments {
+    @include mq($from: desktop) {
+      border-radius: 8px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: white;
+      border-color: $brand-faded-alt-light;
+      box-shadow: 0px 2px 28px 0px rgba(198, 198, 198, 0.5);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+
+      @include mq($until: desktop) {
+        border-color: $brand-extra-faded-dark;
+      }
+
+      @include mq($from: desktop) {
+        border: none;
+      }
+    }
+  }
+}

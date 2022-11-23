@@ -38,6 +38,7 @@
     "@types/cookie": "^0.5.1",
     "@types/lodash": "^4.14.189",
     "@types/react-modal": "^3.13.1",
+    "sass": "^1.56.1",
     "prettier": "^2.8.0"
   }
 }

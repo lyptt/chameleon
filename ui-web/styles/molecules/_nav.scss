@@ -1,0 +1,99 @@
+.chameleon-nav {
+  display: flex;
+  flex-direction: column;
+
+  @include mq($until: desktop) {
+    padding-top: 20px;
+    border-left: 0.5px solid;
+    padding-left: 0.5px;
+  }
+}
+
+.chameleon-nav__title {
+  user-select: none;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 24px;
+  line-height: 1;
+  display: block;
+}
+
+.chameleon-nav__separator {
+  width: 100%;
+  height: 0.5px;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 0.5px;
+}
+
+.chameleon-nav__list {
+  margin: 0;
+  padding: 0;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  user-select: none;
+
+  @include mq($until: desktop) {
+    margin-top: 0;
+  }
+}
+
+.chameleon-nav__link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  @include mq($until: tablet) {
+    justify-content: center;
+  }
+
+  @include mq($from: tablet, $until: desktop) {
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 10px;
+  }
+}
+
+.chameleon-nav__link-icon {
+  margin-right: 10px;
+  width: 16px;
+  height: 16px;
+
+  @include mq($until: desktop) {
+    margin: 0;
+    width: 28px;
+    height: 28px;
+    padding: 2px;
+  }
+}
+
+.chameleon-nav__login-cta {
+  margin: 0;
+  padding: 0;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.chameleon-nav__login-button {
+  margin-bottom: 10px;
+}
+
+@include mq($until: desktop) {
+  .chameleon-nav__title-link,
+  .chameleon-nav__link-separator,
+  .chameleon-nav__login-cta,
+  .chameleon-nav__login-button,
+  .chameleon-nav__register-button {
+    display: none;
+  }
+}
+
+@include mq($until: tablet) {
+  .chameleon-nav__link-text {
+    display: none;
+  }
+}

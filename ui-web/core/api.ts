@@ -282,6 +282,9 @@ export async function fetchPostComments(
   )
 
   if (response.status !== 200) {
+    if (response.status === 404) {
+      return { data: [], page, total_items: 0, total_pages: 0 }
+    }
     throw new Error('Request failed')
   }
 
