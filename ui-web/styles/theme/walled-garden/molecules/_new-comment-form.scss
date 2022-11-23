@@ -1,29 +1,20 @@
 .#{$theme-class} {
-  .chameleon-form-new-post {
+  .chameleon-form-new-comment {
     user-select: none;
-    border-radius: 4px;
+    border-radius: 8px;
 
     @media (prefers-color-scheme: light) {
-      background: white;
       border-color: $brand-faded-alt-light;
       color: black;
     }
 
     @media (prefers-color-scheme: dark) {
-      background: $brand-extra-faded-dark;
       border: none;
       color: white;
     }
   }
 
-  .chameleon-form-new-post__preview {
-    background: black;
-
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-  }
-
-  .chameleon-form-new-post__caption-field {
+  .chameleon-form-new-comment__caption-field {
     font-family: $font-family;
     resize: none;
     outline: none;
@@ -41,16 +32,18 @@
     }
   }
 
-  .chameleon-form-new-post__left-action,
-  .chameleon-form-new-post__right-action {
+  .chameleon-form-new-comment__left-action,
+  .chameleon-form-new-comment__right-action {
     outline: none;
   }
 
-  .chameleon-form-new-post__preview-content {
+  .chameleon-form-new-comment__preview-content {
     background: white;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
   }
 
-  .chameleon-form-new-post__preview-options {
+  .chameleon-form-new-comment__preview-options {
     @media (prefers-color-scheme: light) {
       background: $brand-faded-light;
     }
@@ -60,17 +53,13 @@
     }
   }
 
-  .chameleon-form-new-post__character-count {
+  .chameleon-form-new-comment__character-count {
     font-size: 0.9rem;
     font-weight: 600;
     color: $brand-black-light;
   }
 
-  .chameleon-form-new-post__character-count--empty {
+  .chameleon-form-new-comment__character-count--empty {
     color: rgb(255, 77, 0);
-  }
-
-  .chameleon-form-new-post__upload-feature-text {
-    text-align: center;
   }
 }

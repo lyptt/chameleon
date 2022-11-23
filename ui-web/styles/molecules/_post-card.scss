@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  position: relative;
 
   @include mq($until: desktop) {
     border-bottom: 1px solid;

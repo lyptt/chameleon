@@ -1,0 +1,156 @@
+.#{$theme-class} {
+  .chameleon-post {
+    @include mq($from: desktop) {
+      border-radius: 8px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: white;
+      border-color: $brand-faded-alt-light;
+      box-shadow: 0px 2px 28px 0px rgba(198, 198, 198, 0.5);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+      border: none;
+    }
+  }
+
+  .chameleon-post__masthead {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    backdrop-filter: blur(14px);
+
+    @media (prefers-color-scheme: light) {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: rgba(30, 30, 30, 0.85);
+    }
+  }
+
+  .chameleon-post__avatar-image {
+    border-radius: 9999999px;
+    color: transparent;
+    background: black;
+  }
+
+  .chameleon-post__profile-name {
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+
+    @media (prefers-color-scheme: light) {
+      color: black;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+      color: white;
+    }
+  }
+
+  .chameleon-post__profile-handle {
+    text-decoration: none;
+    font-weight: 400;
+    font-size: 0.9rem;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-dark-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+      color: $brand-dark-dark;
+    }
+  }
+
+  .chameleon-post__body {
+    font-size: 0.9rem;
+    font-weight: 400;
+    text-decoration: none;
+
+    @media (prefers-color-scheme: light) {
+      color: black;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: white;
+    }
+  }
+
+  .chameleon-post__body * {
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin: 0;
+    padding: 0;
+  }
+
+  .chameleon-post__body p {
+    margin-bottom: 0.5rem;
+  }
+
+  .chameleon-post__body p:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .chameleon-post__body img {
+    width: 1rem;
+    height: 1rem;
+    display: inline-block;
+  }
+
+  .chameleon-post__body a {
+    text-decoration: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark;
+    }
+  }
+
+  .chameleon-post__masthead-post-details {
+    @media (prefers-color-scheme: light) {
+      color: $brand-dark-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark-dark;
+    }
+  }
+
+  .chameleon-post__masthead-post-details-visibility-image {
+    width: 14px;
+    height: 14px;
+  }
+
+  .chameleon-post__masthead-post-details-date {
+    font-size: 0.9rem;
+  }
+
+  .chameleon-post__comment-count {
+    font-size: 0.9rem;
+  }
+
+  .chameleon-post__comment-count,
+  .chameleon-post__action-icon {
+    @media (prefers-color-scheme: light) {
+      color: $brand-dark-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark-dark;
+    }
+  }
+
+  .chameleon-post__image-link {
+    text-decoration: none;
+  }
+}

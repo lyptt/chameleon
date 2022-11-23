@@ -80,8 +80,12 @@ export default function NewPostForm({
                 {...getRootProps()}
               >
                 <div className="chameleon-form-new-post__upload-feature">
-                  <p>Drag your photos here</p>
-                  <Button>Select from computer</Button>
+                  <p className="chameleon-form-new-post__upload-feature-text">
+                    Drag a photo here
+                  </p>
+                  <Button className="chameleon-form-new-post__upload-feature-button">
+                    Select from computer
+                  </Button>
                 </div>
 
                 <input
