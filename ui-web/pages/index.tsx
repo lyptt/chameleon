@@ -14,6 +14,10 @@ import ActivityIndicator from '@/components/quarks/ActivityIndicator'
 import { IPost } from '@/core/api'
 import StatusBar from '@/components/molecules/StatusBar'
 import { IoHome } from 'react-icons/io5'
+import {
+  postActionSelectPost,
+  usePost,
+} from '@/components/organisms/PostContext'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -42,6 +46,7 @@ export default function HomePage({
 }: HTMLAttributes<HTMLDivElement>) {
   const { session } = useAuth()
   const { state, dispatch } = useFeed()
+  const { dispatch: postDispatch } = usePost()
   const {
     loading,
     loadingFailed,
@@ -104,6 +109,9 @@ export default function HomePage({
     )
   }
 
+  const handlePostSelected = (post: IPost) => () =>
+    postActionSelectPost(post, postDispatch)
+
   return (
     <section className={cx('chameleon-page-home', className)}>
       <Head>
@@ -126,6 +134,7 @@ export default function HomePage({
             className="chameleon-feed__post"
             post={post}
             handlePostLiked={handlePostLiked}
+            handlePostReplied={handlePostSelected(post)}
           />
         ))}
       {submitting && (

@@ -42,7 +42,7 @@ export default function Toolbox({
   }
 
   const handleCommentSubmit = (comment: string, _visibility: string) => {
-    const postId = postState.post?.post_id
+    const postId = postState.post?.post_id ?? postState.selectedPost?.post_id
     if (!postId) {
       return postActionDeselect(postDispatch)
     }
@@ -102,10 +102,23 @@ export default function Toolbox({
           <>
             <UserProfileCard className="chameleon-toolbox__user-profile" />
             {route === '/' && (
-              <NewPostForm
-                className="chameleon-toolbox__new-post-form"
-                onSubmit={handlePostSubmit}
-              />
+              <>
+                {!postState.selectedPost && (
+                  <NewPostForm
+                    className="chameleon-toolbox__new-post-form"
+                    onSubmit={handlePostSubmit}
+                  />
+                )}
+                {postState.selectedPost && (
+                  <NewCommentForm
+                    className="chameleon-toolbox__new-comment-form"
+                    onSubmit={handleCommentSubmit}
+                    onCancel={handleCommentCancel}
+                    comment={postState.selectedComment}
+                    post={postState.selectedPost}
+                  />
+                )}
+              </>
             )}
             {route === '/users/[userId]/[postId]' && (
               <NewCommentForm
