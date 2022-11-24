@@ -32,11 +32,13 @@ use routes::like::{api_create_like, api_delete_like};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
   api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_post, api_get_user_own_feed,
-  api_upload_post_image,
+  api_get_user_posts, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
-use routes::user::{api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile};
+use routes::user::{
+  api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile, api_get_user_profile,
+};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
@@ -83,18 +85,19 @@ async fn main() -> std::io::Result<()> {
       .app_data(web::Data::new(Cdn::new()))
       .app_data(web::Data::new(Queue::new()))
       .service(
-        web::resource("/api/users/{handle}").name("get_user_by_id").route(
-          web::get()
-            .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
-            .to(api_activitypub_get_user_by_id),
-        ),
-      )
-      .service(
-        web::resource("/api/users/{handle}").name("get_user_by_id").route(
-          web::get()
-            .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
-            .to(api_activitypub_get_user_by_id_astream),
-        ),
+        web::resource("/api/users/{handle}")
+          .name("get_user_by_id")
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_by_id),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_by_id_astream),
+          )
+          .route(web::get().to(api_get_user_profile)),
       )
       .service(
         web::resource("/api/users/{handle}/feed")
@@ -103,7 +106,8 @@ async fn main() -> std::io::Result<()> {
             web::get()
               .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_public_feed),
-          ),
+          )
+          .route(web::get().to(api_get_user_posts)),
       )
       .service(
         web::resource("/api/users/{user_handle}/follows")

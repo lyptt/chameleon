@@ -47,6 +47,8 @@ export interface IProfile {
   handle?: string
   avatar_url?: string
   email?: string
+  intro_md?: string
+  intro_html?: string
 }
 
 export enum AccessType {
@@ -139,6 +141,24 @@ export async function fetchProfile(authToken: string): Promise<IProfile> {
   return await response.json()
 }
 
+export async function fetchUserProfile(
+  handle: string,
+  authToken: string | undefined
+): Promise<IProfile> {
+  const response = await fetch(`${Config.apiUri}/users/${handle}`, {
+    ...(authToken
+      ? buildDefaultHeaders(authToken)
+      : buildUnauthenticatedHeaders()),
+    method: 'GET',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
 export async function fetchFederatedFeed(
   page: number,
   pageSize: number = 20
@@ -167,6 +187,29 @@ export async function fetchOwnFeed(
     `${Config.apiUri}/feed?page=${page}&page_size=${pageSize}`,
     {
       ...buildDefaultHeaders(authToken),
+      method: 'GET',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchUserFeed(
+  handle: string,
+  authToken: string | undefined,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<IPost>> {
+  const response = await fetch(
+    `${Config.apiUri}/users/${handle}/feed?page=${page}&page_size=${pageSize}`,
+    {
+      ...(authToken
+        ? buildDefaultHeaders(authToken)
+        : buildUnauthenticatedHeaders()),
       method: 'GET',
     }
   )

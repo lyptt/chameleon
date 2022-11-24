@@ -8,7 +8,7 @@ export default function ActivityIndicator({
   return (
     <div
       className={cx(
-        'chameleon-activity-indicator',
+        'chameleon-indicator',
 
         className
       )}

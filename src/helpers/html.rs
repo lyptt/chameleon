@@ -6,8 +6,10 @@ use crate::{model::app::App, net::templates::HANDLEBARS};
 #[derive(Debug, Serialize)]
 struct OAuthAuthorizeErrData<'a> {
   pub error: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub username: Option<&'a str>,
   pub blessed: bool,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub app_name: Option<&'a str>,
 }
 

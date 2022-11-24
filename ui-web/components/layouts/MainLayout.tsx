@@ -22,6 +22,7 @@ import {
 } from '@/components/organisms/ThemeContext'
 import { useRouter } from 'next/router'
 import Toolbox from '@/components/molecules/Toolbox'
+import { UserProvider } from '@/components/organisms/UserContext'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
@@ -67,41 +68,43 @@ export default function MainLayout({
         <ProfileProvider>
           <FeedProvider>
             <PostProvider>
-              <DefaultActionsDelegator />
-              <main className={cx('chameleon-main', theme)}>
-                {isBuiltInRoute && (
-                  <>
-                    <div
-                      className="chameleon-main__spacer-left"
-                      aria-hidden="true"
-                    ></div>
-                    <div className="chameleon-main-side-nav" />
-                    {childrenWithClassname}
-                    <div className="chameleon-main-nav" />
-                    <div className="chameleon-main-mobile-nav" />
-                    <div
-                      className="chameleon-main__spacer-right"
-                      aria-hidden="true"
-                    ></div>
-                  </>
-                )}
-                {!isBuiltInRoute && (
-                  <>
-                    <div
-                      className="chameleon-main__spacer-left"
-                      aria-hidden="true"
-                    ></div>
-                    <Toolbox className="chameleon-main-side-nav" />
-                    {childrenWithClassname}
-                    <Nav className="chameleon-main-nav" />
-                    <MobileNav className="chameleon-main-mobile-nav" />
-                    <div
-                      className="chameleon-main__spacer-right"
-                      aria-hidden="true"
-                    ></div>
-                  </>
-                )}
-              </main>
+              <UserProvider>
+                <DefaultActionsDelegator />
+                <main className={cx('chameleon-main', theme)}>
+                  {isBuiltInRoute && (
+                    <>
+                      <div
+                        className="chameleon-main__spacer-left"
+                        aria-hidden="true"
+                      ></div>
+                      <div className="chameleon-main-side-nav" />
+                      {childrenWithClassname}
+                      <div className="chameleon-main-nav" />
+                      <div className="chameleon-main-mobile-nav" />
+                      <div
+                        className="chameleon-main__spacer-right"
+                        aria-hidden="true"
+                      ></div>
+                    </>
+                  )}
+                  {!isBuiltInRoute && (
+                    <>
+                      <div
+                        className="chameleon-main__spacer-left"
+                        aria-hidden="true"
+                      ></div>
+                      <Toolbox className="chameleon-main-side-nav" />
+                      {childrenWithClassname}
+                      <Nav className="chameleon-main-nav" />
+                      <MobileNav className="chameleon-main-mobile-nav" />
+                      <div
+                        className="chameleon-main__spacer-right"
+                        aria-hidden="true"
+                      ></div>
+                    </>
+                  )}
+                </main>
+              </UserProvider>
             </PostProvider>
           </FeedProvider>
         </ProfileProvider>

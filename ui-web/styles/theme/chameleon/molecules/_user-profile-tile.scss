@@ -1,8 +1,6 @@
 .#{$theme-class} {
-  .chameleon-status-bar__content {
-    font-size: 1rem;
-    font-weight: 400;
-    text-decoration: none;
+  .chameleon-user-profile-tile {
+    padding: 20px;
 
     @include mq($from: desktop) {
       border-radius: 4px;
@@ -34,24 +32,37 @@
         border-color: $brand-faded-dark;
       }
     }
+  }
 
-    @include mq($until: desktop) {
-      border-radius: 0;
-      border-top: none;
-      border-right: none;
-      border-left: none;
+  .chameleon-user-profile-tile__photo {
+    border-radius: 4px;
+    background: black;
+    object-fit: cover;
+  }
+
+  .chameleon-user-profile-tile__name {
+    font-size: 0.9rem;
+  }
+
+  .chameleon-user-profile-tile__handle {
+    font-size: 0.9rem;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-dark-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark-dark;
     }
   }
 
-  .chameleon-status-bar__backdrop {
-    background-color: $background-color-light;
+  .chameleon-user-profile-tile__intro-row {
+    font-size: 0.9rem;
+  }
 
-    @media (prefers-color-scheme: dark) {
-      background-color: $background-color-dark;
-    }
-
-    @include mq($until: desktop) {
-      display: none;
-    }
+  .chameleon-user-profile-tile--cutoff {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
   }
 }

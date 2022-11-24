@@ -20,6 +20,7 @@ use crate::{
   model::{
     access_type::AccessType,
     follow::Follow,
+    post_pub::PostPub,
     response::{JobResponse, ListResponse, ObjectResponse},
     user::User,
   },
@@ -165,6 +166,50 @@ pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQ
   };
 
   let posts = match get_global_posts(page_size, page * page_size, &db).await {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
+pub async fn api_get_user_posts(
+  db: web::Data<PgPool>,
+  query: web::Query<PostsQuery>,
+  handle: web::Path<String>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let fediverse_id = match query_auth(&jwt, &db).await {
+    Some(props) => Some(props.sub),
+    None => None,
+  };
+
+  let target_fediverse_id = match User::fetch_fediverse_id_by_handle(&handle, &db).await {
+    Some(id) => id,
+    None => return HttpResponse::NotFound().finish(),
+  };
+
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match PostPub::count_user_public_feed(&target_fediverse_id, &fediverse_id, &db).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match PostPub::fetch_user_public_feed(
+    &target_fediverse_id,
+    &fediverse_id,
+    page_size,
+    page * page_size,
+    &db,
+  )
+  .await
+  {
     Ok(posts) => posts,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };

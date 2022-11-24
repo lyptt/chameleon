@@ -39,6 +39,7 @@ dayjs.locale('en')
 export interface IPostCardProps {
   className?: string
   post: IPost
+  backUri?: string
   linkToPost?: boolean
   handlePostLiked?: (post: IPost) => void
   handlePostReplied?: (post: IPost) => void
@@ -49,6 +50,7 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 export default function PostCard({
   className,
   post,
+  backUri,
   linkToPost = true,
   handlePostLiked,
   handlePostReplied,
@@ -64,8 +66,10 @@ export default function PostCard({
 
   const postUri =
     post.uri.indexOf('http') === 0
-      ? post.uri
-      : `${Config.fqdn}/users/${post.user_handle}/${post.uri}`
+      ? `${post.uri}${backUri ? `?from=${backUri}` : ''}`
+      : `${Config.fqdn}/users/${post.user_handle}/${post.uri}${
+          backUri ? `?from=${backUri}` : ''
+        }`
 
   const image = (
     <LazyImage
@@ -81,7 +85,9 @@ export default function PostCard({
     <article className={cx('chameleon-post', className)}>
       <div className="chameleon-post__masthead">
         <Link
-          href={`/users/${post.user_fediverse_id}`}
+          href={`/users/${post.user_fediverse_id}${
+            backUri ? `?from=${backUri}` : ''
+          }`}
           className="chameleon-post__avatar"
         >
           <img
@@ -92,7 +98,9 @@ export default function PostCard({
         </Link>
         <div className="chameleon-post__masthead-details">
           <Link
-            href={`/users/${post.user_handle}`}
+            href={`/users/${post.user_handle}${
+              backUri ? `?from=${backUri}` : ''
+            }`}
             className="chameleon-post__profile-name"
           >
             {post.user_handle}

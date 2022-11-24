@@ -37,3 +37,13 @@ pub async fn api_get_profile(db: web::Data<PgPool>, jwt: web::ReqData<JwtContext
     Err(_) => HttpResponse::NotFound().finish(),
   }
 }
+
+pub async fn api_get_user_profile(db: web::Data<PgPool>, handle: web::Path<String>) -> impl Responder {
+  match get_user_by_id(&handle, &db).await {
+    Ok(user) => match user {
+      Some(user) => HttpResponse::Ok().json(UserAccountPub::from(user)),
+      None => HttpResponse::NotFound().finish(),
+    },
+    Err(_) => HttpResponse::NotFound().finish(),
+  }
+}

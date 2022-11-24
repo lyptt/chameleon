@@ -64,6 +64,17 @@ impl User {
     Ok(password_hash)
   }
 
+  pub async fn fetch_fediverse_id_by_handle(fediverse_id: &String, pool: &Pool<Postgres>) -> Option<String> {
+    match sqlx::query_scalar("SELECT fediverse_id FROM users WHERE handle = $1")
+      .bind(fediverse_id)
+      .fetch_optional(pool)
+      .await
+    {
+      Ok(user) => user,
+      Err(_) => None,
+    }
+  }
+
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
       aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.fediverse_id)]),

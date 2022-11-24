@@ -13,6 +13,8 @@ pub struct Activity<T> {
   pub object: T,
   #[serde(rename = "type")]
   pub activity_type: ActivityType,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub to: Option<Vec<String>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub cc: Option<Vec<String>>,
 }

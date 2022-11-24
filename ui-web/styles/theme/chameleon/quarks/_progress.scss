@@ -1,0 +1,107 @@
+.#{$theme-class} {
+  .chameleon-progress {
+    appearance: none;
+    background: none;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .chameleon-progress[value]::-webkit-progress-bar {
+    background: none;
+    transition: all 0.15s ease;
+  }
+
+  .chameleon-progress[value]::-webkit-progress-value {
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-bottom: 0.5px solid white;
+    border-right: 0.5px solid white;
+    transition: all 0.15s ease;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-dark;
+    }
+  }
+
+  .chameleon-progress[value]::-moz-progress-bar {
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-bottom: 0.5px solid white;
+    border-right: 0.5px solid white;
+    transition: all 0.15s ease;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-dark;
+    }
+  }
+
+  .chameleon-progress:not([value])::-moz-progress-bar {
+    border-bottom: 0.5px solid white;
+    transition: all 0.15s ease;
+    animation: progresspulse 1.45s infinite;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-dark;
+    }
+  }
+
+  .chameleon-progress:indeterminate::-webkit-progress-bar {
+    border-bottom: 0.5px solid white;
+    transition: all 0.15s ease;
+    animation: progresspulse 1.45s infinite;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-dark;
+    }
+  }
+
+  @keyframes progresspulse {
+    0% {
+      @media (prefers-color-scheme: light) {
+        background: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $brand-dark;
+      }
+    }
+
+    50% {
+      background: var(--brand-color-faded);
+
+      @media (prefers-color-scheme: light) {
+        background: $brand-faded-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $brand-faded-dark;
+      }
+    }
+
+    100% {
+      @media (prefers-color-scheme: light) {
+        background: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $brand-dark;
+      }
+    }
+  }
+}

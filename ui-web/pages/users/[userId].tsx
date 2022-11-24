@@ -1,23 +1,21 @@
-import PostCard from '@/components/molecules/PostCard'
 import Head from 'next/head'
 import { HTMLAttributes, useCallback, useEffect, useState } from 'react'
 import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { debounce } from 'lodash'
 import ActivityIndicator from '@/components/quarks/ActivityIndicator'
-import { IComment, IPost } from '@/core/api'
 import StatusBar from '@/components/molecules/StatusBar'
 import { IoChevronBack } from 'react-icons/io5'
 import { useRouter } from 'next/router'
 import {
-  usePost,
-  postActionLoadPost,
-  postActionLoadComments,
-  postActionUpdateCommentLiked,
-  postActionSelectComment,
-  postActionSelectPost,
-} from '@/components/organisms/PostContext'
-import Comment from '@/components/atoms/Comment'
+  userActionLoadFeed,
+  userActionLoadProfile,
+  useUser,
+} from '@/components/organisms/UserContext'
+import UserProfileTile from '@/components/molecules/UserProfileTile'
+import Link from 'next/link'
+import Config from '@/core/config'
+import { LazyImage } from '@/components/atoms/LazyImage'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -41,26 +39,26 @@ function determineScrollPercentage() {
   return scrollTop / trackLength
 }
 
-export default function PostPage({
+export default function UserPage({
   className,
 }: HTMLAttributes<HTMLDivElement>) {
   const { query, replace, asPath } = useRouter()
-  const { userId, postId, from } = query
+  const { userId, from } = query
 
   const backUri = (from as string) || '/'
 
   const { session } = useAuth()
-  const { state, dispatch } = usePost()
+  const { state, dispatch } = useUser()
   const {
     loading,
     loadingFailed,
-    commentsLoading,
-    commentsLoadingFailed,
-    post,
-    initialCommentLoadComplete,
-    comments,
+    postsLoading,
+    postsLoadingFailed,
+    data,
+    profile,
     page,
     noMorePages,
+    initialLoadComplete,
   } = state
   const [listInView, setListInView] = useState(false)
 
@@ -73,27 +71,25 @@ export default function PostPage({
   )
 
   useEffect(() => {
-    if (!post && !loading && !loadingFailed) {
-      postActionLoadPost(postId as string, session?.access_token, dispatch)
+    if (!profile && !loading && !loadingFailed) {
+      userActionLoadProfile(userId as string, session?.access_token, dispatch)
       return
     }
 
-    if (post?.post_id !== postId && !loading && !loadingFailed) {
-      postActionLoadPost(postId as string, session?.access_token, dispatch)
+    if (profile?.handle !== userId && !loading && !loadingFailed) {
+      userActionLoadProfile(userId as string, session?.access_token, dispatch)
       return
     }
 
-    if (!initialCommentLoadComplete && !!post) {
-      postActionLoadComments(post.post_id, 0, session?.access_token, dispatch)
+    if (!initialLoadComplete && !!profile) {
+      userActionLoadFeed(
+        userId as string,
+        page,
+        session?.access_token,
+        dispatch
+      )
     }
-  }, [
-    dispatch,
-    initialCommentLoadComplete,
-    post,
-    session,
-    loading,
-    loadingFailed,
-  ])
+  }, [dispatch, initialLoadComplete, profile, session, loading, loadingFailed])
 
   // Add a scroll listener to listen for user scroll events so that we know when we've reached near the bottom of the page.
   useEffect(() => {
@@ -109,14 +105,14 @@ export default function PostPage({
   // scroll events.
   useEffect(() => {
     setListInView(determineScrollPercentage() >= 0.75)
-  }, [comments, setListInView])
+  }, [data, setListInView])
 
   useEffect(() => {
     if (
       loading ||
       loadingFailed ||
-      !post ||
-      !postId ||
+      !profile ||
+      !userId ||
       noMorePages ||
       !listInView
     ) {
@@ -126,40 +122,24 @@ export default function PostPage({
     // HACK: We're not getting an accurate indication that we're at the bottom from the IntersectionObserver. It's triggering
     //       at strange times, so we also need to check scroll position manually.
     if (determineScrollPercentage() >= 0.75) {
-      postActionLoadComments(
-        postId as string,
+      userActionLoadFeed(
+        userId as string,
         page + 1,
         session?.access_token,
         dispatch
       )
     }
-  }, [loading, post, postId, session, noMorePages, page, listInView])
+  }, [loading, profile, userId, session, noMorePages, page, listInView])
 
-  if (!userId || !postId) {
+  if (!userId) {
     replace('/404')
     return <></>
   }
 
-  const handleCommentLiked = (comment: IComment) => {
-    postActionUpdateCommentLiked(
-      !comment.liked,
-      comment.comment_id,
-      postId as string,
-      session?.access_token,
-      dispatch
-    )
-  }
-
-  const handlePostReplied = (post: IPost) => {
-    postActionSelectPost(post, dispatch)
-  }
-
-  const handleCommentReplied = (comment: IComment) => {
-    postActionSelectComment(comment, dispatch)
-  }
+  const lastRowStartIdx = Math.floor(data.length / 3) * 3
 
   return (
-    <section className={cx('chameleon-page-post', className)}>
+    <section className={cx('chameleon-page-user', className)}>
       <Head>
         <title>Chameleon</title>
         <meta
@@ -168,46 +148,51 @@ export default function PostPage({
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <StatusBar className="chameleon-page-post__status-bar" href={backUri}>
+      <StatusBar className="chameleon-page-user__status-bar" href={backUri}>
         <IoChevronBack />
         <span>Back</span>
       </StatusBar>
-      {!loading && !!post && (
-        <PostCard
-          className={cx('chameleon-page-post__post', {
-            'chameleon-page-post__post--comments-available':
-              comments.length > 0,
-          })}
-          post={post}
-          linkToPost={false}
-          handlePostReplied={handlePostReplied}
-          backUri={asPath}
+      {!loading && profile && (
+        <UserProfileTile
+          profile={profile}
+          feedAvailable={!postsLoading && data.length > 0}
+          className="chameleon-page-user__profile"
         />
       )}
-      {!commentsLoading && comments.length > 0 && (
-        <div className="chameleon-page-post__comments">
-          {comments.map((comment) => (
-            <Comment
-              key={comment.comment_id}
-              comment={comment}
-              handleCommentLiked={handleCommentLiked}
-              handleCommentReplied={handleCommentReplied}
-              backUri={asPath}
-            />
+      {!postsLoading && data.length > 0 && (
+        <div className="chameleon-page-user__posts">
+          {data.map((post, i) => (
+            <Link
+              key={post.post_id}
+              className={cx('chameleon-page-user__post', {
+                'chameleon-page-user__post--left': i % 3 === 0,
+                'chameleon-page-user__post--middle': i % 3 === 1,
+                'chameleon-page-user__post--right': i % 3 === 2,
+                'chameleon-page-user__post--last': i >= lastRowStartIdx,
+              })}
+              href={
+                post.uri.indexOf('http') === 0
+                  ? `${post.uri}?from=${asPath}`
+                  : `${Config.fqdn}/users/${post.user_handle}/${post.uri}?from=${asPath}`
+              }
+            >
+              <LazyImage
+                className="chameleon-page-user__post-image"
+                contentClassName="chameleon-page-user__post-image-content"
+                blurhash={post.content_blurhash}
+                srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
+                src={`${Config.cdn}/${post.content_image_uri_medium}`}
+              />
+            </Link>
           ))}
         </div>
       )}
-      {comments.length > 0 &&
+      {data.length > 0 &&
         !noMorePages &&
-        initialCommentLoadComplete &&
-        !commentsLoadingFailed && (
+        initialLoadComplete &&
+        !postsLoadingFailed && (
           <ActivityIndicator className="chameleon-post__indicator" />
         )}
-      {commentsLoadingFailed && (
-        <p className="chameleon-post__indicator">
-          We had trouble fetching more comments, please try again later.
-        </p>
-      )}
     </section>
   )
 }
