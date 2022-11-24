@@ -79,6 +79,21 @@ pub struct OAuthTokenResponse {
   pub refresh_expires_at: i64,
 }
 
+#[utoipa::path(
+  get,
+  path = "/api/oauth/authorize",
+  responses(
+      (status = 200, description = "Success", content_type = "text/html"),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("response_type" = OAuthAuthorizeResponseType, Query, description = "The type of OAuth2 flow you're requesting"),
+    ("client_id" = String, Query, description = "Your app's client ID that's registered with this instance"),
+    ("redirect_uri" = String, Query, description = "The URI to redirect to on successful authentication in order to request access and refresh tokens"),
+    ("scope" = Option<String>, Query, description = "The scopes requested for the new session"),
+  )
+)]
 pub async fn api_oauth_authorize(db: web::Data<PgPool>, query: web::Query<OAuthAuthorizeQuery>) -> impl Responder {
   match query.response_type {
     OAuthAuthorizeResponseType::Code => {
@@ -170,6 +185,17 @@ pub async fn api_oauth_authorize_post(
     .finish()
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/oauth/token",
+  responses(
+      (status = 200, description = "Success", body = OAuthTokenResponse),
+      (status = 400, description = "Bad Request", body = ApiError),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  request_body(content = OAuthTokenRequest, content_type = "application/x-www-form-urlencoded")
+)]
 pub async fn api_oauth_token(
   db: web::Data<PgPool>,
   session: web::ReqData<JwtContext>,

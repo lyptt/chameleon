@@ -40,6 +40,18 @@ pub struct PostUpload {
   images: Vec<Tempfile>,
 }
 
+#[utoipa::path(
+  get,
+  path = "/api/activity/users/{handle}/feed",
+  responses(
+      (status = 200, description = "Success"),
+      (status = 401, description = "Unauthorized"),
+      (status = 500, description = "Internal server error")
+  ),
+  params(
+      ("handle" = Uuid, Path, description = "Handle of the user's feed you're querying"),
+  )
+)]
 pub async fn api_activitypub_get_user_public_feed(
   db: web::Data<PgPool>,
   handle: web::Path<String>,
@@ -82,6 +94,19 @@ pub async fn api_activitypub_get_user_public_feed(
   }
 }
 
+#[utoipa::path(
+  get,
+  path = "/api/feed",
+  responses(
+      (status = 200, description = "Success", body = ListResponse<PostPub>),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("page" = Option<i64>, Query),
+    ("page_size" = Option<i64>, Query),
+  )
+)]
 pub async fn api_get_user_own_feed(
   db: web::Data<PgPool>,
   query: web::Query<PostsQuery>,
@@ -113,6 +138,19 @@ pub async fn api_get_user_own_feed(
   })
 }
 
+#[utoipa::path(
+  get,
+  path = "/api/feed/{post_id}",
+  responses(
+      (status = 200, description = "Success", body = PostPub),
+      (status = 404, description = "Not found"),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = Uuid, Path),
+  )
+)]
 pub async fn api_get_post(
   db: web::Data<PgPool>,
   post_id: web::Path<Uuid>,
@@ -156,6 +194,19 @@ pub async fn api_get_post(
   }
 }
 
+#[utoipa::path(
+  get,
+  path = "/api/feed/federated",
+  responses(
+      (status = 200, description = "Success", body = ListResponse<PostPub>),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("page" = Option<i64>, Query),
+    ("page_size" = Option<i64>, Query),
+  )
+)]
 pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQuery>) -> impl Responder {
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
@@ -177,6 +228,16 @@ pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQ
   })
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/feed",
+  responses(
+      (status = 200, description = "Success", body = NewPostResponse),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  request_body(content = NewPostRequest, description = "Metadata for the new post")
+)]
 pub async fn api_create_post(
   db: web::Data<PgPool>,
   req: web::Json<NewPostRequest>,
@@ -193,6 +254,16 @@ pub async fn api_create_post(
   }
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/feed",
+  responses(
+      (status = 200, description = "Success", body = JobResponse),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  request_body(content = MultipartForm<PostUpload>, content_type = "multipart/form-data")
+)]
 pub async fn api_upload_post_image(
   form: MultipartForm<PostUpload>,
   post_id: web::Path<Uuid>,

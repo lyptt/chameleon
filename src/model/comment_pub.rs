@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, FromRow, Pool, Postgres};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize, FromRow)]
+#[derive(Deserialize, Serialize, FromRow, ToSchema)]
 /// Represents a user's comment on a post
 pub struct CommentPub {
   pub comment_id: Uuid,

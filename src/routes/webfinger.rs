@@ -12,6 +12,18 @@ pub struct WebfingerQuery {
   resource: String,
 }
 
+#[utoipa::path(
+  get,
+  path = "/.well-known/webfinger",
+  responses(
+      (status = 200, description = "Success", body = WebfingerRecord),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("resource" = String, Query, description = "The resource you're querying information on")
+  )
+)]
 pub async fn api_webfinger_query_resource(db: web::Data<PgPool>, query: web::Query<WebfingerQuery>) -> impl Responder {
   match get_user_by_fediverse_id(&query.resource, &db).await {
     Ok(user) => match user {

@@ -20,7 +20,7 @@ impl WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "self".to_string(),
       link_type: "application/activity+json".to_string(),
-      href: Some(format!("{}/users/{}", SETTINGS.server.api_fqdn, &handle)),
+      href: Some(format!("{}/activity/users/{}", SETTINGS.server.api_fqdn, &handle)),
       template: None,
     }
   }
@@ -29,7 +29,7 @@ impl WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "feed".to_string(),
       link_type: "application/activity+json".to_string(),
-      href: Some(format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, &handle)),
+      href: Some(format!("{}/activity/users/{}/feed", SETTINGS.server.api_fqdn, &handle)),
       template: None,
     }
   }

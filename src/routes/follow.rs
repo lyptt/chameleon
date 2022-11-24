@@ -7,6 +7,18 @@ use crate::{
 use actix_web::{web, HttpResponse, Responder};
 use sqlx::PgPool;
 
+#[utoipa::path(
+  post,
+  path = "/api/users/{user_handle}/follows",
+  responses(
+      (status = 201, description = "Follow created"),
+      (status = 401, description = "Unauthorized"),
+      (status = 500, description = "Internal server error")
+  ),
+  params(
+      ("user_handle" = Uuid, Path, description = "ID of the user you wish to follow"),
+  )
+)]
 pub async fn api_create_follow(
   db: web::Data<PgPool>,
   user_handle: web::Path<String>,
@@ -23,6 +35,18 @@ pub async fn api_create_follow(
   }
 }
 
+#[utoipa::path(
+  delete,
+  path = "/api/users/{user_handle}/follows",
+  responses(
+      (status = 200, description = "Follow created"),
+      (status = 401, description = "Unauthorized"),
+      (status = 500, description = "Internal server error")
+  ),
+  params(
+      ("user_handle" = Uuid, Path, description = "ID of the user you wish to unfollow"),
+  )
+)]
 pub async fn api_delete_follow(
   db: web::Data<PgPool>,
   user_handle: web::Path<String>,

@@ -12,6 +12,18 @@ use crate::{
   net::jwt::JwtContext,
 };
 
+#[utoipa::path(
+  post,
+  path = "/api/activity/users/{handle}",
+  responses(
+      (status = 200, description = "Success"),
+      (status = 401, description = "Unauthorized"),
+      (status = 500, description = "Internal server error")
+  ),
+  params(
+    ("handle" = String, Path, description = "Handle of the user you're querying"),
+  )
+)]
 pub async fn api_activitypub_get_user_by_id_astream(
   db: web::Data<PgPool>,
   handle: web::Path<String>,
@@ -19,10 +31,32 @@ pub async fn api_activitypub_get_user_by_id_astream(
   handle_async_activitypub_alt_get::<UserAccountPub>(&handle, &result_into(get_user_by_id(&handle, &db).await))
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/activity/users/{handle}",
+  responses(
+      (status = 200, description = "Success"),
+      (status = 401, description = "Unauthorized"),
+      (status = 500, description = "Internal server error")
+  ),
+  params(
+      ("handle" = String, Path, description = "Handle of the user you're querying"),
+  )
+)]
 pub async fn api_activitypub_get_user_by_id(db: web::Data<PgPool>, handle: web::Path<String>) -> impl Responder {
   handle_async_activitypub_get::<UserAccountPub>(&handle, &result_into(get_user_by_id(&handle, &db).await))
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/profile",
+  responses(
+      (status = 200, description = "Success"),
+      (status = 404, description = "Not found"),
+      (status = 401, description = "Unauthorized"),
+      (status = 500, description = "Internal server error")
+  ),
+)]
 pub async fn api_get_profile(db: web::Data<PgPool>, jwt: web::ReqData<JwtContext>) -> impl Responder {
   let props = match require_auth(&jwt, &db).await {
     Ok(props) => props,

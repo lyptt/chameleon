@@ -8,6 +8,18 @@ use actix_web::{web, HttpResponse, Responder};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+#[utoipa::path(
+  post,
+  path = "/api/feed/{post_id}/likes",
+  responses(
+      (status = 200, description = "Success", body = WebfingerRecord),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Query, description = "The post you're liking")
+  )
+)]
 pub async fn api_create_like(
   db: web::Data<PgPool>,
   post_id: web::Path<Uuid>,
@@ -24,6 +36,18 @@ pub async fn api_create_like(
   }
 }
 
+#[utoipa::path(
+  delete,
+  path = "/api/feed/{post_id}/likes",
+  responses(
+      (status = 200, description = "Success", body = WebfingerRecord),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Query, description = "The post you're unliking")
+  )
+)]
 pub async fn api_delete_like(
   db: web::Data<PgPool>,
   post_id: web::Path<Uuid>,

@@ -136,5 +136,13 @@ version = "0.1.1"
 [dependencies.image]
 version = "0.24.5"
 
+[dependencies.utoipa]
+version = "2.4.1"
+features = ["actix_extras", "chrono", "uuid", "json"]
+
+[dependencies.utoipa-swagger-ui]
+version = "2.0.2"
+features = ["actix-web"]
+
 [dev-dependencies.mockall]
 version = "0.11.3"

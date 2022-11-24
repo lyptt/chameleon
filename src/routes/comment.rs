@@ -22,6 +22,19 @@ pub struct CommentsQuery {
   pub page_size: Option<i64>,
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/feed/{post_id}/comments",
+  responses(
+      (status = 201, description = "Success"),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Query, description = "The post you're commenting on")
+  ),
+  request_body(content = NewPost, content_type = "application/json")
+)]
 pub async fn api_create_comment(
   db: web::Data<PgPool>,
   post_id: web::Path<Uuid>,
@@ -39,6 +52,20 @@ pub async fn api_create_comment(
   }
 }
 
+#[utoipa::path(
+  delete,
+  path = "/api/feed/{post_id}/comments/{comment_id}",
+  responses(
+      (status = 200, description = "Success"),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Query, description = "The post your comment is on"),
+    ("comment_id" = String, Query, description = "The id of your comment")
+  ),
+  request_body(content = NewPost, content_type = "application/json")
+)]
 pub async fn api_delete_comment(
   db: web::Data<PgPool>,
   post_id: web::Path<Uuid>,
@@ -56,6 +83,19 @@ pub async fn api_delete_comment(
   }
 }
 
+#[utoipa::path(
+  get,
+  path = "/api/feed/{post_id}/comments",
+  responses(
+      (status = 200, description = "Success", body = ListResponse<CommentPub>),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 404, description = "Not found", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Path, description = "The post you're querying for comments on")
+  ),
+)]
 pub async fn api_get_comments(
   db: web::Data<PgPool>,
   query: web::Query<CommentsQuery>,
@@ -91,6 +131,20 @@ pub async fn api_get_comments(
   })
 }
 
+#[utoipa::path(
+  post,
+  path = "/api/feed/{post_id}/comments/{comment_id}/likes",
+  responses(
+      (status = 200, description = "Success", body = ListResponse<CommentPub>),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 404, description = "Not found", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Path, description = "The post your comment is on"),
+    ("comment_id" = String, Path, description = "The comment you're liking")
+  ),
+)]
 pub async fn api_create_comment_like(
   db: web::Data<PgPool>,
   ids: web::Path<(Uuid, Uuid)>,
@@ -107,6 +161,20 @@ pub async fn api_create_comment_like(
   }
 }
 
+#[utoipa::path(
+  delete,
+  path = "/api/feed/{post_id}/comments/{comment_id}/likes",
+  responses(
+      (status = 200, description = "Success", body = ListResponse<CommentPub>),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 404, description = "Not found", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("post_id" = String, Path, description = "The post your comment is on"),
+    ("comment_id" = String, Path, description = "The comment you're unliking")
+  ),
+)]
 pub async fn api_delete_comment_like(
   db: web::Data<PgPool>,
   ids: web::Path<(Uuid, Uuid)>,

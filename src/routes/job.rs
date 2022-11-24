@@ -11,6 +11,18 @@ use crate::{
   net::jwt::JwtContext,
 };
 
+#[utoipa::path(
+  get,
+  path = "/api/job/{job_id}",
+  responses(
+      (status = 200, description = "Success", body = JobResponse),
+      (status = 401, description = "Unauthorized", body = ApiError),
+      (status = 500, description = "Internal server error", body = ApiError)
+  ),
+  params(
+    ("job_id" = String, Path, description = "The Job ID you're interesting in querying")
+  )
+)]
 pub async fn api_job_query_status(
   db: web::Data<PgPool>,
   job_id: web::Path<Uuid>,
