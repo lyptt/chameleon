@@ -85,7 +85,7 @@ export default function PostCard({
     <article className={cx('chameleon-post', className)}>
       <div className="chameleon-post__masthead">
         <Link
-          href={`/users/${post.user_fediverse_id}${
+          href={`/users/${post.user_handle}${
             backUri ? `?from=${backUri}` : ''
           }`}
           className="chameleon-post__avatar"
