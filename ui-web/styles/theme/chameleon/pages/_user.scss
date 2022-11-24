@@ -1,7 +1,15 @@
 .#{$theme-class} {
   .chameleon-page-user__posts {
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
+    @include mq($until: desktop) {
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    @include mq($from: desktop) {
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
 
     @media (prefers-color-scheme: light) {
       background: white;

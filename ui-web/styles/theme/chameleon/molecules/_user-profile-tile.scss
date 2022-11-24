@@ -2,6 +2,11 @@
   .chameleon-user-profile-tile {
     padding: 20px;
 
+    @include mq($until: desktop) {
+      border-left: none;
+      border-right: none;
+    }
+
     @include mq($from: desktop) {
       border-radius: 4px;
     }
