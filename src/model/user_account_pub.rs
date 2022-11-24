@@ -10,8 +10,11 @@ use uuid::Uuid;
 pub struct UserAccountPub {
   pub user_id: Uuid,
   pub fediverse_id: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub handle: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub avatar_url: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub email: Option<String>,
 }
 

@@ -41,6 +41,7 @@ pub struct OAuthAuthorizeQuery {
   pub client_id: String,
   pub redirect_uri: String,
   // TODO: Support scopes when we have permission controls
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub scope: Option<String>,
 }
 
@@ -52,19 +53,24 @@ pub struct OAuthAuthorizeRequest {
 
 #[derive(Debug, Serialize)]
 struct OAuthAuthorizeData<'a> {
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub username: Option<&'a str>,
   pub blessed: bool,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub app_name: Option<&'a str>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OAuthTokenRequest {
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub code: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub refresh_token: Option<String>,
   pub grant_type: OAuthGrantType,
   pub client_id: String,
   pub client_secret: String,
   pub redirect_uri: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub scope: Option<String>,
 }
 

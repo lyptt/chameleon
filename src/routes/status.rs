@@ -6,6 +6,7 @@ use sqlx::PgPool;
 #[derive(Debug, Serialize)]
 struct ServerComponentStatus {
   ok: bool,
+  #[serde(skip_serializing_if = "Option::is_none")]
   error: Option<String>,
   updated_at: i64,
 }

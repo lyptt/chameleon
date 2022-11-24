@@ -8,5 +8,6 @@ pub const ACTIVITY_LD_JSON_CONTENT_TYPE: &str =
 pub struct ApiError {
   pub code: u16,
   pub reason: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub cause: Option<String>,
 }

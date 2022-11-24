@@ -49,7 +49,9 @@ impl Type<Postgres> for JobStatus {
 /// Represents an asynchronous job that can be queried by the user.
 pub struct Job {
   pub job_id: Uuid,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub completion_record_id: Option<Uuid>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub created_by_id: Option<Uuid>,
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,

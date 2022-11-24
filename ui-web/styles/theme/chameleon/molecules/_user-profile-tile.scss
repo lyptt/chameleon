@@ -1,0 +1,68 @@
+.#{$theme-class} {
+  .chameleon-user-profile-tile {
+    padding: 20px;
+
+    @include mq($from: desktop) {
+      border-radius: 4px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: white;
+      color: black;
+
+      @include mq($until: desktop) {
+        border-color: $brand-faded-light;
+      }
+
+      @include mq($from: desktop) {
+        box-shadow: 0px 2px 4px 0px rgba(198, 198, 198, 0.5);
+        border-color: $brand-light;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-faded-dark;
+      color: white;
+
+      @include mq($until: desktop) {
+        border-color: $brand-extra-faded-dark;
+      }
+
+      @include mq($from: desktop) {
+        border-color: $brand-faded-dark;
+      }
+    }
+  }
+
+  .chameleon-user-profile-tile__photo {
+    border-radius: 4px;
+    background: black;
+    object-fit: cover;
+  }
+
+  .chameleon-user-profile-tile__name {
+    font-size: 0.9rem;
+  }
+
+  .chameleon-user-profile-tile__handle {
+    font-size: 0.9rem;
+
+    @media (prefers-color-scheme: light) {
+      color: $brand-dark-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark-dark;
+    }
+  }
+
+  .chameleon-user-profile-tile__intro-row {
+    font-size: 0.9rem;
+  }
+
+  .chameleon-user-profile-tile--cutoff {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+  }
+}

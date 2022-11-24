@@ -15,27 +15,42 @@ pub struct PostPub {
   pub user_id: Uuid,
   pub user_handle: String,
   pub user_fediverse_id: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub user_avatar_url: Option<String>,
   pub uri: String,
   pub content_md: String,
   pub content_html: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_image_uri_small: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_image_uri_medium: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_image_uri_large: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_width_small: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_width_medium: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_width_large: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_height_small: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_height_medium: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_height_large: Option<i32>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_type_small: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_type_medium: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_type_large: Option<String>,
   pub visibility: AccessType,
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content_blurhash: Option<String>,
   pub likes: i64,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub liked: Option<bool>,
   pub comments: i64,
 }
@@ -100,7 +115,7 @@ impl PostPub {
   /// can see, or alternatively all the user's public posts
   pub async fn fetch_user_public_feed(
     target_user_fediverse_id: &str,
-    own_user_fediverse_id: Option<&str>,
+    own_user_fediverse_id: &Option<String>,
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
@@ -120,7 +135,7 @@ impl PostPub {
   /// user can see, or alternatively all the user's public posts
   pub async fn count_user_public_feed(
     target_user_fediverse_id: &str,
-    own_user_fediverse_id: &str,
+    own_user_fediverse_id: &Option<String>,
     pool: &Pool<Postgres>,
   ) -> Result<i64, Error> {
     let count = sqlx::query_scalar(include_str!("../db/count_user_public_feed.sql"))

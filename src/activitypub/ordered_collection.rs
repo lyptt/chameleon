@@ -43,8 +43,10 @@ pub struct OrderedCollectionPage<T> {
   #[serde(rename = "partOf")]
   pub part_of: String,
   /// The URL to the previous page object, if available
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub prev: Option<String>,
   /// The URL to the next page object, if available
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub next: Option<String>,
   /// The object type, which should be OrderedCollectionPage in this case
   #[serde(rename = "type")]

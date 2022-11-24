@@ -7,7 +7,9 @@ pub struct WebfingerRecordLink {
   pub rel: String,
   #[serde(rename = "type")]
   pub link_type: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub href: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub template: Option<String>,
 }
 
