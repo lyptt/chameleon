@@ -42,8 +42,10 @@ function determineScrollPercentage() {
 export default function UserPage({
   className,
 }: HTMLAttributes<HTMLDivElement>) {
-  const { query, replace } = useRouter()
-  const { userId } = query
+  const { query, replace, asPath } = useRouter()
+  const { userId, from } = query
+
+  const backUri = (from as string) || '/'
 
   const { session } = useAuth()
   const { state, dispatch } = useUser()
@@ -146,7 +148,7 @@ export default function UserPage({
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <StatusBar className="chameleon-page-user__status-bar">
+      <StatusBar className="chameleon-page-user__status-bar" href={backUri}>
         <IoChevronBack />
         <span>Back</span>
       </StatusBar>
@@ -170,8 +172,8 @@ export default function UserPage({
               })}
               href={
                 post.uri.indexOf('http') === 0
-                  ? post.uri
-                  : `${Config.fqdn}/users/${post.user_handle}/${post.uri}`
+                  ? `${post.uri}?from=${asPath}`
+                  : `${Config.fqdn}/users/${post.user_handle}/${post.uri}?from=${asPath}`
               }
             >
               <LazyImage

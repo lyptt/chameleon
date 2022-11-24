@@ -37,6 +37,7 @@ dayjs.locale('en-mini', localeObject)
 dayjs.locale('en')
 
 export interface ICommentProps {
+  backUri?: string
   className?: string
   comment: IComment
   handleCommentLiked?: (comment: IComment) => void
@@ -50,6 +51,7 @@ export default function Comment({
   comment,
   handleCommentLiked,
   handleCommentReplied,
+  backUri,
 }: ICommentProps) {
   let relativeDate = ''
   if (dayjs.utc(comment.created_at).isBefore(dayjs.utc().subtract(3, 'days'))) {
@@ -64,7 +66,9 @@ export default function Comment({
     <article className={cx('chameleon-comment', className)}>
       <div className="chameleon-comment__masthead">
         <Link
-          href={`/users/${comment.user_fediverse_id}`}
+          href={`/users/${comment.user_handle}${
+            backUri ? `?from=${backUri}` : ''
+          }`}
           className="chameleon-comment__avatar"
         >
           <img
@@ -75,7 +79,9 @@ export default function Comment({
         </Link>
         <div className="chameleon-comment__masthead-details">
           <Link
-            href={`/users/${comment.user_handle}`}
+            href={`/users/${comment.user_handle}${
+              backUri ? `?from=${backUri}` : ''
+            }`}
             className="chameleon-comment__profile-name"
           >
             {comment.user_handle}

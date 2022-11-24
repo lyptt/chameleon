@@ -44,8 +44,10 @@ function determineScrollPercentage() {
 export default function PostPage({
   className,
 }: HTMLAttributes<HTMLDivElement>) {
-  const { query, replace } = useRouter()
-  const { userId, postId } = query
+  const { query, replace, asPath } = useRouter()
+  const { userId, postId, from } = query
+
+  const backUri = (from as string) || '/'
 
   const { session } = useAuth()
   const { state, dispatch } = usePost()
@@ -166,7 +168,7 @@ export default function PostPage({
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <StatusBar className="chameleon-page-post__status-bar">
+      <StatusBar className="chameleon-page-post__status-bar" href={backUri}>
         <IoChevronBack />
         <span>Back</span>
       </StatusBar>
@@ -179,6 +181,7 @@ export default function PostPage({
           post={post}
           linkToPost={false}
           handlePostReplied={handlePostReplied}
+          backUri={asPath}
         />
       )}
       {!commentsLoading && comments.length > 0 && (
@@ -189,6 +192,7 @@ export default function PostPage({
               comment={comment}
               handleCommentLiked={handleCommentLiked}
               handleCommentReplied={handleCommentReplied}
+              backUri={asPath}
             />
           ))}
         </div>

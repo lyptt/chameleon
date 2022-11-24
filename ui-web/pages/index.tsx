@@ -18,6 +18,7 @@ import {
   postActionSelectPost,
   usePost,
 } from '@/components/organisms/PostContext'
+import { useRouter } from 'next/router'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(

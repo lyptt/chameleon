@@ -144,7 +144,8 @@ const reducer = (state: IUserState, action: UserAction): IUserState => {
         postsLoadingFailed: true,
       }
     case UserActionType.REFRESH_USER_POSTS_LOADED:
-      const feed = [...state.data, ...(action.feedData?.data ?? [])]
+      const feedData = action.feedData?.data ?? []
+      const feed = [...state.data, ...feedData]
 
       return {
         ...state,
@@ -152,7 +153,9 @@ const reducer = (state: IUserState, action: UserAction): IUserState => {
         postsLoadingFailed: false,
         data: feed,
         totalPages: action.feedData?.total_pages ?? state.totalPages,
-        noMorePages: feed.length >= (action.feedData?.total_items || 0),
+        noMorePages:
+          feed.length >= (action.feedData?.total_items || 0) ||
+          !feedData.length,
         page: action.feedData?.page || 0,
       }
     default:
