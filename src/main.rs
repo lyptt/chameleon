@@ -38,6 +38,7 @@ use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
 use routes::user::{
   api_activitypub_get_user_by_id, api_activitypub_get_user_by_id_astream, api_get_profile, api_get_user_profile,
+  api_get_user_stats,
 };
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -114,6 +115,11 @@ async fn main() -> std::io::Result<()> {
           .name("user_follows")
           .route(web::post().to(api_create_follow))
           .route(web::delete().to(api_delete_follow)),
+      )
+      .service(
+        web::resource("/api/users/{handle}/stats")
+          .name("user_stats")
+          .route(web::get().to(api_get_user_stats)),
       )
       .service(
         web::resource("/api/oauth/authorize")

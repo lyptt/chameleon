@@ -12,6 +12,18 @@ pub struct User {
   pub email: Option<String>,
   pub password_hash: Option<String>,
   pub is_external: bool,
+  pub url_1: Option<String>,
+  pub url_2: Option<String>,
+  pub url_3: Option<String>,
+  pub url_4: Option<String>,
+  pub url_5: Option<String>,
+  pub url_1_title: Option<String>,
+  pub url_2_title: Option<String>,
+  pub url_3_title: Option<String>,
+  pub url_4_title: Option<String>,
+  pub url_5_title: Option<String>,
+  pub intro_md: Option<String>,
+  pub intro_html: Option<String>,
 }
 
 impl User {
@@ -105,6 +117,18 @@ mod tests {
       email: Some("user@example.com".to_string()),
       password_hash: Some("...".to_string()),
       is_external: false,
+      url_1: None,
+      url_2: None,
+      url_3: None,
+      url_4: None,
+      url_5: None,
+      url_1_title: None,
+      url_2_title: None,
+      url_3_title: None,
+      url_4_title: None,
+      url_5_title: None,
+      intro_md: None,
+      intro_html: None,
     };
 
     let finger = user.to_webfinger();
@@ -141,6 +165,18 @@ mod tests {
       email: None,
       password_hash: None,
       is_external: true,
+      url_1: None,
+      url_2: None,
+      url_3: None,
+      url_4: None,
+      url_5: None,
+      url_1_title: None,
+      url_2_title: None,
+      url_3_title: None,
+      url_4_title: None,
+      url_5_title: None,
+      intro_md: None,
+      intro_html: None,
     };
 
     let finger = user.to_webfinger();

@@ -27,3 +27,29 @@
   margin-left: auto;
   margin-bottom: auto;
 }
+
+.chameleon-user-profile-tile__links-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.chameleon-user-profile-tile__link-row {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid;
+  padding-left: 14px;
+  padding-bottom: 14px;
+  padding-right: 14px;
+
+  &:first-of-type {
+    padding-top: 14px;
+  }
+
+  &:last-of-type {
+    border: none;
+  }
+}
+
+.chameleon-user-profile-tile__link-title {
+  margin-bottom: 5px;
+}

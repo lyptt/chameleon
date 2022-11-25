@@ -16,6 +16,30 @@ pub struct UserAccountPub {
   pub avatar_url: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub email: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_1: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_2: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_3: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_4: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_5: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_1_title: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_2_title: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_3_title: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_4_title: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url_5_title: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub intro_md: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub intro_html: Option<String>,
 }
 
 impl From<User> for UserAccountPub {
@@ -26,6 +50,18 @@ impl From<User> for UserAccountPub {
       handle: u.handle,
       avatar_url: u.avatar_url,
       email: u.email,
+      url_1: u.url_1,
+      url_2: u.url_2,
+      url_3: u.url_3,
+      url_4: u.url_4,
+      url_5: u.url_5,
+      url_1_title: u.url_1_title,
+      url_2_title: u.url_2_title,
+      url_3_title: u.url_3_title,
+      url_4_title: u.url_4_title,
+      url_5_title: u.url_5_title,
+      intro_md: u.intro_md,
+      intro_html: u.intro_html,
     }
   }
 }
@@ -47,6 +83,18 @@ mod tests {
       email: Some("b".to_string()),
       password_hash: Some("c".to_string()),
       is_external: true,
+      url_1: None,
+      url_2: None,
+      url_3: None,
+      url_4: None,
+      url_5: None,
+      url_1_title: None,
+      url_2_title: None,
+      url_3_title: None,
+      url_4_title: None,
+      url_5_title: None,
+      intro_md: None,
+      intro_html: None,
     };
     let user_cmp = user.clone();
 
