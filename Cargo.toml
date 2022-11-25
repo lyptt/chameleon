@@ -48,7 +48,7 @@ features = [
 ]
 
 [dependencies.env_logger]
-version = "0.9.3"
+version = "0.10.0"
 
 [dependencies.log]
 version = "0.4.17"
