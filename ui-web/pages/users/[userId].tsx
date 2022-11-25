@@ -56,9 +56,11 @@ export default function UserPage({
     postsLoadingFailed,
     data,
     profile,
+    stats,
     page,
     noMorePages,
     initialLoadComplete,
+    totalItems,
   } = state
   const [listInView, setListInView] = useState(false)
 
@@ -154,7 +156,10 @@ export default function UserPage({
       </StatusBar>
       {!loading && profile && (
         <UserProfileTile
+          session={session}
           profile={profile}
+          stats={stats}
+          postCount={totalItems}
           feedAvailable={!postsLoading && data.length > 0}
           className="chameleon-page-user__profile"
         />

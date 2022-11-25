@@ -49,6 +49,23 @@ export interface IProfile {
   email?: string
   intro_md?: string
   intro_html?: string
+  url_1?: string
+  url_2?: string
+  url_3?: string
+  url_4?: string
+  url_5?: string
+  url_1_title?: string
+  url_2_title?: string
+  url_3_title?: string
+  url_4_title?: string
+  url_5_title?: string
+}
+
+export interface IProfileStats {
+  following_count: number
+  followers_count: number
+  following_user: boolean
+  user_is_you: boolean
 }
 
 export enum AccessType {
@@ -146,6 +163,24 @@ export async function fetchUserProfile(
   authToken: string | undefined
 ): Promise<IProfile> {
   const response = await fetch(`${Config.apiUri}/users/${handle}`, {
+    ...(authToken
+      ? buildDefaultHeaders(authToken)
+      : buildUnauthenticatedHeaders()),
+    method: 'GET',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchUserStats(
+  handle: string,
+  authToken: string | undefined
+): Promise<IObjectResponse<IProfileStats>> {
+  const response = await fetch(`${Config.apiUri}/users/${handle}/stats`, {
     ...(authToken
       ? buildDefaultHeaders(authToken)
       : buildUnauthenticatedHeaders()),

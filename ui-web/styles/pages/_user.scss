@@ -75,3 +75,24 @@
   padding: 0;
   margin: 0;
 }
+
+@include mq($until: desktop) {
+  .chameleon-page-user__post {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    margin-bottom: 1px;
+  }
+
+  .chameleon-page-user__post--last {
+    margin-bottom: 0;
+  }
+
+  .chameleon-page-user__post--left {
+    margin-right: 0;
+  }
+
+  .chameleon-page-user__post-middle {
+    margin-right: 0;
+  }
+}

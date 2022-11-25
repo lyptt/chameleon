@@ -5,10 +5,10 @@ use crate::{
   helpers::{
     activitypub::{handle_async_activitypub_alt_get, handle_async_activitypub_get},
     api::result_into,
-    auth::require_auth,
+    auth::{query_auth, require_auth},
   },
   logic::user::{get_user_by_fediverse_id, get_user_by_id},
-  model::user_account_pub::UserAccountPub,
+  model::{response::ObjectResponse, user_account_pub::UserAccountPub, user_stats::UserStats},
   net::jwt::JwtContext,
 };
 
@@ -45,5 +45,21 @@ pub async fn api_get_user_profile(db: web::Data<PgPool>, handle: web::Path<Strin
       None => HttpResponse::NotFound().finish(),
     },
     Err(_) => HttpResponse::NotFound().finish(),
+  }
+}
+
+pub async fn api_get_user_stats(
+  db: web::Data<PgPool>,
+  jwt: web::ReqData<JwtContext>,
+  handle: web::Path<String>,
+) -> impl Responder {
+  let own_user_id = match query_auth(&jwt, &db).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  match UserStats::fetch_for_user(&handle, &own_user_id, &db).await {
+    Some(user) => HttpResponse::Ok().json(ObjectResponse { data: user }),
+    None => HttpResponse::NotFound().finish(),
   }
 }

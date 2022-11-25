@@ -70,4 +70,53 @@
     border-bottom-right-radius: 0;
     border-bottom: none;
   }
+
+  .chameleon-user-profile-tile__stats-row-item {
+    font-size: 0.9rem;
+  }
+
+  .chameleon-user-profile-tile__stats-row-item-stat {
+    font-weight: 500;
+  }
+
+  .chameleon-user-profile-tile__links-row {
+    border-radius: 4px;
+    font-size: 0.9rem;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-faded-light;
+      color: $brand-black-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-extra-faded-dark;
+      color: $brand-black-dark;
+    }
+  }
+
+  .chameleon-user-profile-tile__link-row {
+    @media (prefers-color-scheme: light) {
+      border-color: $brand-faded-alt-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      border-color: $brand-faded-dark;
+    }
+  }
+
+  .chameleon-user-profile-tile__link-title {
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .chameleon-user-profile-tile__link-description {
+    text-decoration: none;
+    @media (prefers-color-scheme: light) {
+      color: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark;
+    }
+  }
 }

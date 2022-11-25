@@ -1,10 +1,11 @@
 import {
-  fetchProfile,
   fetchUserFeed,
   fetchUserProfile,
+  fetchUserStats,
   IListResponse,
   IPost,
   IProfile,
+  IProfileStats,
 } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 import retry from 'async-retry'
@@ -13,6 +14,7 @@ enum UserActionType {
   REFRESH_USER_PROFILE_LOADING = 'REFRESH_USER_PROFILE_LOADING',
   REFRESH_USER_PROFILE_ERROR = 'REFRESH_USER_PROFILE_ERROR',
   REFRESH_USER_PROFILE_LOADED = 'REFRESH_USER_PROFILE_LOADED',
+  REFRESH_USER_PROFILE_STATS_LOADED = 'REFRESH_USER_PROFILE_STATS_LOADED',
   REFRESH_USER_POSTS_LOADING = 'REFRESH_USER_POSTS_LOADING',
   REFRESH_USER_POSTS_ERROR = 'REFRESH_USER_POSTS_ERROR',
   REFRESH_USER_POSTS_LOADED = 'REFRESH_USER_POSTS_LOADED',
@@ -21,6 +23,7 @@ enum UserActionType {
 interface UserAction {
   type: UserActionType
   data?: any
+  stats?: IProfileStats
   feedData?: IListResponse<IPost>
   error?: any
 }
@@ -45,6 +48,17 @@ export async function userActionLoadProfile(
       type: UserActionType.REFRESH_USER_PROFILE_ERROR,
       error,
     })
+    return
+  }
+
+  try {
+    const stats = await fetchUserStats(handle, authToken)
+    dispatch({
+      type: UserActionType.REFRESH_USER_PROFILE_STATS_LOADED,
+      stats: stats.data,
+    })
+  } catch (error) {
+    console.error(error)
   }
 }
 
@@ -83,6 +97,7 @@ export async function userActionLoadFeed(
 
 export interface IUserState {
   profile?: IProfile
+  stats?: IProfileStats
   loading: boolean
   loadingFailed: boolean
   data: IPost[]
@@ -90,11 +105,14 @@ export interface IUserState {
   postsLoadingFailed: boolean
   page: number
   totalPages?: number
+  totalItems?: number
   noMorePages: boolean
   initialLoadComplete: boolean
 }
 
 const initialState: IUserState = {
+  profile: undefined,
+  stats: undefined,
   loading: false,
   loadingFailed: false,
   data: [],
@@ -103,6 +121,7 @@ const initialState: IUserState = {
   page: 0,
   noMorePages: false,
   initialLoadComplete: false,
+  totalItems: undefined,
 }
 
 export const UserContext = createContext(
@@ -129,6 +148,11 @@ const reducer = (state: IUserState, action: UserAction): IUserState => {
         loading: false,
         loadingFailed: false,
         profile: action.data,
+      }
+    case UserActionType.REFRESH_USER_PROFILE_STATS_LOADED:
+      return {
+        ...state,
+        stats: action.stats,
       }
     case UserActionType.REFRESH_USER_POSTS_LOADING:
       return {
@@ -157,6 +181,7 @@ const reducer = (state: IUserState, action: UserAction): IUserState => {
           feed.length >= (action.feedData?.total_items || 0) ||
           !feedData.length,
         page: action.feedData?.page || 0,
+        totalItems: action.feedData?.total_items || feed.length,
       }
     default:
       return state
