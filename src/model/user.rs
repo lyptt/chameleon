@@ -22,6 +22,8 @@ pub struct User {
   pub url_3_title: Option<String>,
   pub url_4_title: Option<String>,
   pub url_5_title: Option<String>,
+  pub intro_md: Option<String>,
+  pub intro_html: Option<String>,
 }
 
 impl User {
@@ -125,6 +127,8 @@ mod tests {
       url_3_title: None,
       url_4_title: None,
       url_5_title: None,
+      intro_md: None,
+      intro_html: None,
     };
 
     let finger = user.to_webfinger();
@@ -171,6 +175,8 @@ mod tests {
       url_3_title: None,
       url_4_title: None,
       url_5_title: None,
+      intro_md: None,
+      intro_html: None,
     };
 
     let finger = user.to_webfinger();

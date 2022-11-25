@@ -36,6 +36,10 @@ pub struct UserAccountPub {
   pub url_4_title: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub url_5_title: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub intro_md: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub intro_html: Option<String>,
 }
 
 impl From<User> for UserAccountPub {
@@ -56,6 +60,8 @@ impl From<User> for UserAccountPub {
       url_3_title: u.url_3_title,
       url_4_title: u.url_4_title,
       url_5_title: u.url_5_title,
+      intro_md: u.intro_md,
+      intro_html: u.intro_html,
     }
   }
 }
@@ -87,6 +93,8 @@ mod tests {
       url_3_title: None,
       url_4_title: None,
       url_5_title: None,
+      intro_md: None,
+      intro_html: None,
     };
     let user_cmp = user.clone();
 

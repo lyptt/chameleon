@@ -7,6 +7,18 @@ CREATE TABLE users (
   "password_hash" varchar(64),
   "is_external" bool NOT NULL DEFAULT true,
   "is_admin" bool NOT NULL DEFAULT false,
+  "url_1" varchar(2048) NULL,
+  "url_2" varchar(2048) NULL,
+  "url_3" varchar(2048) NULL,
+  "url_4" varchar(2048) NULL,
+  "url_5" varchar(2048) NULL,
+  "url_1_title" varchar(256) NULL,
+  "url_2_title" varchar(256) NULL,
+  "url_3_title" varchar(256) NULL,
+  "url_4_title" varchar(256) NULL,
+  "url_5_title" varchar(256) NULL,
+  "intro_md" text NULL,
+  "intro_html" text NULL,
   PRIMARY KEY ("user_id")
 );
 
