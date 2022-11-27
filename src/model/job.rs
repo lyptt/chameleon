@@ -6,7 +6,7 @@ use sqlx::{postgres::PgTypeInfo, Decode, Encode, Error, FromRow, Pool, Postgres,
 use strum::{Display, EnumString};
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize, EnumString, Display, Debug)]
+#[derive(Deserialize, Serialize, EnumString, Display, Debug, Clone)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum JobStatus {
@@ -45,7 +45,7 @@ impl Type<Postgres> for JobStatus {
   }
 }
 
-#[derive(Deserialize, Serialize, FromRow)]
+#[derive(Deserialize, Serialize, Clone, FromRow)]
 /// Represents an asynchronous job that can be queried by the user.
 pub struct Job {
   pub job_id: Uuid,

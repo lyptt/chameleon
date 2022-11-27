@@ -70,6 +70,7 @@ pub struct Cdn {
 pub struct Queue {
   pub queue_backend: AppQueueBackend,
   pub work_queue: String,
+  pub url: Option<String>,
   pub work_deadletter_queue: String,
   pub credentials: Option<CloudCredentials>,
 }
@@ -125,6 +126,7 @@ impl Settings {
       },
       queue: Queue {
         queue_backend: AppQueueBackend::RabbitMQ,
+        url: Some("amqp://127.0.0.1:5672".to_string()),
         work_queue: "work_q".to_string(),
         work_deadletter_queue: "work_dq".to_string(),
         credentials: None,

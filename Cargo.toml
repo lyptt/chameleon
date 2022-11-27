@@ -136,5 +136,8 @@ version = "0.1.1"
 [dependencies.image]
 version = "0.24.5"
 
+[dependencies.lapin]
+version = "2.1.1"
+
 [dev-dependencies.mockall]
 version = "0.11.3"

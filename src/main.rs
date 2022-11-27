@@ -10,6 +10,7 @@ mod job;
 mod logic;
 mod model;
 mod net;
+mod rabbitmq;
 mod routes;
 mod settings;
 mod work_queue;
@@ -23,6 +24,7 @@ use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
+use rabbitmq::clients::RabbitMQClient;
 use routes::comment::{
   api_create_comment, api_create_comment_like, api_delete_comment, api_delete_comment_like, api_get_comments,
 };
@@ -56,6 +58,7 @@ async fn main() -> std::io::Result<()> {
 
   AWSClient::create_s3_client().await;
   AWSClient::create_sqs_client().await;
+  RabbitMQClient::create_rabbitmq_client().await;
 
   env_logger::Builder::new()
     .filter_level(filter)
