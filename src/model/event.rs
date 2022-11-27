@@ -77,4 +77,20 @@ impl Event {
 
     Ok(())
   }
+
+  pub async fn delete_post_events(
+    post_id: &Uuid,
+    user_id: &Uuid,
+    event_type: EventType,
+    pool: &Pool<Postgres>,
+  ) -> Result<(), Error> {
+    sqlx::query("DELETE FROM events WHERE post_id = $1 AND source_user_id = $2 AND event_type = $3")
+      .bind(post_id)
+      .bind(user_id)
+      .bind(event_type.to_string())
+      .execute(pool)
+      .await?;
+
+    Ok(())
+  }
 }

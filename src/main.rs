@@ -33,8 +33,8 @@ use routes::job::api_job_query_status;
 use routes::like::{api_create_like, api_delete_like};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
-  api_activitypub_get_user_public_feed, api_create_post, api_get_global_feed, api_get_post, api_get_user_own_feed,
-  api_get_user_posts, api_upload_post_image,
+  api_activitypub_get_user_public_feed, api_boost_post, api_create_post, api_get_global_feed, api_get_post,
+  api_get_user_own_feed, api_get_user_posts, api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
@@ -163,6 +163,12 @@ async fn main() -> std::io::Result<()> {
           .name("post_comments")
           .route(web::get().to(api_get_comments))
           .route(web::post().to(api_create_comment)),
+      )
+      .service(
+        web::resource("/api/feed/{post_id}/boost")
+          .name("post_boosts")
+          .route(web::post().to(api_boost_post))
+          .route(web::delete().to(api_unboost_post)),
       )
       .service(
         web::resource("/api/feed/{post_id}/comments/{comment_id}/likes")

@@ -36,17 +36,15 @@ impl QueueBackendRabbitMQ {
 
     let mut should_requeue = true;
 
-    match Job::update(&db_job, &db).await {
+    match Job::update(&db_job, db).await {
       Ok(_) => {
         if cfg!(debug_assertions) {
           // Give ourselves more opportunity to diagnose job issues in debug builds
           if db_job.failed_count > 49 {
             should_requeue = false;
           }
-        } else {
-          if db_job.failed_count > 4 {
-            should_requeue = false;
-          }
+        } else if db_job.failed_count > 4 {
+          should_requeue = false;
         }
       }
       Err(err) => {
@@ -59,8 +57,10 @@ impl QueueBackendRabbitMQ {
       }
     }
 
-    let mut opts = BasicNackOptions::default();
-    opts.requeue = should_requeue;
+    let opts = BasicNackOptions {
+      requeue: should_requeue,
+      ..Default::default()
+    };
     let result = queue_job.nack(opts).await;
     if let Err(err) = result {
       error!("Failed to reject queue_job: {}: {}", db_job.job_id, err.to_string());
@@ -122,8 +122,10 @@ impl QueueBackend for QueueBackendRabbitMQ {
         Ok(job) => job,
         Err(err) => {
           error!("Failed to deserialize queue_job: {}", err.to_string());
-          let mut opts = BasicNackOptions::default();
-          opts.requeue = false;
+          let opts = BasicNackOptions {
+            requeue: false,
+            ..Default::default()
+          };
           let result = job.nack(opts).await;
           if let Err(err) = result {
             error!("Failed to reject queue_job: {}", err.to_string());
@@ -136,8 +138,10 @@ impl QueueBackend for QueueBackendRabbitMQ {
         Some(job) => job,
         None => {
           error!("Job not found in db with id {}", queue_job.job_id,);
-          let mut opts = BasicNackOptions::default();
-          opts.requeue = false;
+          let opts = BasicNackOptions {
+            requeue: false,
+            ..Default::default()
+          };
           let result = job.nack(opts).await;
           if let Err(err) = result {
             error!("Failed to reject queue_job: {}: {}", queue_job.job_id, err.to_string());

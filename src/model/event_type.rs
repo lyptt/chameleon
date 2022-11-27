@@ -13,8 +13,7 @@ use strum::{Display, EnumString};
 pub enum EventType {
   Unknown,
   Post,
-  Comment,
-  Like,
+  Boost,
 }
 
 impl<'r> FromRow<'r, PgRow> for EventType {

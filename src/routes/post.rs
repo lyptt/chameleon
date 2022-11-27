@@ -20,7 +20,11 @@ use crate::{
   model::{
     access_type::AccessType,
     follow::Follow,
+    job::Job,
+    job::JobStatus,
+    job::NewJob,
     post_event::PostEvent,
+    queue_job::{QueueJob, QueueJobType},
     response::{JobResponse, ListResponse, ObjectResponse},
     user::User,
   },
@@ -254,6 +258,84 @@ pub async fn api_upload_post_image(
 
   match upload_post_file(&db, &post_id, &props.uid, &cdn, &queue, &form.images[0]).await {
     Ok(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
+    Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_boost_post(
+  db: web::Data<PgPool>,
+  queue: web::Data<Queue>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  let user_id = props.uid;
+
+  let job_id = match Job::create(
+    NewJob {
+      created_by_id: Some(user_id),
+      status: JobStatus::NotStarted,
+      record_id: Some(*post_id),
+      associated_record_id: None,
+    },
+    &db,
+  )
+  .await
+  {
+    Ok(id) => id,
+    Err(err) => return build_api_err(500, err.to_string(), None),
+  };
+
+  let job = QueueJob {
+    job_id,
+    job_type: QueueJobType::CreateBoostEvents,
+  };
+
+  match queue.send_job(job).await {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_unboost_post(
+  db: web::Data<PgPool>,
+  queue: web::Data<Queue>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &db).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  let user_id = props.uid;
+
+  let job_id = match Job::create(
+    NewJob {
+      created_by_id: Some(user_id),
+      status: JobStatus::NotStarted,
+      record_id: Some(*post_id),
+      associated_record_id: None,
+    },
+    &db,
+  )
+  .await
+  {
+    Ok(id) => id,
+    Err(err) => return build_api_err(500, err.to_string(), None),
+  };
+
+  let job = QueueJob {
+    job_id,
+    job_type: QueueJobType::DeleteBoostEvents,
+  };
+
+  match queue.send_job(job).await {
+    Ok(_) => HttpResponse::Created().finish(),
     Err(err) => build_api_err(500, err.to_string(), None),
   }
 }
