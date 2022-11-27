@@ -27,7 +27,7 @@ impl RabbitMQClient {
       .queue
       .url
       .clone()
-      .unwrap_or("amqp://127.0.0.1:5672".to_string());
+      .unwrap_or_else(|| "amqp://127.0.0.1:5672".to_string());
 
     let conn = Connection::connect(&url, ConnectionProperties::default())
       .await
@@ -66,10 +66,12 @@ impl RabbitMQClient {
       .await
       .unwrap();
 
-    let mut queue_options = QueueDeclareOptions::default();
-    queue_options.durable = true;
-    queue_options.exclusive = false;
-    queue_options.auto_delete = false;
+    let queue_options = QueueDeclareOptions {
+      durable: true,
+      exclusive: false,
+      auto_delete: false,
+      ..Default::default()
+    };
 
     let mut queue_args = FieldTable::default();
     queue_args.insert(
@@ -78,14 +80,14 @@ impl RabbitMQClient {
     );
 
     let work_queue = work_channel
-      .queue_declare(&SETTINGS.queue.work_queue, queue_options.clone(), queue_args)
+      .queue_declare(&SETTINGS.queue.work_queue, queue_options, queue_args)
       .await
       .unwrap();
 
     let dl_queue = work_channel
       .queue_declare(
         &SETTINGS.queue.work_deadletter_queue,
-        queue_options.clone(),
+        queue_options,
         FieldTable::default(),
       )
       .await

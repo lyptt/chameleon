@@ -32,34 +32,34 @@ pub async fn create_events(job_id: Uuid, db: &Pool<Postgres>, queue: &Queue) -> 
     None => return Err(LogicErr::InternalError("User ID not found for job".to_string())),
   };
 
-  let visibility = match Post::fetch_visibility_by_id(&post_id, &db).await {
+  let visibility = match Post::fetch_visibility_by_id(&post_id, db).await {
     Some(v) => v,
     None => return Err(LogicErr::InternalError("Visibility not found for post".to_string())),
   };
 
   let own_event = NewEvent {
-    source_user_id: user_id.clone(),
+    source_user_id: user_id,
     target_user_id: None,
     visibility: visibility.clone(),
-    post_id: Some(post_id.clone()),
+    post_id: Some(post_id),
     like_id: None,
     comment_id: None,
     event_type: EventType::Post,
   };
 
-  if let Err(err) = Event::create_event(own_event, &db).await.map_err(map_ext_err) {
+  if let Err(err) = Event::create_event(own_event, db).await.map_err(map_ext_err) {
     warn!("Failed to create user's own event for new post: {}", err);
   }
 
-  let followers = Follow::fetch_user_followers(&user_id, &db).await.unwrap_or_default();
+  let followers = Follow::fetch_user_followers(&user_id, db).await.unwrap_or_default();
 
   for follower in followers {
     let job_id = Job::create(
       NewJob {
-        created_by_id: Some(user_id.clone()),
+        created_by_id: Some(user_id),
         status: JobStatus::NotStarted,
-        record_id: Some(post_id.clone()),
-        associated_record_id: Some(follower.user_id.clone()),
+        record_id: Some(post_id),
+        associated_record_id: Some(follower.user_id),
       },
       db,
     )

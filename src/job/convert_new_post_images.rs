@@ -237,9 +237,9 @@ pub async fn convert_new_post_images(
 
   let job_id = Job::create(
     NewJob {
-      created_by_id: Some(post.user_id.clone()),
+      created_by_id: Some(post.user_id),
       status: JobStatus::NotStarted,
-      record_id: Some(post.post_id.clone()),
+      record_id: Some(post.post_id),
       associated_record_id: None,
     },
     db,
