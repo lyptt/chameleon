@@ -5,6 +5,8 @@ use uuid::Uuid;
 #[derive(Deserialize, Serialize, EnumString, Display, Debug)]
 pub enum QueueJobType {
   ConvertNewPostImages,
+  CreateEvents,
+  CreateEvent,
 }
 
 #[derive(Deserialize, Serialize)]

@@ -6,20 +6,27 @@ use tempfile::TempDir;
 use uuid::Uuid;
 
 use crate::cdn::cdn_store::Cdn;
-use crate::helpers::api::map_ext_err;
+use crate::helpers::api::{map_db_err, map_ext_err};
 use crate::logic::LogicErr;
-use crate::model::job::Job;
+use crate::model::job::{Job, JobStatus, NewJob};
 use crate::model::post::Post;
+use crate::model::queue_job::{QueueJob, QueueJobType};
 use crate::settings::SETTINGS;
+use crate::work_queue::queue::Queue;
 use log::{debug, warn};
 
-pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
+pub async fn convert_new_post_images(
+  job_id: Uuid,
+  db: &Pool<Postgres>,
+  cdn: &Cdn,
+  queue: &Queue,
+) -> Result<(), LogicErr> {
   let job = match Job::fetch_optional_by_id(&job_id, db).await {
     Some(job) => job,
     None => return Err(LogicErr::InternalError("Job not found".to_string())),
   };
 
-  let post_id = match job.completion_record_id {
+  let post_id = match job.record_id {
     Some(id) => id,
     None => return Err(LogicErr::InternalError("Post ID not found for job".to_string())),
   };
@@ -227,6 +234,25 @@ pub async fn convert_new_post_images(job_id: Uuid, db: &Pool<Postgres>, cdn: &Cd
   post.content_blurhash = blurhash;
 
   post.update_post_content(db).await.map_err(map_ext_err)?;
+
+  let job_id = Job::create(
+    NewJob {
+      created_by_id: Some(post.user_id.clone()),
+      status: JobStatus::NotStarted,
+      record_id: Some(post.post_id.clone()),
+      associated_record_id: None,
+    },
+    db,
+  )
+  .await
+  .map_err(map_db_err)?;
+
+  let job = QueueJob {
+    job_id,
+    job_type: QueueJobType::CreateEvents,
+  };
+
+  queue.send_job(job).await?;
 
   Ok(())
 }

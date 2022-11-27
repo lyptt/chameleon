@@ -9,12 +9,12 @@ use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 use std::result::Result;
 
-use super::queue_backend_sqs::QueueBackendSQS;
+use super::{queue_backend_rabbitmq::QueueBackendRabbitMQ, queue_backend_sqs::QueueBackendSQS};
 
 #[async_trait]
 pub trait QueueBackend {
   async fn send_job(&self, job: QueueJob) -> Result<(), LogicErr>;
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr>;
+  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr>;
 }
 
 pub struct Queue {
@@ -27,7 +27,9 @@ impl Queue {
       AppQueueBackend::Sqs => Queue {
         imp: Box::new(QueueBackendSQS {}),
       },
-      AppQueueBackend::RabbitMQ => todo!("RabbitMQ queue backend is implemented"),
+      AppQueueBackend::RabbitMQ => Queue {
+        imp: Box::new(QueueBackendRabbitMQ {}),
+      },
     }
   }
 
@@ -35,7 +37,7 @@ impl Queue {
     self.imp.send_job(job).await
   }
 
-  pub async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
-    self.imp.receive_jobs(db, cdn).await
+  pub async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
+    self.imp.receive_jobs(db, cdn, queue).await
   }
 }

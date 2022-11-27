@@ -122,7 +122,7 @@ export enum JobStatus {
 
 export interface IJob {
   job_id: string
-  completion_record_id?: string
+  record_id?: string
   created_by_id?: string
   created_at: number
   updated_at: number

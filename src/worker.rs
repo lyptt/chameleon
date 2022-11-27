@@ -10,6 +10,7 @@ mod job;
 mod logic;
 mod model;
 mod net;
+mod rabbitmq;
 mod settings;
 mod work_queue;
 
@@ -18,6 +19,7 @@ use cdn::cdn_store::Cdn;
 use env_logger::WriteStyle;
 use log::error;
 use log::LevelFilter;
+use rabbitmq::clients::RabbitMQClient;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
@@ -38,6 +40,7 @@ async fn main() -> std::io::Result<()> {
 
   AWSClient::create_s3_client().await;
   AWSClient::create_sqs_client().await;
+  RabbitMQClient::create_rabbitmq_client().await;
 
   let cdn = Cdn::new();
 
@@ -52,7 +55,7 @@ async fn main() -> std::io::Result<()> {
   let queue = Queue::new();
 
   loop {
-    match queue.receive_jobs(pool.clone(), &cdn).await {
+    match queue.receive_jobs(pool.clone(), &cdn, &queue).await {
       Ok(_) => {}
       Err(err) => error!("{}", err.to_string()),
     }

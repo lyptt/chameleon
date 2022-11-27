@@ -138,7 +138,7 @@ export async function feedActionSubmitPost(
             type: FeedActionType.SUBMIT_POST_ERROR,
           })
         } else {
-          const post = await fetchPost(res.completion_record_id!, authToken)
+          const post = await fetchPost(res.record_id!, authToken)
           return dispatch({
             type: FeedActionType.SUBMIT_POST_COMPLETED,
             newPost: post.data,

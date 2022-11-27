@@ -44,7 +44,7 @@ Chameleon provides its own API that's easy for developers to consume and build a
 ## Requirements:
 
 - **A relational DB**. Currently we only support PostgreSQL 14. Older versions may work but aren't tested against. Other DBs are not planned to be supported in the medium to long term future.
-- **A job queue**. Currently we only support AWS SQS, other open job queue technologies will be supported in the future (e.g. RabbitMQ).
+- **A job queue**. Currently we support AWS SQS, and RabbitMQ. For SQS you must create the queues yourself, for RabbitMQ they're created on startup.
 - **An in-memory DB**. Currently we only support Redis.
 - **A CDN**. Currently we support AWS S3, and any file store accessible from your instance's server via a local file path.
 

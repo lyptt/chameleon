@@ -1,13 +1,13 @@
-use super::queue::QueueBackend;
+use super::queue::{Queue, QueueBackend};
 use crate::{
   aws::clients::SQS_CLIENT,
   cdn::cdn_store::Cdn,
   helpers::api::map_ext_err,
-  job::convert_new_post_images::convert_new_post_images,
+  job::delegate_job,
   logic::LogicErr,
   model::{
     job::{Job, JobStatus},
-    queue_job::{QueueJob, QueueJobType::ConvertNewPostImages},
+    queue_job::QueueJob,
   },
   settings::SETTINGS,
 };
@@ -40,7 +40,7 @@ impl QueueBackend for QueueBackendSQS {
     Ok(())
   }
 
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
+  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
     let rcv_message_output = SQS_CLIENT
       .get()
       .unwrap()
@@ -103,9 +103,9 @@ impl QueueBackend for QueueBackendSQS {
         }
       }
 
-      match match queue_job.job_type {
-        ConvertNewPostImages => convert_new_post_images(queue_job.job_id, &db, cdn).await,
-      } {
+      let result = delegate_job(&queue_job, &db, cdn, queue).await;
+
+      match result {
         Ok(()) => {
           job.status = JobStatus::Done;
           match Job::update(&job, &db).await {

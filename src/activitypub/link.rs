@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::model::post_pub::PostPub;
+use crate::model::post_event::PostEvent;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Link {
@@ -17,7 +17,7 @@ pub struct Link {
 }
 
 impl Link {
-  pub fn from_post_pub_small(post: &PostPub) -> Option<Link> {
+  pub fn from_post_pub_small(post: &PostEvent) -> Option<Link> {
     post.content_image_uri_small.as_ref().map(|uri| Link {
       object_type: "Link".to_string(),
       href: uri.to_string(),
@@ -27,7 +27,7 @@ impl Link {
     })
   }
 
-  pub fn from_post_pub_medium(post: &PostPub) -> Option<Link> {
+  pub fn from_post_pub_medium(post: &PostEvent) -> Option<Link> {
     post.content_image_uri_medium.as_ref().map(|uri| Link {
       object_type: "Link".to_string(),
       href: uri.to_string(),
@@ -37,7 +37,7 @@ impl Link {
     })
   }
 
-  pub fn from_post_pub_large(post: &PostPub) -> Option<Link> {
+  pub fn from_post_pub_large(post: &PostEvent) -> Option<Link> {
     post.content_image_uri_large.as_ref().map(|uri| Link {
       object_type: "Link".to_string(),
       href: uri.to_string(),

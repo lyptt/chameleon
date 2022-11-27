@@ -11,7 +11,7 @@ use crate::{
     access_type::AccessType,
     job::{Job, JobStatus, NewJob},
     post::Post,
-    post_pub::PostPub,
+    post_event::PostEvent,
     queue_job::{QueueJob, QueueJobType},
   },
   work_queue::queue::Queue,
@@ -29,12 +29,12 @@ pub struct NewPostResponse {
 }
 
 pub async fn get_user_posts(
-  handle: &str,
+  user_id: &Uuid,
   limit: i64,
   skip: i64,
   db: &Pool<Postgres>,
-) -> Result<Vec<PostPub>, LogicErr> {
-  PostPub::fetch_user_own_feed(handle, limit, skip, db)
+) -> Result<Vec<PostEvent>, LogicErr> {
+  PostEvent::fetch_user_own_feed(user_id, limit, skip, db)
     .await
     .map_err(map_db_err)
 }
@@ -43,22 +43,22 @@ pub async fn get_post(
   post_id: &Uuid,
   user_id: &Option<Uuid>,
   db: &Pool<Postgres>,
-) -> Result<Option<PostPub>, LogicErr> {
-  PostPub::fetch_post(post_id, user_id, db).await.map_err(map_db_err)
+) -> Result<Option<PostEvent>, LogicErr> {
+  PostEvent::fetch_post(post_id, user_id, db).await.map_err(map_db_err)
 }
 
-pub async fn get_user_posts_count(handle: &str, db: &Pool<Postgres>) -> Result<i64, LogicErr> {
-  PostPub::count_user_own_feed(handle, db).await.map_err(map_db_err)
+pub async fn get_user_posts_count(user_id: &Uuid, db: &Pool<Postgres>) -> Result<i64, LogicErr> {
+  PostEvent::count_user_own_feed(user_id, db).await.map_err(map_db_err)
 }
 
-pub async fn get_global_posts(limit: i64, skip: i64, db: &Pool<Postgres>) -> Result<Vec<PostPub>, LogicErr> {
-  PostPub::fetch_global_federated_feed(limit, skip, db)
+pub async fn get_global_posts(limit: i64, skip: i64, db: &Pool<Postgres>) -> Result<Vec<PostEvent>, LogicErr> {
+  PostEvent::fetch_global_federated_feed(limit, skip, db)
     .await
     .map_err(map_db_err)
 }
 
 pub async fn get_global_posts_count(db: &Pool<Postgres>) -> Result<i64, LogicErr> {
-  PostPub::count_global_federated_feed(db).await.map_err(map_db_err)
+  PostEvent::count_global_federated_feed(db).await.map_err(map_db_err)
 }
 
 pub async fn create_post(db: &Pool<Postgres>, req: &NewPostRequest, user_id: &Uuid) -> Result<Uuid, LogicErr> {
@@ -93,13 +93,12 @@ pub async fn upload_post_file(
     Err(err) => return Err(map_db_err(err)),
   }
 
-  let job_id = Uuid::new_v4();
-  Job::create(
+  let job_id = Job::create(
     NewJob {
-      job_id,
       created_by_id: Some(*user_id),
       status: JobStatus::NotStarted,
-      completion_record_id: Some(*post_id),
+      record_id: Some(*post_id),
+      associated_record_id: None,
     },
     db,
   )
