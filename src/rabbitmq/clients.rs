@@ -35,7 +35,7 @@ impl RabbitMQClient {
 
     let work_channel = conn.create_channel().await.unwrap();
 
-    let dl_exchg_declare_options = ExchangeDeclareOptions {
+    let exchg_declare_options = ExchangeDeclareOptions {
       passive: false,
       durable: true,
       auto_delete: false,
@@ -44,12 +44,23 @@ impl RabbitMQClient {
     };
 
     let dl_exchg_name = format!("exchg_{}", SETTINGS.queue.work_deadletter_queue);
+    let exchg_name = format!("exchg_{}", SETTINGS.queue.work_queue);
 
     work_channel
       .exchange_declare(
         &dl_exchg_name,
         ExchangeKind::Direct,
-        dl_exchg_declare_options,
+        exchg_declare_options,
+        FieldTable::default(),
+      )
+      .await
+      .unwrap();
+
+    work_channel
+      .exchange_declare(
+        &exchg_name,
+        ExchangeKind::Direct,
+        exchg_declare_options,
         FieldTable::default(),
       )
       .await
@@ -84,6 +95,17 @@ impl RabbitMQClient {
       .queue_bind(
         &SETTINGS.queue.work_deadletter_queue,
         &dl_exchg_name,
+        "",
+        QueueBindOptions::default(),
+        FieldTable::default(),
+      )
+      .await
+      .unwrap();
+
+    work_channel
+      .queue_bind(
+        &SETTINGS.queue.work_queue,
+        &exchg_name,
         "",
         QueueBindOptions::default(),
         FieldTable::default(),

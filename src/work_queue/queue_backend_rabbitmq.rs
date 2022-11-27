@@ -6,7 +6,7 @@ use crate::{
   logic::LogicErr,
   model::{
     job::{Job, JobStatus},
-    queue_job::QueueJob,
+    queue_job::{QueueJob, QueueJobType},
   },
   settings::SETTINGS,
 };
@@ -155,9 +155,11 @@ impl QueueBackend for QueueBackendRabbitMQ {
         }
       }
 
-      match match queue_job.job_type {
-        ConvertNewPostImages => convert_new_post_images(queue_job.job_id, &db, cdn).await,
-      } {
+      let result = match queue_job.job_type {
+        QueueJobType::ConvertNewPostImages => convert_new_post_images(queue_job.job_id, &db, cdn).await,
+      };
+
+      match result {
         Ok(()) => {
           db_job.status = JobStatus::Done;
           match Job::update(&db_job, &db).await {
