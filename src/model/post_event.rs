@@ -53,6 +53,10 @@ pub struct PostEvent {
   pub user_fediverse_id: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub user_avatar_url: Option<String>,
+  pub event_user_handle: String,
+  pub event_user_fediverse_id: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub event_user_avatar_url: Option<String>,
   pub likes: i64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub liked: Option<bool>,
