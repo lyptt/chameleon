@@ -7,16 +7,14 @@ use crate::activitypub::{
   activity::Activity, activity_convertible::ActivityConvertible, activity_type::ActivityType, image::Image, link::Link,
 };
 
-use super::access_type::AccessType;
+use super::{access_type::AccessType, event_type::EventType};
 
 #[derive(Deserialize, Serialize, FromRow)]
-pub struct PostPub {
+pub struct PostEvent {
+  // Event columns
+  pub event_type: EventType,
+  // Post columns
   pub post_id: Uuid,
-  pub user_id: Uuid,
-  pub user_handle: String,
-  pub user_fediverse_id: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub user_avatar_url: Option<String>,
   pub uri: String,
   pub content_md: String,
   pub content_html: String,
@@ -49,22 +47,28 @@ pub struct PostPub {
   pub updated_at: DateTime<Utc>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub content_blurhash: Option<String>,
+  // Foreign columns
+  pub user_id: Uuid,
+  pub user_handle: String,
+  pub user_fediverse_id: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub user_avatar_url: Option<String>,
   pub likes: i64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub liked: Option<bool>,
   pub comments: i64,
 }
 
-impl PostPub {
+impl PostEvent {
   /// Fetches the user's feed from their own perspective, i.e. all of the posts they have submitted
   pub async fn fetch_user_own_feed(
-    fediverse_id: &str,
+    user_id: &Uuid,
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
-  ) -> Result<Vec<PostPub>, Error> {
+  ) -> Result<Vec<PostEvent>, Error> {
     let post = sqlx::query_as(include_str!("../db/fetch_user_own_feed.sql"))
-      .bind(fediverse_id)
+      .bind(user_id)
       .bind(limit)
       .bind(skip)
       .fetch_all(pool)
@@ -74,9 +78,9 @@ impl PostPub {
   }
 
   /// Fetches the count of the posts in the user's feed from their own perspective, i.e. all of the posts they have submitted
-  pub async fn count_user_own_feed(fediverse_id: &str, pool: &Pool<Postgres>) -> Result<i64, Error> {
+  pub async fn count_user_own_feed(user_id: &Uuid, pool: &Pool<Postgres>) -> Result<i64, Error> {
     let count = sqlx::query_scalar(include_str!("../db/count_user_own_feed.sql"))
-      .bind(fediverse_id)
+      .bind(user_id)
       .fetch_one(pool)
       .await?;
 
@@ -85,13 +89,13 @@ impl PostPub {
 
   /// Fetches the user's federated feed, i.e. what users on any server can see
   pub async fn fetch_user_federated_feed(
-    fediverse_id: &str,
+    user_id: &Uuid,
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
-  ) -> Result<Vec<PostPub>, Error> {
+  ) -> Result<Vec<PostEvent>, Error> {
     let post = sqlx::query_as(include_str!("../db/fetch_user_federated_feed.sql"))
-      .bind(fediverse_id)
+      .bind(user_id)
       .bind(limit)
       .bind(skip)
       .fetch_all(pool)
@@ -102,9 +106,9 @@ impl PostPub {
 
   /// Fetches the count of the user's posts in their federated feed, i.e.
   /// what users on any server can see
-  pub async fn count_user_federated_feed(fediverse_id: &str, pool: &Pool<Postgres>) -> Result<i64, Error> {
+  pub async fn count_user_federated_feed(user_id: &Uuid, pool: &Pool<Postgres>) -> Result<i64, Error> {
     let count = sqlx::query_scalar(include_str!("../db/count_user_federated_feed.sql"))
-      .bind(fediverse_id)
+      .bind(user_id)
       .fetch_one(pool)
       .await?;
 
@@ -114,15 +118,15 @@ impl PostPub {
   /// Fetches the user's public feed, i.e. what users that follow this user
   /// can see, or alternatively all the user's public posts
   pub async fn fetch_user_public_feed(
-    target_user_fediverse_id: &str,
-    own_user_fediverse_id: &Option<String>,
+    target_user_id: &Uuid,
+    own_user_id: &Option<Uuid>,
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
-  ) -> Result<Vec<PostPub>, Error> {
+  ) -> Result<Vec<PostEvent>, Error> {
     let post = sqlx::query_as(include_str!("../db/fetch_user_public_feed.sql"))
-      .bind(target_user_fediverse_id)
-      .bind(own_user_fediverse_id)
+      .bind(target_user_id)
+      .bind(own_user_id)
       .bind(limit)
       .bind(skip)
       .fetch_all(pool)
@@ -134,13 +138,13 @@ impl PostPub {
   /// Fetches the count of posts in the user's public feed, i.e. what users that follow this
   /// user can see, or alternatively all the user's public posts
   pub async fn count_user_public_feed(
-    target_user_fediverse_id: &str,
-    own_user_fediverse_id: &Option<String>,
+    target_user_id: &Uuid,
+    own_user_id: &Option<Uuid>,
     pool: &Pool<Postgres>,
   ) -> Result<i64, Error> {
     let count = sqlx::query_scalar(include_str!("../db/count_user_public_feed.sql"))
-      .bind(target_user_fediverse_id)
-      .bind(own_user_fediverse_id)
+      .bind(target_user_id)
+      .bind(own_user_id)
       .fetch_one(pool)
       .await?;
 
@@ -152,7 +156,7 @@ impl PostPub {
     limit: i64,
     skip: i64,
     pool: &Pool<Postgres>,
-  ) -> Result<Vec<PostPub>, Error> {
+  ) -> Result<Vec<PostEvent>, Error> {
     let post = sqlx::query_as(include_str!("../db/fetch_global_federated_feed.sql"))
       .bind(limit)
       .bind(skip)
@@ -175,7 +179,7 @@ impl PostPub {
     post_id: &Uuid,
     user_id: &Option<Uuid>,
     pool: &Pool<Postgres>,
-  ) -> Result<Option<PostPub>, Error> {
+  ) -> Result<Option<PostEvent>, Error> {
     let post = sqlx::query_as(include_str!("../db/fetch_post.sql"))
       .bind(post_id)
       .bind(user_id)
@@ -186,7 +190,7 @@ impl PostPub {
   }
 }
 
-impl ActivityConvertible<Image> for PostPub {
+impl ActivityConvertible<Image> for PostEvent {
   fn to_activity(&self, base_uri: &str, actor_uri: &str) -> Option<Activity<Image>> {
     let mut image_links: Vec<Link> = vec![];
     if let Some(link) = Link::from_post_pub_small(self) {
