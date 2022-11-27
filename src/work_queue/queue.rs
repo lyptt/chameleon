@@ -14,7 +14,7 @@ use super::{queue_backend_rabbitmq::QueueBackendRabbitMQ, queue_backend_sqs::Que
 #[async_trait]
 pub trait QueueBackend {
   async fn send_job(&self, job: QueueJob) -> Result<(), LogicErr>;
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr>;
+  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr>;
 }
 
 pub struct Queue {
@@ -37,7 +37,7 @@ impl Queue {
     self.imp.send_job(job).await
   }
 
-  pub async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
-    self.imp.receive_jobs(db, cdn).await
+  pub async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
+    self.imp.receive_jobs(db, cdn, queue).await
   }
 }

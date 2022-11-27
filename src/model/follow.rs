@@ -1,9 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{Error, Pool, Postgres};
+use sqlx::{Error, FromRow, Pool, Postgres};
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, FromRow)]
 /// Represents a user's follow on another user
 pub struct Follow {
   pub follower_id: Uuid,
@@ -66,5 +66,18 @@ impl Follow {
     .fetch_one(pool)
     .await
     .unwrap_or(false)
+  }
+
+  pub async fn fetch_user_followers(user_id: &Uuid, pool: &Pool<Postgres>) -> Option<Vec<Follow>> {
+    let result =
+      sqlx::query_as("SELECT * FROM followers WHERE following_user_id = $1 AND user_id != following_user_id")
+        .bind(user_id)
+        .fetch_all(pool)
+        .await;
+
+    match result {
+      Ok(follows) => Some(follows),
+      Err(_) => None,
+    }
   }
 }

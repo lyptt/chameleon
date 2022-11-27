@@ -2,6 +2,7 @@ pub mod access_type;
 pub mod app;
 pub mod comment;
 pub mod comment_pub;
+pub mod event;
 pub mod event_type;
 pub mod follow;
 pub mod job;

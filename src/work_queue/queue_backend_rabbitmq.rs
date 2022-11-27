@@ -1,12 +1,12 @@
-use super::queue::QueueBackend;
+use super::queue::{Queue, QueueBackend};
 use crate::{
   cdn::cdn_store::Cdn,
   helpers::api::map_ext_err,
-  job::convert_new_post_images::convert_new_post_images,
+  job::delegate_job,
   logic::LogicErr,
   model::{
     job::{Job, JobStatus},
-    queue_job::{QueueJob, QueueJobType},
+    queue_job::QueueJob,
   },
   settings::SETTINGS,
 };
@@ -38,8 +38,15 @@ impl QueueBackendRabbitMQ {
 
     match Job::update(&db_job, &db).await {
       Ok(_) => {
-        if db_job.failed_count > 5 {
-          should_requeue = false;
+        if cfg!(debug_assertions) {
+          // Give ourselves more opportunity to diagnose job issues in debug builds
+          if db_job.failed_count > 49 {
+            should_requeue = false;
+          }
+        } else {
+          if db_job.failed_count > 4 {
+            should_requeue = false;
+          }
         }
       }
       Err(err) => {
@@ -85,7 +92,7 @@ impl QueueBackend for QueueBackendRabbitMQ {
     Ok(())
   }
 
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn) -> Result<(), LogicErr> {
+  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
     let tag = Uuid::new_v4().to_string();
     let mut consumer = match RABBITMQ_WORK_CHANNEL
       .get()
@@ -155,9 +162,7 @@ impl QueueBackend for QueueBackendRabbitMQ {
         }
       }
 
-      let result = match queue_job.job_type {
-        QueueJobType::ConvertNewPostImages => convert_new_post_images(queue_job.job_id, &db, cdn).await,
-      };
+      let result = delegate_job(&queue_job, &db, cdn, queue).await;
 
       match result {
         Ok(()) => {

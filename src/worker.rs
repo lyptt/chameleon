@@ -55,7 +55,7 @@ async fn main() -> std::io::Result<()> {
   let queue = Queue::new();
 
   loop {
-    match queue.receive_jobs(pool.clone(), &cdn).await {
+    match queue.receive_jobs(pool.clone(), &cdn, &queue).await {
       Ok(_) => {}
       Err(err) => error!("{}", err.to_string()),
     }

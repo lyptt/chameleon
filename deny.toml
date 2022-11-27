@@ -27,6 +27,7 @@ allow = [
   "LGPL-3.0",
   "AGPL-3.0",
   "OpenSSL",
+  "BSD-2-Clause",
 ]
 copyleft = "warn"
 allow-osi-fsf-free = "neither"

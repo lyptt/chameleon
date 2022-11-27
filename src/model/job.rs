@@ -50,7 +50,9 @@ impl Type<Postgres> for JobStatus {
 pub struct Job {
   pub job_id: Uuid,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub completion_record_id: Option<Uuid>,
+  pub record_id: Option<Uuid>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub associated_record_id: Option<Uuid>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub created_by_id: Option<Uuid>,
   pub created_at: DateTime<Utc>,
@@ -61,10 +63,10 @@ pub struct Job {
 
 /// Represents a new asynchronous job that can be queried by the user.
 pub struct NewJob {
-  pub job_id: Uuid,
   pub created_by_id: Option<Uuid>,
   pub status: JobStatus,
-  pub completion_record_id: Option<Uuid>,
+  pub record_id: Option<Uuid>,
+  pub associated_record_id: Option<Uuid>,
 }
 
 impl Job {
@@ -88,28 +90,32 @@ impl Job {
     }
   }
 
-  pub async fn create(job: NewJob, pool: &Pool<Postgres>) -> Result<(), Error> {
-    sqlx::query("INSERT INTO jobs (job_id, created_by_id, status, completion_record_id) VALUES ($1, $2, $3, $4)")
-      .bind(job.job_id)
-      .bind(job.created_by_id)
-      .bind(job.status)
-      .bind(job.completion_record_id)
-      .execute(pool)
-      .await?;
+  pub async fn create(job: NewJob, pool: &Pool<Postgres>) -> Result<Uuid, Error> {
+    let job_id = Uuid::new_v4();
 
-    Ok(())
+    sqlx::query(
+      "INSERT INTO jobs (job_id, created_by_id, status, record_id, associated_record_id) VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(job_id)
+    .bind(job.created_by_id)
+    .bind(job.status)
+    .bind(job.record_id)
+    .bind(job.associated_record_id)
+    .execute(pool)
+    .await?;
+
+    Ok(job_id)
   }
 
   pub async fn update(job: &Self, pool: &Pool<Postgres>) -> Result<(), Error> {
-    sqlx::query(
-      "UPDATE jobs SET completion_record_id=$1, status = $2, failed_count = $3, updated_at = now() WHERE job_id = $4",
-    )
-    .bind(job.completion_record_id)
-    .bind(&job.status)
-    .bind(job.failed_count)
-    .bind(job.job_id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE jobs SET record_id = $1, associated_record_id = $2, status = $3, failed_count = $4, updated_at = now() WHERE job_id = $5")
+      .bind(job.record_id)
+      .bind(job.associated_record_id)
+      .bind(&job.status)
+      .bind(job.failed_count)
+      .bind(job.job_id)
+      .execute(pool)
+      .await?;
 
     Ok(())
   }

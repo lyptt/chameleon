@@ -93,13 +93,12 @@ pub async fn upload_post_file(
     Err(err) => return Err(map_db_err(err)),
   }
 
-  let job_id = Uuid::new_v4();
-  Job::create(
+  let job_id = Job::create(
     NewJob {
-      job_id,
       created_by_id: Some(*user_id),
       status: JobStatus::NotStarted,
-      completion_record_id: Some(*post_id),
+      record_id: Some(*post_id),
+      associated_record_id: None,
     },
     db,
   )
