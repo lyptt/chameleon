@@ -23,7 +23,7 @@ pub async fn delete_boost_events(job_id: Uuid, db: &Pool<Postgres>) -> Result<()
     None => return Err(LogicErr::InternalError("Post ID not found for job".to_string())),
   };
 
-  Event::delete_post_events(&post_id, &user_id, EventType::Boost, &db)
+  Event::delete_post_events(&post_id, &user_id, EventType::Boost, db)
     .await
     .map_err(map_db_err)
 }

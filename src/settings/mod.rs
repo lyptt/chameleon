@@ -26,6 +26,7 @@ pub enum AppCdnStore {
 
 #[derive(Clone, Debug, Deserialize, EnumString, Display, PartialEq, Eq)]
 pub enum AppQueueBackend {
+  Noop,
   RabbitMQ,
   Sqs,
 }
@@ -41,6 +42,8 @@ pub struct Server {
   pub url: String,
   pub fqdn: String,
   pub api_fqdn: String,
+  pub api_root_fqdn: String,
+  pub cdn_fqdn: String,
   pub jwt_secret: String,
 }
 
@@ -116,6 +119,8 @@ impl Settings {
         port: 8080,
         fqdn: "http://0.0.0.0:8080".to_string(),
         api_fqdn: "http://0.0.0.0:8080/api".to_string(),
+        api_root_fqdn: "http://0.0.0.0:8080".to_string(),
+        cdn_fqdn: "http://0.0.0.0:8080".to_string(),
         jwt_secret: "change-me".to_string(),
       },
       cdn: Cdn {

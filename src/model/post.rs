@@ -160,4 +160,11 @@ impl Post {
       Err(_) => None,
     }
   }
+
+  pub async fn fetch_post_count(pool: &Pool<Postgres>) -> i64 {
+    sqlx::query_scalar("SELECT COUNT(*) FROM posts")
+      .fetch_one(pool)
+      .await
+      .unwrap_or(0)
+  }
 }

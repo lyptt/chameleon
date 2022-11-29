@@ -1,7 +1,9 @@
 pub mod comment;
 pub mod follow;
+pub mod host_meta;
 pub mod job;
 pub mod like;
+pub mod nodeinfo;
 pub mod oauth;
 pub mod post;
 pub mod public;

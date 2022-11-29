@@ -9,7 +9,10 @@ use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 use std::result::Result;
 
-use super::{queue_backend_rabbitmq::QueueBackendRabbitMQ, queue_backend_sqs::QueueBackendSQS};
+use super::{
+  queue_backend_noop::QueueBackendNoop, queue_backend_rabbitmq::QueueBackendRabbitMQ,
+  queue_backend_sqs::QueueBackendSQS,
+};
 
 #[async_trait]
 pub trait QueueBackend {
@@ -29,6 +32,9 @@ impl Queue {
       },
       AppQueueBackend::RabbitMQ => Queue {
         imp: Box::new(QueueBackendRabbitMQ {}),
+      },
+      AppQueueBackend::Noop => Queue {
+        imp: Box::new(QueueBackendNoop {}),
       },
     }
   }
