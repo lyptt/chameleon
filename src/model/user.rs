@@ -89,15 +89,22 @@ impl User {
 
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
-      aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.fediverse_id)]),
+      aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.handle)]),
       subject: self.fediverse_id.clone(),
       links: [
-        WebfingerRecordLink::build_self_link(&self.fediverse_id),
-        WebfingerRecordLink::build_profile_page_link(&self.fediverse_id),
-        WebfingerRecordLink::build_feed_link(&self.fediverse_id),
+        WebfingerRecordLink::build_self_link(&self.handle),
+        WebfingerRecordLink::build_profile_page_link(&self.handle),
+        WebfingerRecordLink::build_feed_link(&self.handle),
       ]
       .into(),
     }
+  }
+
+  pub async fn fetch_user_count(pool: &Pool<Postgres>) -> i64 {
+    sqlx::query_scalar("SELECT COUNT(*) FROM users")
+      .fetch_one(pool)
+      .await
+      .unwrap_or(0)
   }
 }
 
@@ -136,7 +143,7 @@ mod tests {
     assert_eq!(&finger.subject, &user.fediverse_id);
     assert!(finger.aliases.is_some());
     assert_eq!(finger.aliases.unwrap().len(), 1);
-    assert_eq!(finger.links.len(), 2);
+    assert_eq!(finger.links.len(), 3);
 
     assert_eq!(finger.links[0].rel, "self");
     assert_eq!(finger.links[0].link_type, "application/activity+json");
@@ -151,7 +158,7 @@ mod tests {
     assert!(finger.links[1].href.is_some());
     assert_eq!(
       finger.links[1].href.as_ref().unwrap(),
-      "http://127.0.0.1:8000/feed/user"
+      "http://127.0.0.1:3000/users/user"
     );
   }
 
@@ -184,7 +191,7 @@ mod tests {
     assert_eq!(&finger.subject, &user.fediverse_id);
     assert!(finger.aliases.is_some());
     assert_eq!(finger.aliases.unwrap().len(), 1);
-    assert_eq!(finger.links.len(), 2);
+    assert_eq!(finger.links.len(), 3);
 
     assert_eq!(finger.links[0].rel, "self");
     assert_eq!(finger.links[0].link_type, "application/activity+json");
@@ -199,7 +206,7 @@ mod tests {
     assert!(finger.links[1].href.is_some());
     assert_eq!(
       finger.links[1].href.as_ref().unwrap(),
-      "http://127.0.0.1:8000/feed/<unknown>"
+      "http://127.0.0.1:3000/users/<unknown>"
     );
   }
 }

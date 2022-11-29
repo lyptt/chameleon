@@ -101,4 +101,11 @@ impl Comment {
 
     Ok(())
   }
+
+  pub async fn fetch_comment_count(pool: &Pool<Postgres>) -> i64 {
+    sqlx::query_scalar("SELECT COUNT(*) FROM comments")
+      .fetch_one(pool)
+      .await
+      .unwrap_or(0)
+  }
 }

@@ -29,8 +29,10 @@ use routes::comment::{
   api_create_comment, api_create_comment_like, api_delete_comment, api_delete_comment_like, api_get_comments,
 };
 use routes::follow::{api_create_follow, api_delete_follow};
+use routes::host_meta::api_get_host_meta;
 use routes::job::api_job_query_status;
 use routes::like::{api_create_like, api_delete_like};
+use routes::nodeinfo::{api_get_nodeinfo, api_get_nodeinfo_2_1};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
   api_activitypub_get_user_public_feed, api_boost_post, api_create_post, api_get_global_feed, api_get_post,
@@ -200,6 +202,21 @@ async fn main() -> std::io::Result<()> {
         web::resource("/.well-known/status")
           .name("status")
           .route(web::get().to(api_get_server_status)),
+      )
+      .service(
+        web::resource("/.well-known/nodeinfo")
+          .name("nodeinfo")
+          .route(web::get().to(api_get_nodeinfo)),
+      )
+      .service(
+        web::resource("/.well-known/host-meta")
+          .name("nodeinfo")
+          .route(web::get().to(api_get_host_meta)),
+      )
+      .service(
+        web::resource("/api/nodeinfo/2.1")
+          .name("nodeinfo")
+          .route(web::get().to(api_get_nodeinfo_2_1)),
       )
       .service(
         web::resource("/{path:.*}")

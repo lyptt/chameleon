@@ -3,7 +3,9 @@ env = "Development"
 [server]
 url = "127.0.0.1"
 fqdn = "http://127.0.0.1:3000"
+cdn_fqdn = "http://127.0.0.1:3000"
 api_fqdn = "http://127.0.0.1:8000/api"
+api_root_fqdn = "http://127.0.0.1:8000"
 jwt_secret = "super-secret-key"
 
 [database]
@@ -16,7 +18,7 @@ file_store = "Local"
 [queue]
 queue_backend = "RabbitMQ"
 work_queue = "work_q"
-work_deadletter_queue="work_dq"
+work_deadletter_queue = "work_dq"
 
 [log]
 level = "Debug"
