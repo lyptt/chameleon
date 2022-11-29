@@ -20,7 +20,7 @@ version = "4.2.1"
 version = "0.6.4"
 
 [dependencies.serde]
-version = "1.0.147"
+version = "1.0.148"
 features = ["derive"]
 
 [dependencies.serde_json]
