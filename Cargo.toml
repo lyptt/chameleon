@@ -68,7 +68,7 @@ features = ["clock", "std", "wasmbind", "serde"]
 default-features = false
 
 [dependencies.async-trait]
-version = "0.1.58"
+version = "0.1.59"
 
 [dependencies.tokio]
 version = "1.22.0"
