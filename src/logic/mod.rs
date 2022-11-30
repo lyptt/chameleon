@@ -6,7 +6,7 @@ pub mod like;
 pub mod post;
 pub mod user;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum LogicErr {
   // NotFound,
   DbError(String),
