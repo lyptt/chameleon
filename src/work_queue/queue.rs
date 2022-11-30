@@ -14,6 +14,10 @@ use super::{
   queue_backend_sqs::QueueBackendSQS,
 };
 
+#[cfg(test)]
+use mockall::automock;
+
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait QueueBackend {
   async fn send_job(&self, job: QueueJob) -> Result<(), LogicErr>;
@@ -37,6 +41,11 @@ impl Queue {
         imp: Box::new(QueueBackendNoop {}),
       },
     }
+  }
+
+  #[cfg(test)]
+  pub fn new_inner(inner: Box<dyn QueueBackend + Sync + Send>) -> Queue {
+    Queue { imp: inner }
   }
 
   pub async fn send_job(&self, job: QueueJob) -> Result<(), LogicErr> {

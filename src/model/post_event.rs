@@ -9,7 +9,7 @@ use crate::activitypub::{
 
 use super::{access_type::AccessType, event_type::EventType};
 
-#[derive(Deserialize, Serialize, FromRow)]
+#[derive(Deserialize, Serialize, FromRow, Debug, PartialEq, Eq, Clone)]
 pub struct PostEvent {
   // Event columns
   pub event_type: EventType,

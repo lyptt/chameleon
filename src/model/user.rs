@@ -71,28 +71,27 @@ mod tests {
       intro_html: None,
     };
 
-    let finger = user.to_webfinger();
+    temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {
+      let finger = user.to_webfinger();
 
-    assert_eq!(&finger.subject, &user.fediverse_id);
-    assert!(finger.aliases.is_some());
-    assert_eq!(finger.aliases.unwrap().len(), 1);
-    assert_eq!(finger.links.len(), 3);
+      assert_eq!(&finger.subject, &user.fediverse_id);
+      assert!(finger.aliases.is_some());
+      assert_eq!(finger.aliases.unwrap().len(), 1);
+      assert_eq!(finger.links.len(), 3);
 
-    assert_eq!(finger.links[0].rel, "self");
-    assert_eq!(finger.links[0].link_type, "application/activity+json");
-    assert!(finger.links[0].href.is_some());
-    assert_eq!(
-      finger.links[0].href.as_ref().unwrap(),
-      "http://127.0.0.1:8000/api/users/user"
-    );
+      assert_eq!(finger.links[0].rel, "self");
+      assert_eq!(finger.links[0].link_type, "application/activity+json");
+      assert!(finger.links[0].href.is_some());
+      assert_eq!(
+        finger.links[0].href.as_ref().unwrap(),
+        "http://0.0.0.0:8080/api/users/user"
+      );
 
-    assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
-    assert_eq!(finger.links[1].link_type, "text/html");
-    assert!(finger.links[1].href.is_some());
-    assert_eq!(
-      finger.links[1].href.as_ref().unwrap(),
-      "http://127.0.0.1:3000/users/user"
-    );
+      assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
+      assert_eq!(finger.links[1].link_type, "text/html");
+      assert!(finger.links[1].href.is_some());
+      assert_eq!(finger.links[1].href.as_ref().unwrap(), "http://0.0.0.0:8080/users/user");
+    });
   }
 
   #[test]
@@ -119,27 +118,29 @@ mod tests {
       intro_html: None,
     };
 
-    let finger = user.to_webfinger();
+    temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {
+      let finger = user.to_webfinger();
 
-    assert_eq!(&finger.subject, &user.fediverse_id);
-    assert!(finger.aliases.is_some());
-    assert_eq!(finger.aliases.unwrap().len(), 1);
-    assert_eq!(finger.links.len(), 3);
+      assert_eq!(&finger.subject, &user.fediverse_id);
+      assert!(finger.aliases.is_some());
+      assert_eq!(finger.aliases.unwrap().len(), 1);
+      assert_eq!(finger.links.len(), 3);
 
-    assert_eq!(finger.links[0].rel, "self");
-    assert_eq!(finger.links[0].link_type, "application/activity+json");
-    assert!(finger.links[0].href.is_some());
-    assert_eq!(
-      finger.links[0].href.as_ref().unwrap(),
-      "http://127.0.0.1:8000/api/users/<unknown>"
-    );
+      assert_eq!(finger.links[0].rel, "self");
+      assert_eq!(finger.links[0].link_type, "application/activity+json");
+      assert!(finger.links[0].href.is_some());
+      assert_eq!(
+        finger.links[0].href.as_ref().unwrap(),
+        "http://0.0.0.0:8080/api/users/<unknown>"
+      );
 
-    assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
-    assert_eq!(finger.links[1].link_type, "text/html");
-    assert!(finger.links[1].href.is_some());
-    assert_eq!(
-      finger.links[1].href.as_ref().unwrap(),
-      "http://127.0.0.1:3000/users/<unknown>"
-    );
+      assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
+      assert_eq!(finger.links[1].link_type, "text/html");
+      assert!(finger.links[1].href.is_some());
+      assert_eq!(
+        finger.links[1].href.as_ref().unwrap(),
+        "http://0.0.0.0:8080/users/<unknown>"
+      );
+    });
   }
 }
