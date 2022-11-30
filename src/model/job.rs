@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::PgTypeInfo, Decode, Encode, Error, FromRow, Pool, Postgres, Type};
+use sqlx::{postgres::PgTypeInfo, Decode, Encode, FromRow, Postgres, Type};
 use strum::{Display, EnumString};
 use uuid::Uuid;
 
@@ -67,56 +67,4 @@ pub struct NewJob {
   pub status: JobStatus,
   pub record_id: Option<Uuid>,
   pub associated_record_id: Option<Uuid>,
-}
-
-impl Job {
-  pub async fn fetch_by_id(job_id: &Uuid, pool: &Pool<Postgres>) -> Result<Option<Self>, Error> {
-    let user = sqlx::query_as("SELECT * FROM jobs WHERE job_id = $1")
-      .bind(job_id)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(user)
-  }
-
-  pub async fn fetch_optional_by_id(job_id: &Uuid, pool: &Pool<Postgres>) -> Option<Self> {
-    match sqlx::query_as("SELECT * FROM jobs WHERE job_id = $1")
-      .bind(job_id)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(job) => job,
-      Err(_) => None,
-    }
-  }
-
-  pub async fn create(job: NewJob, pool: &Pool<Postgres>) -> Result<Uuid, Error> {
-    let job_id = Uuid::new_v4();
-
-    sqlx::query(
-      "INSERT INTO jobs (job_id, created_by_id, status, record_id, associated_record_id) VALUES ($1, $2, $3, $4, $5)",
-    )
-    .bind(job_id)
-    .bind(job.created_by_id)
-    .bind(job.status)
-    .bind(job.record_id)
-    .bind(job.associated_record_id)
-    .execute(pool)
-    .await?;
-
-    Ok(job_id)
-  }
-
-  pub async fn update(job: &Self, pool: &Pool<Postgres>) -> Result<(), Error> {
-    sqlx::query("UPDATE jobs SET record_id = $1, associated_record_id = $2, status = $3, failed_count = $4, updated_at = now() WHERE job_id = $5")
-      .bind(job.record_id)
-      .bind(job.associated_record_id)
-      .bind(&job.status)
-      .bind(job.failed_count)
-      .bind(job.job_id)
-      .execute(pool)
-      .await?;
-
-    Ok(())
-  }
 }

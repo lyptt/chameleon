@@ -1,4 +1,4 @@
-use sqlx::{Error, FromRow, Pool, Postgres};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
@@ -27,66 +27,6 @@ pub struct User {
 }
 
 impl User {
-  pub async fn fetch_by_handle(handle: &String, pool: &Pool<Postgres>) -> Result<Option<User>, Error> {
-    let user = sqlx::query_as("SELECT * FROM users WHERE handle = $1")
-      .bind(handle)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(user)
-  }
-
-  pub async fn fetch_id_by_handle(handle: &String, pool: &Pool<Postgres>) -> Option<Uuid> {
-    match sqlx::query_scalar("SELECT user_id FROM users WHERE handle = $1")
-      .bind(handle)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(user) => user,
-      Err(_) => None,
-    }
-  }
-
-  pub async fn fetch_id_by_fediverse_id(fediverse_id: &String, pool: &Pool<Postgres>) -> Option<Uuid> {
-    match sqlx::query_scalar("SELECT user_id FROM users WHERE fediverse_id = $1")
-      .bind(fediverse_id)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(user) => user,
-      Err(_) => None,
-    }
-  }
-
-  pub async fn fetch_by_fediverse_id(fediverse_id: &String, pool: &Pool<Postgres>) -> Result<Option<User>, Error> {
-    let user = sqlx::query_as("SELECT * FROM users WHERE fediverse_id = $1")
-      .bind(fediverse_id)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(user)
-  }
-
-  pub async fn fetch_password_hash(handle: &str, pool: &Pool<Postgres>) -> Result<Option<String>, Error> {
-    let password_hash = sqlx::query_scalar("SELECT password_hash FROM users WHERE handle = $1")
-      .bind(handle)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(password_hash)
-  }
-
-  pub async fn fetch_fediverse_id_by_handle(fediverse_id: &String, pool: &Pool<Postgres>) -> Option<String> {
-    match sqlx::query_scalar("SELECT fediverse_id FROM users WHERE handle = $1")
-      .bind(fediverse_id)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(user) => user,
-      Err(_) => None,
-    }
-  }
-
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
       aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.handle)]),
@@ -98,13 +38,6 @@ impl User {
       ]
       .into(),
     }
-  }
-
-  pub async fn fetch_user_count(pool: &Pool<Postgres>) -> i64 {
-    sqlx::query_scalar("SELECT COUNT(*) FROM users")
-      .fetch_one(pool)
-      .await
-      .unwrap_or(0)
   }
 }
 

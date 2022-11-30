@@ -1,16 +1,15 @@
 use actix_easy_multipart::tempfile::Tempfile;
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use super::LogicErr;
 use crate::{
   cdn::cdn_store::Cdn,
+  db::{job_repository::JobPool, post_repository::PostPool},
   helpers::api::map_db_err,
   model::{
     access_type::AccessType,
-    job::{Job, JobStatus, NewJob},
-    post::Post,
+    job::{JobStatus, NewJob},
     post_event::PostEvent,
     queue_job::{QueueJob, QueueJobType},
   },
@@ -32,52 +31,49 @@ pub async fn get_user_posts(
   user_id: &Uuid,
   limit: i64,
   skip: i64,
-  db: &Pool<Postgres>,
+  posts: &PostPool,
 ) -> Result<Vec<PostEvent>, LogicErr> {
-  PostEvent::fetch_user_own_feed(user_id, limit, skip, db)
+  posts
+    .fetch_user_own_feed(user_id, limit, skip)
     .await
     .map_err(map_db_err)
 }
 
-pub async fn get_post(
-  post_id: &Uuid,
-  user_id: &Option<Uuid>,
-  db: &Pool<Postgres>,
-) -> Result<Option<PostEvent>, LogicErr> {
-  PostEvent::fetch_post(post_id, user_id, db).await.map_err(map_db_err)
+pub async fn get_post(post_id: &Uuid, user_id: &Option<Uuid>, posts: &PostPool) -> Result<Option<PostEvent>, LogicErr> {
+  posts.fetch_post(post_id, user_id).await.map_err(map_db_err)
 }
 
-pub async fn get_user_posts_count(user_id: &Uuid, db: &Pool<Postgres>) -> Result<i64, LogicErr> {
-  PostEvent::count_user_own_feed(user_id, db).await.map_err(map_db_err)
+pub async fn get_user_posts_count(user_id: &Uuid, posts: &PostPool) -> Result<i64, LogicErr> {
+  posts.count_user_own_feed(user_id).await.map_err(map_db_err)
 }
 
-pub async fn get_global_posts(limit: i64, skip: i64, db: &Pool<Postgres>) -> Result<Vec<PostEvent>, LogicErr> {
-  PostEvent::fetch_global_federated_feed(limit, skip, db)
-    .await
-    .map_err(map_db_err)
+pub async fn get_global_posts(limit: i64, skip: i64, posts: &PostPool) -> Result<Vec<PostEvent>, LogicErr> {
+  posts.fetch_global_federated_feed(limit, skip).await.map_err(map_db_err)
 }
 
-pub async fn get_global_posts_count(db: &Pool<Postgres>) -> Result<i64, LogicErr> {
-  PostEvent::count_global_federated_feed(db).await.map_err(map_db_err)
+pub async fn get_global_posts_count(posts: &PostPool) -> Result<i64, LogicErr> {
+  posts.count_global_federated_feed().await.map_err(map_db_err)
 }
 
-pub async fn create_post(db: &Pool<Postgres>, req: &NewPostRequest, user_id: &Uuid) -> Result<Uuid, LogicErr> {
+pub async fn create_post(posts: &PostPool, req: &NewPostRequest, user_id: &Uuid) -> Result<Uuid, LogicErr> {
   let content_html = markdown::to_html(&req.content_md);
 
-  Post::create_post(user_id, &req.content_md, &content_html, &req.visibility, db)
+  posts
+    .create_post(user_id, &req.content_md, &content_html, &req.visibility)
     .await
     .map_err(map_db_err)
 }
 
 pub async fn upload_post_file(
-  db: &Pool<Postgres>,
+  posts: &PostPool,
+  jobs: &JobPool,
   post_id: &Uuid,
   user_id: &Uuid,
   cdn: &Cdn,
   queue: &Queue,
   upload: &Tempfile,
 ) -> Result<Uuid, LogicErr> {
-  if !Post::user_owns_post(user_id, post_id, db).await {
+  if !posts.user_owns_post(user_id, post_id).await {
     return Err(LogicErr::UnauthorizedError);
   }
 
@@ -88,22 +84,20 @@ pub async fn upload_post_file(
     Err(err) => return Err(err),
   };
 
-  match Post::update_post_content_storage(post_id, &path, db).await {
+  match posts.update_post_content_storage(post_id, &path).await {
     Ok(_) => {}
     Err(err) => return Err(map_db_err(err)),
   }
 
-  let job_id = Job::create(
-    NewJob {
+  let job_id = jobs
+    .create(NewJob {
       created_by_id: Some(*user_id),
       status: JobStatus::NotStarted,
       record_id: Some(*post_id),
       associated_record_id: None,
-    },
-    db,
-  )
-  .await
-  .map_err(map_db_err)?;
+    })
+    .await
+    .map_err(map_db_err)?;
 
   let job = QueueJob {
     job_id,

@@ -1,25 +1,27 @@
-use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
+  db::{comment_repository::CommentPool, follow_repository::FollowPool, post_repository::PostPool},
   helpers::api::map_db_err,
-  model::{access_type::AccessType, comment::Comment, follow::Follow, post::Post},
+  model::access_type::AccessType,
 };
 
 use super::LogicErr;
 
 pub async fn create_comment(
-  db: &Pool<Postgres>,
+  posts: &PostPool,
+  follows: &FollowPool,
+  comments: &CommentPool,
   post_id: &Uuid,
   user_id: &Uuid,
-  content_md: &String,
+  content_md: &str,
 ) -> Result<Uuid, LogicErr> {
-  let visibility = match Post::fetch_visibility_by_id(post_id, db).await {
+  let visibility = match posts.fetch_visibility_by_id(post_id).await {
     Some(visibility) => visibility,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  let owner_id = match Post::fetch_owner_by_id(post_id, db).await {
+  let owner_id = match posts.fetch_owner_by_id(post_id).await {
     Some(id) => id,
     None => return Err(LogicErr::MissingRecord),
   };
@@ -31,29 +33,32 @@ pub async fn create_comment(
 
   // If the post is only available to the author's followers and the user isn't a follower of the author, don't let the
   // user comment
-  if visibility == AccessType::FollowersOnly && !Follow::user_follows_poster(post_id, user_id, db).await {
+  if visibility == AccessType::FollowersOnly && !follows.user_follows_poster(post_id, user_id).await {
     return Err(LogicErr::MissingRecord);
   }
 
   let content_html = markdown::to_html(content_md);
 
-  Comment::create_comment(user_id, post_id, content_md, &content_html, db)
+  comments
+    .create_comment(user_id, post_id, content_md, &content_html)
     .await
     .map_err(map_db_err)
 }
 
 pub async fn create_comment_like(
-  db: &Pool<Postgres>,
+  posts: &PostPool,
+  follows: &FollowPool,
+  comments: &CommentPool,
   post_id: &Uuid,
   comment_id: &Uuid,
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
-  let visibility = match Post::fetch_visibility_by_id(post_id, db).await {
+  let visibility = match posts.fetch_visibility_by_id(post_id).await {
     Some(visibility) => visibility,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  let owner_id = match Post::fetch_owner_by_id(post_id, db).await {
+  let owner_id = match posts.fetch_owner_by_id(post_id).await {
     Some(id) => id,
     None => return Err(LogicErr::MissingRecord),
   };
@@ -65,33 +70,36 @@ pub async fn create_comment_like(
 
   // If the post is only available to the author's followers and the user isn't a follower of the author, don't let the
   // user comment
-  if visibility == AccessType::FollowersOnly && !Follow::user_follows_poster(post_id, user_id, db).await {
+  if visibility == AccessType::FollowersOnly && !follows.user_follows_poster(post_id, user_id).await {
     return Err(LogicErr::MissingRecord);
   }
 
-  Comment::create_comment_like(user_id, comment_id, post_id, db)
+  comments
+    .create_comment_like(user_id, comment_id, post_id)
     .await
     .map_err(map_db_err)
 }
 
 pub async fn delete_comment(
-  db: &Pool<Postgres>,
+  comments: &CommentPool,
   post_id: &Uuid,
   comment_id: &Uuid,
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
-  Comment::delete_comment(user_id, post_id, comment_id, db)
+  comments
+    .delete_comment(user_id, post_id, comment_id)
     .await
     .map_err(map_db_err)
 }
 
 pub async fn delete_comment_like(
-  db: &Pool<Postgres>,
+  comments: &CommentPool,
   post_id: &Uuid,
   comment_id: &Uuid,
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
-  Comment::delete_comment_like(user_id, comment_id, post_id, db)
+  comments
+    .delete_comment_like(user_id, comment_id, post_id)
     .await
     .map_err(map_db_err)
 }

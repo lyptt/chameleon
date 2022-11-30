@@ -1,6 +1,7 @@
 use super::queue::{Queue, QueueBackend};
 use crate::{
   cdn::cdn_store::Cdn,
+  db::{job_repository::JobPool, repositories::Repositories},
   helpers::api::map_ext_err,
   job::delegate_job,
   logic::LogicErr,
@@ -19,7 +20,6 @@ use lapin::{
   BasicProperties,
 };
 use log::error;
-use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::rabbitmq::clients::RABBITMQ_WORK_CHANNEL;
@@ -27,7 +27,7 @@ use crate::rabbitmq::clients::RABBITMQ_WORK_CHANNEL;
 pub struct QueueBackendRabbitMQ {}
 
 impl QueueBackendRabbitMQ {
-  async fn reject_job(job: Job, queue_job: &Delivery, db: &Pool<Postgres>, err_msg: &str, err: LogicErr) {
+  async fn reject_job(job: Job, queue_job: &Delivery, jobs: &JobPool, err_msg: &str, err: LogicErr) {
     error!("{}: {}: {}", err_msg, job.job_id, err.to_string());
 
     let mut db_job = job.clone();
@@ -36,7 +36,7 @@ impl QueueBackendRabbitMQ {
 
     let mut should_requeue = true;
 
-    match Job::update(&db_job, db).await {
+    match jobs.update(&db_job).await {
       Ok(_) => {
         if cfg!(debug_assertions) {
           // Give ourselves more opportunity to diagnose job issues in debug builds
@@ -92,7 +92,7 @@ impl QueueBackend for QueueBackendRabbitMQ {
     Ok(())
   }
 
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
+  async fn receive_jobs(&self, cdn: &Cdn, queue: &Queue, repositories: &Repositories) -> Result<(), LogicErr> {
     let tag = Uuid::new_v4().to_string();
     let mut consumer = match RABBITMQ_WORK_CHANNEL
       .get()
@@ -134,7 +134,7 @@ impl QueueBackend for QueueBackendRabbitMQ {
         }
       };
 
-      let mut db_job = match Job::fetch_optional_by_id(&queue_job.job_id, &db).await {
+      let mut db_job = match repositories.jobs.fetch_optional_by_id(&queue_job.job_id).await {
         Some(job) => job,
         None => {
           error!("Job not found in db with id {}", queue_job.job_id,);
@@ -151,13 +151,13 @@ impl QueueBackend for QueueBackendRabbitMQ {
       };
 
       db_job.status = JobStatus::InProgress;
-      match Job::update(&db_job, &db).await {
+      match repositories.jobs.update(&db_job).await {
         Ok(_) => {}
         Err(err) => {
           QueueBackendRabbitMQ::reject_job(
             db_job,
             &job,
-            &db,
+            &repositories.jobs,
             "Failed to update job in db with id",
             map_ext_err(err),
           )
@@ -166,18 +166,18 @@ impl QueueBackend for QueueBackendRabbitMQ {
         }
       }
 
-      let result = delegate_job(&queue_job, &db, cdn, queue).await;
+      let result = delegate_job(&queue_job, repositories, cdn, queue).await;
 
       match result {
         Ok(()) => {
           db_job.status = JobStatus::Done;
-          match Job::update(&db_job, &db).await {
+          match repositories.jobs.update(&db_job).await {
             Ok(_) => {}
             Err(err) => {
               QueueBackendRabbitMQ::reject_job(
                 db_job,
                 &job,
-                &db,
+                &repositories.jobs,
                 "Failed to update job in db with id",
                 map_ext_err(err),
               )
@@ -187,14 +187,27 @@ impl QueueBackend for QueueBackendRabbitMQ {
           }
         }
         Err(err) => {
-          QueueBackendRabbitMQ::reject_job(db_job, &job, &db, "Failed to run queue_job with id", map_ext_err(err))
-            .await;
+          QueueBackendRabbitMQ::reject_job(
+            db_job,
+            &job,
+            &repositories.jobs,
+            "Failed to run queue_job with id",
+            map_ext_err(err),
+          )
+          .await;
           continue;
         }
       }
 
       if let Err(err) = job.ack(BasicAckOptions::default()).await {
-        QueueBackendRabbitMQ::reject_job(db_job, &job, &db, "Failed to ack queue_job with id", map_ext_err(err)).await;
+        QueueBackendRabbitMQ::reject_job(
+          db_job,
+          &job,
+          &repositories.jobs,
+          "Failed to ack queue_job with id",
+          map_ext_err(err),
+        )
+        .await;
         continue;
       }
     }

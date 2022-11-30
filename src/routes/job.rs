@@ -1,24 +1,24 @@
 use actix_web::{web, HttpResponse, Responder};
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
+  db::{job_repository::JobPool, session_repository::SessionPool},
   helpers::{
     auth::query_auth,
     core::{build_api_err, build_api_not_found},
   },
-  model::job::Job,
   net::jwt::JwtContext,
 };
 
 pub async fn api_job_query_status(
-  db: web::Data<PgPool>,
+  sessions: web::Data<SessionPool>,
+  jobs: web::Data<JobPool>,
   job_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let props = query_auth(&jwt, &db).await;
+  let props = query_auth(&jwt, &sessions).await;
 
-  match Job::fetch_by_id(&job_id, &db).await {
+  match jobs.fetch_by_id(&job_id).await {
     Ok(job) => match job {
       Some(job) => match job.created_by_id {
         Some(created_by_id) => match props {

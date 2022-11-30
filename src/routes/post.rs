@@ -1,12 +1,15 @@
 use actix_easy_multipart::{tempfile::Tempfile, MultipartForm};
 use actix_web::{web, HttpResponse, Responder};
 use serde::Deserialize;
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
   activitypub::ordered_collection::OrderedCollectionPage,
   cdn::cdn_store::Cdn,
+  db::{
+    follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
+    user_repository::UserPool,
+  },
   helpers::{
     activitypub::handle_activitypub_collection_metadata_get,
     auth::{query_auth, require_auth},
@@ -19,14 +22,10 @@ use crate::{
   },
   model::{
     access_type::AccessType,
-    follow::Follow,
-    job::Job,
     job::JobStatus,
     job::NewJob,
-    post_event::PostEvent,
     queue_job::{QueueJob, QueueJobType},
     response::{JobResponse, ListResponse, ObjectResponse},
-    user::User,
   },
   net::jwt::JwtContext,
   settings::SETTINGS,
@@ -46,11 +45,12 @@ pub struct PostUpload {
 }
 
 pub async fn api_activitypub_get_user_public_feed(
-  db: web::Data<PgPool>,
+  users: web::Data<UserPool>,
+  posts: web::Data<PostPool>,
   handle: web::Path<String>,
   query: web::Query<PostsQuery>,
 ) -> impl Responder {
-  let user_id = match User::fetch_id_by_handle(&handle, &db).await {
+  let user_id = match users.fetch_id_by_handle(&handle).await {
     Some(id) => id,
     None => return build_api_not_found("No such id".to_string()),
   };
@@ -58,12 +58,12 @@ pub async fn api_activitypub_get_user_public_feed(
   match query.page {
     Some(page) => {
       let page_size = query.page_size.unwrap_or(20);
-      let posts_count = match get_user_posts_count(&user_id, &db).await {
+      let posts_count = match get_user_posts_count(&user_id, &posts).await {
         Ok(count) => count,
         Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
       };
 
-      let posts = match get_user_posts(&user_id, page_size, page * page_size, &db).await {
+      let posts = match get_user_posts(&user_id, page_size, page * page_size, &posts).await {
         Ok(posts) => posts,
         Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
       };
@@ -87,17 +87,18 @@ pub async fn api_activitypub_get_user_public_feed(
     None => handle_activitypub_collection_metadata_get(
       &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
       query.page_size.unwrap_or(20),
-      get_user_posts_count(&user_id, &db).await,
+      get_user_posts_count(&user_id, &posts).await,
     ),
   }
 }
 
 pub async fn api_get_user_own_feed(
-  db: web::Data<PgPool>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
   query: web::Query<PostsQuery>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let props = match require_auth(&jwt, &db).await {
+  let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
@@ -105,12 +106,12 @@ pub async fn api_get_user_own_feed(
   let user_id = props.uid;
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
-  let posts_count = match get_user_posts_count(&user_id, &db).await {
+  let posts_count = match get_user_posts_count(&user_id, &posts).await {
     Ok(count) => count,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  let posts = match get_user_posts(&user_id, page_size, page * page_size, &db).await {
+  let posts = match get_user_posts(&user_id, page_size, page * page_size, &posts).await {
     Ok(posts) => posts,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
@@ -124,16 +125,19 @@ pub async fn api_get_user_own_feed(
 }
 
 pub async fn api_get_post(
-  db: web::Data<PgPool>,
+  users: web::Data<UserPool>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  follows: web::Data<FollowPool>,
   post_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let current_user_id = match query_auth(&jwt, &db).await {
-    Some(props) => User::fetch_id_by_fediverse_id(&props.sub, &db).await,
+  let current_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => users.fetch_id_by_fediverse_id(&props.sub).await,
     None => None,
   };
 
-  let post = match get_post(&post_id, &current_user_id, &db).await {
+  let post = match get_post(&post_id, &current_user_id, &posts).await {
     Ok(post) => match post {
       Some(post) => post,
       None => return build_api_not_found(post_id.to_string()),
@@ -155,7 +159,7 @@ pub async fn api_get_post(
       }
 
       if post.visibility == AccessType::FollowersOnly
-        && Follow::user_follows_poster(&post.post_id, &current_user_id, &db).await
+        && follows.user_follows_poster(&post.post_id, &current_user_id).await
       {
         return HttpResponse::Ok().json(ObjectResponse { data: post });
       }
@@ -166,15 +170,15 @@ pub async fn api_get_post(
   }
 }
 
-pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQuery>) -> impl Responder {
+pub async fn api_get_global_feed(posts: web::Data<PostPool>, query: web::Query<PostsQuery>) -> impl Responder {
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
-  let posts_count = match get_global_posts_count(&db).await {
+  let posts_count = match get_global_posts_count(&posts).await {
     Ok(count) => count,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  let posts = match get_global_posts(page_size, page * page_size, &db).await {
+  let posts = match get_global_posts(page_size, page * page_size, &posts).await {
     Ok(posts) => posts,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
@@ -188,29 +192,34 @@ pub async fn api_get_global_feed(db: web::Data<PgPool>, query: web::Query<PostsQ
 }
 
 pub async fn api_get_user_posts(
-  db: web::Data<PgPool>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  users: web::Data<UserPool>,
   query: web::Query<PostsQuery>,
   handle: web::Path<String>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let user_id = match query_auth(&jwt, &db).await {
+  let user_id = match query_auth(&jwt, &sessions).await {
     Some(props) => Some(props.uid),
     None => None,
   };
 
-  let target_id = match User::fetch_id_by_handle(&handle, &db).await {
+  let target_id = match users.fetch_id_by_handle(&handle).await {
     Some(id) => id,
     None => return HttpResponse::NotFound().finish(),
   };
 
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
-  let posts_count = match PostEvent::count_user_public_feed(&target_id, &user_id, &db).await {
+  let posts_count = match posts.count_user_public_feed(&target_id, &user_id).await {
     Ok(count) => count,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  let posts = match PostEvent::fetch_user_public_feed(&target_id, &user_id, page_size, page * page_size, &db).await {
+  let posts = match posts
+    .fetch_user_public_feed(&target_id, &user_id, page_size, page * page_size)
+    .await
+  {
     Ok(posts) => posts,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
@@ -224,16 +233,17 @@ pub async fn api_get_user_posts(
 }
 
 pub async fn api_create_post(
-  db: web::Data<PgPool>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
   req: web::Json<NewPostRequest>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let props = match require_auth(&jwt, &db).await {
+  let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
 
-  match create_post(&db, &req, &props.uid).await {
+  match create_post(&posts, &req, &props.uid).await {
     Ok(post_id) => HttpResponse::Ok().json(NewPostResponse { id: post_id }),
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
   }
@@ -244,47 +254,48 @@ pub async fn api_upload_post_image(
   post_id: web::Path<Uuid>,
   cdn: web::Data<Cdn>,
   queue: web::Data<Queue>,
-  db: web::Data<PgPool>,
   jwt: web::ReqData<JwtContext>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  jobs: web::Data<JobPool>,
 ) -> impl Responder {
   if form.images.is_empty() {
     return HttpResponse::BadRequest().finish();
   }
 
-  let props = match require_auth(&jwt, &db).await {
+  let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
 
-  match upload_post_file(&db, &post_id, &props.uid, &cdn, &queue, &form.images[0]).await {
+  match upload_post_file(&posts, &jobs, &post_id, &props.uid, &cdn, &queue, &form.images[0]).await {
     Ok(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
     Err(err) => build_api_err(500, err.to_string(), None),
   }
 }
 
 pub async fn api_boost_post(
-  db: web::Data<PgPool>,
+  sessions: web::Data<SessionPool>,
+  jobs: web::Data<JobPool>,
   queue: web::Data<Queue>,
   post_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let props = match require_auth(&jwt, &db).await {
+  let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
 
   let user_id = props.uid;
 
-  let job_id = match Job::create(
-    NewJob {
+  let job_id = match jobs
+    .create(NewJob {
       created_by_id: Some(user_id),
       status: JobStatus::NotStarted,
       record_id: Some(*post_id),
       associated_record_id: None,
-    },
-    &db,
-  )
-  .await
+    })
+    .await
   {
     Ok(id) => id,
     Err(err) => return build_api_err(500, err.to_string(), None),
@@ -302,28 +313,27 @@ pub async fn api_boost_post(
 }
 
 pub async fn api_unboost_post(
-  db: web::Data<PgPool>,
+  sessions: web::Data<SessionPool>,
+  jobs: web::Data<JobPool>,
   queue: web::Data<Queue>,
   post_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let props = match require_auth(&jwt, &db).await {
+  let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
 
   let user_id = props.uid;
 
-  let job_id = match Job::create(
-    NewJob {
+  let job_id = match jobs
+    .create(NewJob {
       created_by_id: Some(user_id),
       status: JobStatus::NotStarted,
       record_id: Some(*post_id),
       associated_record_id: None,
-    },
-    &db,
-  )
-  .await
+    })
+    .await
   {
     Ok(id) => id,
     Err(err) => return build_api_err(500, err.to_string(), None),

@@ -1,18 +1,17 @@
 use actix_web::{web, HttpResponse, Responder};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use strum::{Display, EnumString};
 use uuid::Uuid;
 
 use crate::{
+  db::{app_repository::AppPool, session_repository::SessionPool, user_repository::UserPool},
   helpers::{
     auth::require_auth,
     core::build_api_err,
     html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
   },
   logic::{user::authorize_user, LogicErr},
-  model::{app::App, session::Session, user::User},
   net::{
     jwt::{JwtContext, JwtFactory},
     templates::HANDLEBARS,
@@ -85,11 +84,11 @@ pub struct OAuthTokenResponse {
   pub refresh_expires_at: i64,
 }
 
-pub async fn api_oauth_authorize(db: web::Data<PgPool>, query: web::Query<OAuthAuthorizeQuery>) -> impl Responder {
+pub async fn api_oauth_authorize(apps: web::Data<AppPool>, query: web::Query<OAuthAuthorizeQuery>) -> impl Responder {
   match query.response_type {
     OAuthAuthorizeResponseType::Code => {
       let app = match oauth_app_unwrap_result(
-        App::fetch_by_client_id(&query.client_id, &db).await,
+        apps.fetch_by_client_id(&query.client_id).await,
         "This application is not configured correctly to authenticate with Chameleon",
       ) {
         Ok(app) => app,
@@ -126,12 +125,13 @@ pub async fn api_oauth_authorize(db: web::Data<PgPool>, query: web::Query<OAuthA
 }
 
 pub async fn api_oauth_authorize_post(
-  db: web::Data<PgPool>,
+  apps: web::Data<AppPool>,
+  users: web::Data<UserPool>,
   query: web::Query<OAuthAuthorizeQuery>,
   req: web::Form<OAuthAuthorizeRequest>,
 ) -> impl Responder {
   let app = match oauth_app_unwrap_result(
-    App::fetch_by_client_id(&query.client_id, &db).await,
+    apps.fetch_by_client_id(&query.client_id).await,
     "This application is not configured correctly to authenticate with Chameleon",
   ) {
     Ok(app) => app,
@@ -150,7 +150,7 @@ pub async fn api_oauth_authorize_post(
     );
   }
 
-  let authorization_code = match authorize_user(&req.username, &req.password, &db).await {
+  let authorization_code = match authorize_user(&req.username, &req.password, &users).await {
     Ok(code) => code,
     Err(err) => match err {
       LogicErr::UnauthorizedError => {
@@ -177,12 +177,14 @@ pub async fn api_oauth_authorize_post(
 }
 
 pub async fn api_oauth_token(
-  db: web::Data<PgPool>,
+  apps: web::Data<AppPool>,
+  users: web::Data<UserPool>,
+  sessions: web::Data<SessionPool>,
   session: web::ReqData<JwtContext>,
   req: web::Form<OAuthTokenRequest>,
 ) -> impl Responder {
   let app = match oauth_app_unwrap_result(
-    App::fetch_by_client_id(&req.client_id, &db).await,
+    apps.fetch_by_client_id(&req.client_id).await,
     "This application is not configured correctly to authenticate with Chameleon",
   ) {
     Ok(app) => app,
@@ -209,7 +211,7 @@ pub async fn api_oauth_token(
         None => return build_api_err(401, "Invalid authorization token".to_string(), None),
       };
 
-      let user = match User::fetch_by_handle(&claims.sub, &db).await {
+      let user = match users.fetch_by_handle(&claims.sub).await {
         Ok(user) => match user {
           Some(user) => user,
           None => return build_api_err(401, "Invalid authorization token".to_string(), None),
@@ -224,16 +226,16 @@ pub async fn api_oauth_token(
         Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
       };
 
-      match Session::insert_session(
-        &session_id,
-        &user.user_id,
-        &app.app_id,
-        &session.refresh_token,
-        &session.access_expiry,
-        &session.refresh_expiry,
-        &db,
-      )
-      .await
+      match sessions
+        .insert_session(
+          &session_id,
+          &user.user_id,
+          &app.app_id,
+          &session.refresh_token,
+          &session.access_expiry,
+          &session.refresh_expiry,
+        )
+        .await
       {
         Ok(_) => {}
         Err(err) => return build_api_err(500, "Internal server error".to_string(), Some(err.to_string())),
@@ -250,16 +252,16 @@ pub async fn api_oauth_token(
       })
     }
     OAuthGrantType::ClientCredentials => build_api_err(400, "Not implemented".to_string(), None),
-    OAuthGrantType::RefreshToken => match require_auth(&session, &db).await {
+    OAuthGrantType::RefreshToken => match require_auth(&session, &sessions).await {
       Ok(session) => {
         let refresh_token = req.refresh_token.clone().unwrap_or_default();
 
-        match Session::query_session_exists_for_refresh_token(&refresh_token, &db).await {
+        match sessions.query_session_exists_for_refresh_token(&refresh_token).await {
           true => {}
           false => return build_api_err(401, "Invalid refresh token".to_string(), None),
         };
 
-        let user = match User::fetch_by_fediverse_id(&session.sub, &db).await {
+        let user = match users.fetch_by_fediverse_id(&session.sub).await {
           Ok(user) => match user {
             Some(user) => user,
             None => return build_api_err(401, "Invalid authorization token".to_string(), None),
@@ -267,7 +269,10 @@ pub async fn api_oauth_token(
           Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
         };
 
-        match Session::delete_session(&user.user_id, &app.app_id, &refresh_token, &db).await {
+        match sessions
+          .delete_session(&user.user_id, &app.app_id, &refresh_token)
+          .await
+        {
           Ok(_) => {}
           Err(_) => return build_api_err(500, "Internal server error".to_string(), None),
         }
@@ -279,16 +284,16 @@ pub async fn api_oauth_token(
           Err(_) => return build_api_err(401, "Invalid authorization token".to_string(), None),
         };
 
-        match Session::insert_session(
-          &session_id,
-          &user.user_id,
-          &app.app_id,
-          &session.refresh_token,
-          &session.access_expiry,
-          &session.refresh_expiry,
-          &db,
-        )
-        .await
+        match sessions
+          .insert_session(
+            &session_id,
+            &user.user_id,
+            &app.app_id,
+            &session.refresh_token,
+            &session.access_expiry,
+            &session.refresh_expiry,
+          )
+          .await
         {
           Ok(_) => {}
           Err(err) => return build_api_err(500, "Internal server error".to_string(), Some(err.to_string())),

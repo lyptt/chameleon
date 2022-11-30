@@ -1,23 +1,30 @@
 use log::warn;
-use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
+  db::{
+    event_repository::EventPool, follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool,
+  },
   helpers::api::{map_db_err, map_ext_err},
   logic::LogicErr,
   model::{
-    event::{Event, NewEvent},
+    event::NewEvent,
     event_type::EventType,
-    follow::Follow,
-    job::{Job, JobStatus, NewJob},
-    post::Post,
+    job::{JobStatus, NewJob},
     queue_job::{QueueJob, QueueJobType},
   },
   work_queue::queue::Queue,
 };
 
-pub async fn create_post_events(job_id: Uuid, db: &Pool<Postgres>, queue: &Queue) -> Result<(), LogicErr> {
-  let job = match Job::fetch_optional_by_id(&job_id, db).await {
+pub async fn create_post_events(
+  jobs: &JobPool,
+  posts: &PostPool,
+  events: &EventPool,
+  follows: &FollowPool,
+  job_id: Uuid,
+  queue: &Queue,
+) -> Result<(), LogicErr> {
+  let job = match jobs.fetch_optional_by_id(&job_id).await {
     Some(job) => job,
     None => return Err(LogicErr::InternalError("Job not found".to_string())),
   };
@@ -32,7 +39,7 @@ pub async fn create_post_events(job_id: Uuid, db: &Pool<Postgres>, queue: &Queue
     None => return Err(LogicErr::InternalError("User ID not found for job".to_string())),
   };
 
-  let visibility = match Post::fetch_visibility_by_id(&post_id, db).await {
+  let visibility = match posts.fetch_visibility_by_id(&post_id).await {
     Some(v) => v,
     None => return Err(LogicErr::InternalError("Visibility not found for post".to_string())),
   };
@@ -47,24 +54,22 @@ pub async fn create_post_events(job_id: Uuid, db: &Pool<Postgres>, queue: &Queue
     event_type: EventType::Post,
   };
 
-  if let Err(err) = Event::create_event(own_event, db).await.map_err(map_ext_err) {
+  if let Err(err) = events.create_event(own_event).await.map_err(map_ext_err) {
     warn!("Failed to create user's own event for new post: {}", err);
   }
 
-  let followers = Follow::fetch_user_followers(&user_id, db).await.unwrap_or_default();
+  let followers = follows.fetch_user_followers(&user_id).await.unwrap_or_default();
 
   for follower in followers {
-    let job_id = Job::create(
-      NewJob {
+    let job_id = jobs
+      .create(NewJob {
         created_by_id: Some(user_id),
         status: JobStatus::NotStarted,
         record_id: Some(post_id),
         associated_record_id: Some(follower.user_id),
-      },
-      db,
-    )
-    .await
-    .map_err(map_db_err)?;
+      })
+      .await
+      .map_err(map_db_err)?;
 
     let job = QueueJob {
       job_id,

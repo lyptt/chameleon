@@ -1,12 +1,12 @@
 use crate::{
   cdn::cdn_store::Cdn,
+  db::repositories::Repositories,
   logic::LogicErr,
   model::queue_job::QueueJob,
   settings::{AppQueueBackend, SETTINGS},
 };
 
 use async_trait::async_trait;
-use sqlx::{Pool, Postgres};
 use std::result::Result;
 
 use super::{
@@ -17,7 +17,7 @@ use super::{
 #[async_trait]
 pub trait QueueBackend {
   async fn send_job(&self, job: QueueJob) -> Result<(), LogicErr>;
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr>;
+  async fn receive_jobs(&self, cdn: &Cdn, queue: &Queue, repositories: &Repositories) -> Result<(), LogicErr>;
 }
 
 pub struct Queue {
@@ -43,7 +43,7 @@ impl Queue {
     self.imp.send_job(job).await
   }
 
-  pub async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
-    self.imp.receive_jobs(db, cdn, queue).await
+  pub async fn receive_jobs(&self, cdn: &Cdn, queue: &Queue, repositories: &Repositories) -> Result<(), LogicErr> {
+    self.imp.receive_jobs(cdn, queue, repositories).await
   }
 }

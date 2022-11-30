@@ -1,7 +1,7 @@
 use actix_web::HttpResponse;
 use serde::Serialize;
 
-use crate::{model::app::App, net::templates::HANDLEBARS};
+use crate::{logic::LogicErr, model::app::App, net::templates::HANDLEBARS};
 
 #[derive(Debug, Serialize)]
 struct OAuthAuthorizeErrData<'a> {
@@ -43,7 +43,7 @@ pub fn handle_oauth_app_body(app: &App, err: &'static str) -> HttpResponse {
   }
 }
 
-pub fn oauth_app_unwrap_result<T>(obj: Result<Option<T>, sqlx::Error>, error: &'static str) -> Result<T, HttpResponse> {
+pub fn oauth_app_unwrap_result<T>(obj: Result<Option<T>, LogicErr>, error: &'static str) -> Result<T, HttpResponse> {
   match obj {
     Ok(obj) => match obj {
       Some(obj) => Ok(obj),

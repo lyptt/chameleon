@@ -1,8 +1,7 @@
-use actix_web::web;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use sqlx::PgPool;
 
 use crate::{
+  db::user_repository::UserPool,
   helpers::api::{map_db_err, map_ext_err},
   model::user::User,
   net::jwt::JwtFactory,
@@ -10,16 +9,16 @@ use crate::{
 
 use super::LogicErr;
 
-pub async fn get_user_by_id(handle: &String, db: &web::Data<PgPool>) -> Result<Option<User>, LogicErr> {
-  User::fetch_by_handle(handle, db).await.map_err(map_db_err)
+pub async fn get_user_by_id(handle: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
+  users.fetch_by_handle(handle).await.map_err(map_db_err)
 }
 
-pub async fn get_user_by_fediverse_id(fediverse_id: &String, db: &web::Data<PgPool>) -> Result<Option<User>, LogicErr> {
-  User::fetch_by_fediverse_id(fediverse_id, db).await.map_err(map_db_err)
+pub async fn get_user_by_fediverse_id(fediverse_id: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
+  users.fetch_by_fediverse_id(fediverse_id).await.map_err(map_db_err)
 }
 
-pub async fn authorize_user(username: &str, password: &str, db: &web::Data<PgPool>) -> Result<String, LogicErr> {
-  let current_hash = match User::fetch_password_hash(username, db).await.map_err(map_ext_err)? {
+pub async fn authorize_user(username: &str, password: &str, users: &UserPool) -> Result<String, LogicErr> {
+  let current_hash = match users.fetch_password_hash(username).await.map_err(map_ext_err)? {
     Some(hash) => hash,
     None => return Err(LogicErr::UnauthorizedError),
   };

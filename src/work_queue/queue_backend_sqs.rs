@@ -2,18 +2,15 @@ use super::queue::{Queue, QueueBackend};
 use crate::{
   aws::clients::SQS_CLIENT,
   cdn::cdn_store::Cdn,
+  db::repositories::Repositories,
   helpers::api::map_ext_err,
   job::delegate_job,
   logic::LogicErr,
-  model::{
-    job::{Job, JobStatus},
-    queue_job::QueueJob,
-  },
+  model::{job::JobStatus, queue_job::QueueJob},
   settings::SETTINGS,
 };
 use async_trait::async_trait;
 use log::error;
-use sqlx::{Pool, Postgres};
 
 pub struct QueueBackendSQS {}
 
@@ -40,7 +37,7 @@ impl QueueBackend for QueueBackendSQS {
     Ok(())
   }
 
-  async fn receive_jobs(&self, db: Pool<Postgres>, cdn: &Cdn, queue: &Queue) -> Result<(), LogicErr> {
+  async fn receive_jobs(&self, cdn: &Cdn, queue: &Queue, repositories: &Repositories) -> Result<(), LogicErr> {
     let rcv_message_output = SQS_CLIENT
       .get()
       .unwrap()
@@ -79,7 +76,7 @@ impl QueueBackend for QueueBackendSQS {
         }
       };
 
-      let mut job = match Job::fetch_optional_by_id(&queue_job.job_id, &db).await {
+      let mut job = match repositories.jobs.fetch_optional_by_id(&queue_job.job_id).await {
         Some(job) => job,
         None => {
           error!(
@@ -91,7 +88,7 @@ impl QueueBackend for QueueBackendSQS {
       };
 
       job.status = JobStatus::InProgress;
-      match Job::update(&job, &db).await {
+      match repositories.jobs.update(&job).await {
         Ok(_) => {}
         Err(err) => {
           error!(
@@ -103,12 +100,12 @@ impl QueueBackend for QueueBackendSQS {
         }
       }
 
-      let result = delegate_job(&queue_job, &db, cdn, queue).await;
+      let result = delegate_job(&queue_job, repositories, cdn, queue).await;
 
       match result {
         Ok(()) => {
           job.status = JobStatus::Done;
-          match Job::update(&job, &db).await {
+          match repositories.jobs.update(&job).await {
             Ok(_) => {}
             Err(err) => {
               error!(
@@ -148,7 +145,7 @@ impl QueueBackend for QueueBackendSQS {
 
           job.failed_count += 1;
           job.status = JobStatus::NotStarted;
-          match Job::update(&job, &db).await {
+          match repositories.jobs.update(&job).await {
             Ok(_) => {}
             Err(err) => {
               error!(
