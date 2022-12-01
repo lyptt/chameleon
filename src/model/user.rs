@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
 
-#[derive(Clone, FromRow)]
+#[derive(Debug, Clone, FromRow, PartialEq, Eq)]
 pub struct User {
   pub user_id: Uuid,
   pub fediverse_id: String,
