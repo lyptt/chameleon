@@ -4,10 +4,8 @@ use crate::{
     session_repository::SessionPool,
   },
   helpers::auth::{query_auth, require_auth},
-  helpers::core::build_api_err,
-  helpers::math::div_up,
-  logic::comment::{create_comment, create_comment_like, delete_comment, delete_comment_like},
-  model::response::ListResponse,
+  helpers::core::{build_api_err, map_api_err},
+  logic::comment::{create_comment, create_comment_like, delete_comment, delete_comment_like, get_comments},
   net::jwt::JwtContext,
 };
 use actix_web::{web, HttpResponse, Responder};
@@ -59,7 +57,7 @@ pub async fn api_delete_comment(
 
   match delete_comment(&comments, &post_id, &comment_id, &props.uid).await {
     Ok(_) => HttpResponse::Ok().finish(),
-    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+    Err(err) => map_api_err(err),
   }
 }
 
@@ -75,31 +73,10 @@ pub async fn api_get_comments(
     None => None,
   };
 
-  let page = query.page.unwrap_or(0);
-  let page_size = query.page_size.unwrap_or(20);
-  let comments_count = match comments.fetch_comments_count(&post_id, &own_user_id).await {
-    Ok(count) => count,
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  if comments_count == 0 {
-    return HttpResponse::NotFound().finish();
+  match get_comments(&comments, &post_id, &own_user_id, &query.page, &query.page_size).await {
+    Ok(response) => HttpResponse::Ok().json(response),
+    Err(err) => map_api_err(err),
   }
-
-  let comments = match comments
-    .fetch_comments(&post_id, &own_user_id, page_size, page * page_size)
-    .await
-  {
-    Ok(posts) => posts,
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  HttpResponse::Ok().json(ListResponse {
-    data: comments,
-    page,
-    total_items: comments_count,
-    total_pages: div_up(comments_count, page_size) + 1,
-  })
 }
 
 pub async fn api_create_comment_like(
@@ -117,7 +94,7 @@ pub async fn api_create_comment_like(
 
   match create_comment_like(&posts, &follows, &comments, &ids.0, &ids.1, &props.uid).await {
     Ok(_) => HttpResponse::Created().finish(),
-    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+    Err(err) => map_api_err(err),
   }
 }
 
@@ -134,6 +111,6 @@ pub async fn api_delete_comment_like(
 
   match delete_comment_like(&comments, &ids.0, &ids.1, &props.uid).await {
     Ok(_) => HttpResponse::Ok().finish(),
-    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+    Err(err) => map_api_err(err),
   }
 }

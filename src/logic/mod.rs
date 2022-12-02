@@ -4,6 +4,7 @@ use strum::Display;
 
 pub mod comment;
 pub mod follow;
+pub mod job;
 pub mod like;
 pub mod post;
 pub mod user;

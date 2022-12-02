@@ -2,7 +2,8 @@ use uuid::Uuid;
 
 use crate::{
   db::{comment_repository::CommentPool, follow_repository::FollowPool, post_repository::PostPool},
-  model::access_type::AccessType,
+  helpers::math::div_up,
+  model::{access_type::AccessType, comment_pub::CommentPub, response::ListResponse},
 };
 
 use super::LogicErr;
@@ -91,6 +92,38 @@ pub async fn delete_comment_like(
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
   comments.delete_comment_like(user_id, comment_id, post_id).await
+}
+
+pub async fn get_comments(
+  comments: &CommentPool,
+  post_id: &Uuid,
+  own_user_id: &Option<Uuid>,
+  page: &Option<i64>,
+  page_size: &Option<i64>,
+) -> Result<ListResponse<CommentPub>, LogicErr> {
+  let page = page.unwrap_or(0);
+  let page_size = page_size.unwrap_or(20);
+  let comments_count = match comments.fetch_comments_count(post_id, own_user_id).await {
+    Ok(count) => count,
+    Err(err) => return Err(err),
+  };
+
+  if comments_count == 0 {
+    return Err(LogicErr::MissingRecord);
+  }
+
+  match comments
+    .fetch_comments(post_id, own_user_id, page_size, page * page_size)
+    .await
+  {
+    Ok(comments) => Ok(ListResponse {
+      data: comments,
+      page,
+      total_items: comments_count,
+      total_pages: div_up(comments_count, page_size) + 1,
+    }),
+    Err(err) => Err(err),
+  }
 }
 
 #[cfg(test)]
