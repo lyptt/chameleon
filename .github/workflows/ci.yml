@@ -65,6 +65,9 @@ jobs:
           cargo audit
           cargo deny check
 
+      - name: Test
+        run: cargo test
+
       - name: Build
         run: cargo build --all --release
 

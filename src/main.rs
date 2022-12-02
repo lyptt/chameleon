@@ -5,6 +5,7 @@
 mod activitypub;
 mod aws;
 mod cdn;
+mod db;
 mod helpers;
 mod job;
 mod logic;
@@ -20,6 +21,7 @@ use actix_web::middleware::Logger;
 use actix_web::{guard, web, App, HttpServer};
 use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
+use db::repository::Repository;
 use env_logger::WriteStyle;
 use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
@@ -75,6 +77,17 @@ async fn main() -> std::io::Result<()> {
     .await
     .unwrap();
 
+  let app_pool = Repository::new_app_pool(&pool);
+  let comment_pool = Repository::new_comment_pool(&pool);
+  let event_pool = Repository::new_event_pool(&pool);
+  let follow_pool = Repository::new_follow_pool(&pool);
+  let job_pool = Repository::new_job_pool(&pool);
+  let like_pool = Repository::new_like_pool(&pool);
+  let post_pool = Repository::new_post_pool(&pool);
+  let session_pool = Repository::new_session_pool(&pool);
+  let user_pool = Repository::new_user_pool(&pool);
+  let user_stats_pool = Repository::new_user_stats_pool(&pool);
+
   HttpServer::new(move || {
     let cors = Cors::default()
       .allowed_origin_fn(|_, _| true)
@@ -88,6 +101,16 @@ async fn main() -> std::io::Result<()> {
       .wrap(cors)
       .wrap(JwtSession::default())
       .app_data(web::Data::new(pool.clone()))
+      .app_data(web::Data::new(app_pool.clone()))
+      .app_data(web::Data::new(comment_pool.clone()))
+      .app_data(web::Data::new(event_pool.clone()))
+      .app_data(web::Data::new(follow_pool.clone()))
+      .app_data(web::Data::new(job_pool.clone()))
+      .app_data(web::Data::new(like_pool.clone()))
+      .app_data(web::Data::new(post_pool.clone()))
+      .app_data(web::Data::new(session_pool.clone()))
+      .app_data(web::Data::new(user_pool.clone()))
+      .app_data(web::Data::new(user_stats_pool.clone()))
       .app_data(web::Data::new(Cdn::new()))
       .app_data(web::Data::new(Queue::new()))
       .service(

@@ -5,6 +5,7 @@
 mod activitypub;
 mod aws;
 mod cdn;
+mod db;
 mod helpers;
 mod job;
 mod logic;
@@ -16,6 +17,7 @@ mod work_queue;
 
 use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
+use db::repositories::Repositories;
 use env_logger::WriteStyle;
 use log::error;
 use log::LevelFilter;
@@ -52,10 +54,12 @@ async fn main() -> std::io::Result<()> {
     .await
     .unwrap();
 
+  let repositories = Repositories::new(&pool);
+
   let queue = Queue::new();
 
   loop {
-    match queue.receive_jobs(pool.clone(), &cdn, &queue).await {
+    match queue.receive_jobs(&cdn, &queue, &repositories).await {
       Ok(_) => {}
       Err(err) => error!("{}", err.to_string()),
     }

@@ -1,10 +1,9 @@
 use crate::{
-  model::{comment::Comment, post::Post, user::User},
+  db::{comment_repository::CommentPool, post_repository::PostPool, user_repository::UserPool},
   settings::SETTINGS,
 };
 use actix_web::{web, HttpResponse, Responder};
 use serde::Serialize;
-use sqlx::PgPool;
 use strum::{Display, EnumString};
 
 #[derive(Debug, Serialize)]
@@ -141,10 +140,14 @@ pub async fn api_get_nodeinfo() -> impl Responder {
   })
 }
 
-pub async fn api_get_nodeinfo_2_1(db: web::Data<PgPool>) -> impl Responder {
-  let post_count = Post::fetch_post_count(&db).await;
-  let comment_count = Comment::fetch_comment_count(&db).await;
-  let user_count = User::fetch_user_count(&db).await;
+pub async fn api_get_nodeinfo_2_1(
+  posts: web::Data<PostPool>,
+  comments: web::Data<CommentPool>,
+  users: web::Data<UserPool>,
+) -> impl Responder {
+  let post_count = posts.fetch_post_count().await;
+  let comment_count = comments.fetch_comment_count().await;
+  let user_count = users.fetch_user_count().await;
 
   HttpResponse::Ok().json(NodeInfoResponse2_1 {
     version: "2.1",

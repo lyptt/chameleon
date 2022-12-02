@@ -1,9 +1,9 @@
-use sqlx::{Error, FromRow, Pool, Postgres};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
 
-#[derive(Clone, FromRow)]
+#[derive(Debug, Clone, FromRow, PartialEq, Eq)]
 pub struct User {
   pub user_id: Uuid,
   pub fediverse_id: String,
@@ -27,66 +27,6 @@ pub struct User {
 }
 
 impl User {
-  pub async fn fetch_by_handle(handle: &String, pool: &Pool<Postgres>) -> Result<Option<User>, Error> {
-    let user = sqlx::query_as("SELECT * FROM users WHERE handle = $1")
-      .bind(handle)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(user)
-  }
-
-  pub async fn fetch_id_by_handle(handle: &String, pool: &Pool<Postgres>) -> Option<Uuid> {
-    match sqlx::query_scalar("SELECT user_id FROM users WHERE handle = $1")
-      .bind(handle)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(user) => user,
-      Err(_) => None,
-    }
-  }
-
-  pub async fn fetch_id_by_fediverse_id(fediverse_id: &String, pool: &Pool<Postgres>) -> Option<Uuid> {
-    match sqlx::query_scalar("SELECT user_id FROM users WHERE fediverse_id = $1")
-      .bind(fediverse_id)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(user) => user,
-      Err(_) => None,
-    }
-  }
-
-  pub async fn fetch_by_fediverse_id(fediverse_id: &String, pool: &Pool<Postgres>) -> Result<Option<User>, Error> {
-    let user = sqlx::query_as("SELECT * FROM users WHERE fediverse_id = $1")
-      .bind(fediverse_id)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(user)
-  }
-
-  pub async fn fetch_password_hash(handle: &str, pool: &Pool<Postgres>) -> Result<Option<String>, Error> {
-    let password_hash = sqlx::query_scalar("SELECT password_hash FROM users WHERE handle = $1")
-      .bind(handle)
-      .fetch_optional(pool)
-      .await?;
-
-    Ok(password_hash)
-  }
-
-  pub async fn fetch_fediverse_id_by_handle(fediverse_id: &String, pool: &Pool<Postgres>) -> Option<String> {
-    match sqlx::query_scalar("SELECT fediverse_id FROM users WHERE handle = $1")
-      .bind(fediverse_id)
-      .fetch_optional(pool)
-      .await
-    {
-      Ok(user) => user,
-      Err(_) => None,
-    }
-  }
-
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
       aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.handle)]),
@@ -98,13 +38,6 @@ impl User {
       ]
       .into(),
     }
-  }
-
-  pub async fn fetch_user_count(pool: &Pool<Postgres>) -> i64 {
-    sqlx::query_scalar("SELECT COUNT(*) FROM users")
-      .fetch_one(pool)
-      .await
-      .unwrap_or(0)
   }
 }
 
@@ -138,28 +71,27 @@ mod tests {
       intro_html: None,
     };
 
-    let finger = user.to_webfinger();
+    temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {
+      let finger = user.to_webfinger();
 
-    assert_eq!(&finger.subject, &user.fediverse_id);
-    assert!(finger.aliases.is_some());
-    assert_eq!(finger.aliases.unwrap().len(), 1);
-    assert_eq!(finger.links.len(), 3);
+      assert_eq!(&finger.subject, &user.fediverse_id);
+      assert!(finger.aliases.is_some());
+      assert_eq!(finger.aliases.unwrap().len(), 1);
+      assert_eq!(finger.links.len(), 3);
 
-    assert_eq!(finger.links[0].rel, "self");
-    assert_eq!(finger.links[0].link_type, "application/activity+json");
-    assert!(finger.links[0].href.is_some());
-    assert_eq!(
-      finger.links[0].href.as_ref().unwrap(),
-      "http://127.0.0.1:8000/api/users/user"
-    );
+      assert_eq!(finger.links[0].rel, "self");
+      assert_eq!(finger.links[0].link_type, "application/activity+json");
+      assert!(finger.links[0].href.is_some());
+      assert_eq!(
+        finger.links[0].href.as_ref().unwrap(),
+        "http://0.0.0.0:8080/api/users/user"
+      );
 
-    assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
-    assert_eq!(finger.links[1].link_type, "text/html");
-    assert!(finger.links[1].href.is_some());
-    assert_eq!(
-      finger.links[1].href.as_ref().unwrap(),
-      "http://127.0.0.1:3000/users/user"
-    );
+      assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
+      assert_eq!(finger.links[1].link_type, "text/html");
+      assert!(finger.links[1].href.is_some());
+      assert_eq!(finger.links[1].href.as_ref().unwrap(), "http://0.0.0.0:8080/users/user");
+    });
   }
 
   #[test]
@@ -186,27 +118,29 @@ mod tests {
       intro_html: None,
     };
 
-    let finger = user.to_webfinger();
+    temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {
+      let finger = user.to_webfinger();
 
-    assert_eq!(&finger.subject, &user.fediverse_id);
-    assert!(finger.aliases.is_some());
-    assert_eq!(finger.aliases.unwrap().len(), 1);
-    assert_eq!(finger.links.len(), 3);
+      assert_eq!(&finger.subject, &user.fediverse_id);
+      assert!(finger.aliases.is_some());
+      assert_eq!(finger.aliases.unwrap().len(), 1);
+      assert_eq!(finger.links.len(), 3);
 
-    assert_eq!(finger.links[0].rel, "self");
-    assert_eq!(finger.links[0].link_type, "application/activity+json");
-    assert!(finger.links[0].href.is_some());
-    assert_eq!(
-      finger.links[0].href.as_ref().unwrap(),
-      "http://127.0.0.1:8000/api/users/<unknown>"
-    );
+      assert_eq!(finger.links[0].rel, "self");
+      assert_eq!(finger.links[0].link_type, "application/activity+json");
+      assert!(finger.links[0].href.is_some());
+      assert_eq!(
+        finger.links[0].href.as_ref().unwrap(),
+        "http://0.0.0.0:8080/api/users/<unknown>"
+      );
 
-    assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
-    assert_eq!(finger.links[1].link_type, "text/html");
-    assert!(finger.links[1].href.is_some());
-    assert_eq!(
-      finger.links[1].href.as_ref().unwrap(),
-      "http://127.0.0.1:3000/users/<unknown>"
-    );
+      assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
+      assert_eq!(finger.links[1].link_type, "text/html");
+      assert!(finger.links[1].href.is_some());
+      assert_eq!(
+        finger.links[1].href.as_ref().unwrap(),
+        "http://0.0.0.0:8080/users/<unknown>"
+      );
+    });
   }
 }

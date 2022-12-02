@@ -1,25 +1,27 @@
-use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
-  helpers::api::map_db_err,
-  model::{access_type::AccessType, comment::Comment, follow::Follow, post::Post},
+  db::{comment_repository::CommentPool, follow_repository::FollowPool, post_repository::PostPool},
+  helpers::math::div_up,
+  model::{access_type::AccessType, comment_pub::CommentPub, response::ListResponse},
 };
 
 use super::LogicErr;
 
 pub async fn create_comment(
-  db: &Pool<Postgres>,
+  posts: &PostPool,
+  follows: &FollowPool,
+  comments: &CommentPool,
   post_id: &Uuid,
   user_id: &Uuid,
-  content_md: &String,
+  content_md: &str,
 ) -> Result<Uuid, LogicErr> {
-  let visibility = match Post::fetch_visibility_by_id(post_id, db).await {
+  let visibility = match posts.fetch_visibility_by_id(post_id).await {
     Some(visibility) => visibility,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  let owner_id = match Post::fetch_owner_by_id(post_id, db).await {
+  let owner_id = match posts.fetch_owner_by_id(post_id).await {
     Some(id) => id,
     None => return Err(LogicErr::MissingRecord),
   };
@@ -31,29 +33,31 @@ pub async fn create_comment(
 
   // If the post is only available to the author's followers and the user isn't a follower of the author, don't let the
   // user comment
-  if visibility == AccessType::FollowersOnly && !Follow::user_follows_poster(post_id, user_id, db).await {
+  if visibility == AccessType::FollowersOnly && !follows.user_follows_poster(post_id, user_id).await {
     return Err(LogicErr::MissingRecord);
   }
 
   let content_html = markdown::to_html(content_md);
 
-  Comment::create_comment(user_id, post_id, content_md, &content_html, db)
+  comments
+    .create_comment(user_id, post_id, content_md, &content_html)
     .await
-    .map_err(map_db_err)
 }
 
 pub async fn create_comment_like(
-  db: &Pool<Postgres>,
+  posts: &PostPool,
+  follows: &FollowPool,
+  comments: &CommentPool,
   post_id: &Uuid,
   comment_id: &Uuid,
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
-  let visibility = match Post::fetch_visibility_by_id(post_id, db).await {
+  let visibility = match posts.fetch_visibility_by_id(post_id).await {
     Some(visibility) => visibility,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  let owner_id = match Post::fetch_owner_by_id(post_id, db).await {
+  let owner_id = match posts.fetch_owner_by_id(post_id).await {
     Some(id) => id,
     None => return Err(LogicErr::MissingRecord),
   };
@@ -65,33 +69,616 @@ pub async fn create_comment_like(
 
   // If the post is only available to the author's followers and the user isn't a follower of the author, don't let the
   // user comment
-  if visibility == AccessType::FollowersOnly && !Follow::user_follows_poster(post_id, user_id, db).await {
+  if visibility == AccessType::FollowersOnly && !follows.user_follows_poster(post_id, user_id).await {
     return Err(LogicErr::MissingRecord);
   }
 
-  Comment::create_comment_like(user_id, comment_id, post_id, db)
-    .await
-    .map_err(map_db_err)
+  comments.create_comment_like(user_id, comment_id, post_id).await
 }
 
 pub async fn delete_comment(
-  db: &Pool<Postgres>,
+  comments: &CommentPool,
   post_id: &Uuid,
   comment_id: &Uuid,
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
-  Comment::delete_comment(user_id, post_id, comment_id, db)
-    .await
-    .map_err(map_db_err)
+  comments.delete_comment(user_id, post_id, comment_id).await
 }
 
 pub async fn delete_comment_like(
-  db: &Pool<Postgres>,
+  comments: &CommentPool,
   post_id: &Uuid,
   comment_id: &Uuid,
   user_id: &Uuid,
 ) -> Result<(), LogicErr> {
-  Comment::delete_comment_like(user_id, comment_id, post_id, db)
+  comments.delete_comment_like(user_id, comment_id, post_id).await
+}
+
+pub async fn get_comments(
+  comments: &CommentPool,
+  post_id: &Uuid,
+  own_user_id: &Option<Uuid>,
+  page: &Option<i64>,
+  page_size: &Option<i64>,
+) -> Result<ListResponse<CommentPub>, LogicErr> {
+  let page = page.unwrap_or(0);
+  let page_size = page_size.unwrap_or(20);
+  let comments_count = match comments.fetch_comments_count(post_id, own_user_id).await {
+    Ok(count) => count,
+    Err(err) => return Err(err),
+  };
+
+  if comments_count == 0 {
+    return Err(LogicErr::MissingRecord);
+  }
+
+  match comments
+    .fetch_comments(post_id, own_user_id, page_size, page * page_size)
     .await
-    .map_err(map_db_err)
+  {
+    Ok(comments) => Ok(ListResponse {
+      data: comments,
+      page,
+      total_items: comments_count,
+      total_pages: div_up(comments_count, page_size) + 1,
+    }),
+    Err(err) => Err(err),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::sync::Arc;
+
+  use mockall::predicate::*;
+  use uuid::Uuid;
+
+  use crate::{
+    db::{
+      comment_repository::{CommentPool, MockCommentRepo},
+      follow_repository::{FollowPool, MockFollowRepo},
+      post_repository::{MockPostRepo, PostPool},
+    },
+    logic::{
+      comment::{create_comment, create_comment_like, delete_comment, delete_comment_like},
+      LogicErr,
+    },
+    model::access_type::AccessType,
+  };
+
+  #[async_std::test]
+  async fn test_create_comment_rejects_for_missing_post() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| None);
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Err(LogicErr::MissingRecord)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_rejects_for_missing_post_owner() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::PublicFederated));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| None);
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Err(LogicErr::MissingRecord)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_rejects_for_foreign_user_private_visibility() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::Private));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Err(LogicErr::UnauthorizedError)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_rejects_for_foreign_user_shadow_visibility() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::Shadow));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Err(LogicErr::UnauthorizedError)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_rejects_for_foreign_user_not_following_followers_only() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::FollowersOnly));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let mut follow_repo = MockFollowRepo::new();
+
+    follow_repo
+      .expect_user_follows_poster()
+      .times(1)
+      .with(eq(post_id), eq(user_id))
+      .returning(|_, _| false);
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(follow_repo);
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Err(LogicErr::MissingRecord)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_rejects_for_db_err() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::PublicFederated));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_create_comment()
+      .times(1)
+      .with(eq(user_id), eq(post_id), eq("test"), always())
+      .returning(|_, _, _, _| Err(LogicErr::DbError("Boop".to_string())));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Err(LogicErr::DbError("Boop".to_string()))
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_succeeds() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+    let exp_comment_id = comment_id;
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::PublicFederated));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_create_comment()
+      .times(1)
+      .with(eq(user_id), eq(post_id), eq("test"), always())
+      .returning(move |_, _, _, _| Ok(comment_id));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
+      Ok(exp_comment_id)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_rejects_for_missing_post() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| None);
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::MissingRecord)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_rejects_for_missing_post_owner() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::PublicFederated));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| None);
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::MissingRecord)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_rejects_for_foreign_user_private_visibility() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::Private));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::UnauthorizedError)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_rejects_for_foreign_user_shadow_visibility() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::Shadow));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::UnauthorizedError)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_rejects_for_foreign_user_not_following_followers_only() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::FollowersOnly));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let mut follow_repo = MockFollowRepo::new();
+
+    follow_repo
+      .expect_user_follows_poster()
+      .times(1)
+      .with(eq(post_id), eq(user_id))
+      .returning(|_, _| false);
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(follow_repo);
+    let comments: CommentPool = Arc::new(MockCommentRepo::new());
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::MissingRecord)
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_rejects_for_db_err() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::PublicFederated));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_create_comment_like()
+      .times(1)
+      .with(eq(user_id), eq(comment_id), eq(post_id))
+      .returning(|_, _, _| Err(LogicErr::DbError("Boop".to_string())));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::DbError("Boop".to_string()))
+    );
+  }
+
+  #[async_std::test]
+  async fn test_create_comment_like_succeeds() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut post_repo = MockPostRepo::new();
+
+    post_repo
+      .expect_fetch_visibility_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(AccessType::PublicFederated));
+
+    post_repo
+      .expect_fetch_owner_by_id()
+      .times(1)
+      .with(eq(post_id))
+      .returning(|_| Some(Uuid::new_v4()));
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_create_comment_like()
+      .times(1)
+      .with(eq(user_id), eq(comment_id), eq(post_id))
+      .returning(|_, _, _| Ok(()));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let follows: FollowPool = Arc::new(MockFollowRepo::new());
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      create_comment_like(&posts, &follows, &comments, &post_id, &comment_id, &user_id).await,
+      Ok(())
+    );
+  }
+
+  #[async_std::test]
+  async fn test_delete_comment_err_passthrough() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_delete_comment()
+      .times(1)
+      .with(eq(user_id), eq(post_id), eq(comment_id))
+      .returning(|_, _, _| Err(LogicErr::DbError("Boop".to_string())));
+
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      delete_comment(&comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::DbError("Boop".to_string()))
+    );
+  }
+
+  #[async_std::test]
+  async fn test_delete_comment_succeeds() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_delete_comment()
+      .times(1)
+      .with(eq(user_id), eq(post_id), eq(comment_id))
+      .returning(|_, _, _| Ok(()));
+
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(delete_comment(&comments, &post_id, &comment_id, &user_id).await, Ok(()));
+  }
+
+  #[async_std::test]
+  async fn test_delete_comment_like_err_passthrough() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_delete_comment_like()
+      .times(1)
+      .with(eq(user_id), eq(comment_id), eq(post_id))
+      .returning(|_, _, _| Err(LogicErr::DbError("Boop".to_string())));
+
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      delete_comment_like(&comments, &post_id, &comment_id, &user_id).await,
+      Err(LogicErr::DbError("Boop".to_string()))
+    );
+  }
+
+  #[async_std::test]
+  async fn test_delete_comment_like_succeeds() {
+    let post_id = Uuid::new_v4();
+    let user_id = Uuid::new_v4();
+    let comment_id = Uuid::new_v4();
+
+    let mut comment_repo = MockCommentRepo::new();
+
+    comment_repo
+      .expect_delete_comment_like()
+      .times(1)
+      .with(eq(user_id), eq(comment_id), eq(post_id))
+      .returning(|_, _, _| Ok(()));
+
+    let comments: CommentPool = Arc::new(comment_repo);
+
+    assert_eq!(
+      delete_comment_like(&comments, &post_id, &comment_id, &user_id).await,
+      Ok(())
+    );
+  }
 }

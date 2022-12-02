@@ -1,19 +1,23 @@
-use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
+  db::{follow_repository::FollowPool, job_repository::JobPool},
   helpers::api::map_db_err,
   logic::LogicErr,
   model::{
-    follow::Follow,
-    job::{Job, JobStatus, NewJob},
+    job::{JobStatus, NewJob},
     queue_job::{QueueJob, QueueJobType},
   },
   work_queue::queue::Queue,
 };
 
-pub async fn create_boost_events(job_id: Uuid, db: &Pool<Postgres>, queue: &Queue) -> Result<(), LogicErr> {
-  let job = match Job::fetch_optional_by_id(&job_id, db).await {
+pub async fn create_boost_events(
+  jobs: &JobPool,
+  follows: &FollowPool,
+  job_id: Uuid,
+  queue: &Queue,
+) -> Result<(), LogicErr> {
+  let job = match jobs.fetch_optional_by_id(&job_id).await {
     Some(job) => job,
     None => return Err(LogicErr::InternalError("Job not found".to_string())),
   };
@@ -28,20 +32,18 @@ pub async fn create_boost_events(job_id: Uuid, db: &Pool<Postgres>, queue: &Queu
     None => return Err(LogicErr::InternalError("User ID not found for job".to_string())),
   };
 
-  let followers = Follow::fetch_user_followers(&user_id, db).await.unwrap_or_default();
+  let followers = follows.fetch_user_followers(&user_id).await.unwrap_or_default();
 
   for follower in followers {
-    let job_id = Job::create(
-      NewJob {
+    let job_id = jobs
+      .create(NewJob {
         created_by_id: Some(user_id),
         status: JobStatus::NotStarted,
         record_id: Some(post_id),
         associated_record_id: Some(follower.user_id),
-      },
-      db,
-    )
-    .await
-    .map_err(map_db_err)?;
+      })
+      .await
+      .map_err(map_db_err)?;
 
     let job = QueueJob {
       job_id,

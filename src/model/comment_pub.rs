@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{Error, FromRow, Pool, Postgres};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, FromRow)]
@@ -20,24 +20,4 @@ pub struct CommentPub {
   pub likes: i64,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub liked: Option<bool>,
-}
-
-impl CommentPub {
-  pub async fn fetch_comments(
-    post_id: &Uuid,
-    own_user_id: &Option<Uuid>,
-    limit: i64,
-    skip: i64,
-    pool: &Pool<Postgres>,
-  ) -> Result<Vec<CommentPub>, Error> {
-    let post = sqlx::query_as(include_str!("../db/fetch_post_comments.sql"))
-      .bind(own_user_id)
-      .bind(post_id)
-      .bind(limit)
-      .bind(skip)
-      .fetch_all(pool)
-      .await?;
-
-    Ok(post)
-  }
 }

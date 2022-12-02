@@ -1,15 +1,15 @@
 use blurhash::encode;
 use futures_util::future::join_all;
 use image::{GenericImageView, ImageFormat};
-use sqlx::{Pool, Postgres};
 use tempfile::TempDir;
 use uuid::Uuid;
 
 use crate::cdn::cdn_store::Cdn;
+use crate::db::job_repository::JobPool;
+use crate::db::post_repository::PostPool;
 use crate::helpers::api::{map_db_err, map_ext_err};
 use crate::logic::LogicErr;
-use crate::model::job::{Job, JobStatus, NewJob};
-use crate::model::post::Post;
+use crate::model::job::{JobStatus, NewJob};
 use crate::model::queue_job::{QueueJob, QueueJobType};
 use crate::settings::SETTINGS;
 use crate::work_queue::queue::Queue;
@@ -17,11 +17,12 @@ use log::{debug, warn};
 
 pub async fn convert_new_post_images(
   job_id: Uuid,
-  db: &Pool<Postgres>,
+  jobs: &JobPool,
+  posts: &PostPool,
   cdn: &Cdn,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
-  let job = match Job::fetch_optional_by_id(&job_id, db).await {
+  let job = match jobs.fetch_optional_by_id(&job_id).await {
     Some(job) => job,
     None => return Err(LogicErr::InternalError("Job not found".to_string())),
   };
@@ -31,7 +32,7 @@ pub async fn convert_new_post_images(
     None => return Err(LogicErr::InternalError("Post ID not found for job".to_string())),
   };
 
-  let mut post = match Post::find_optional_by_id(&post_id, db).await {
+  let mut post = match posts.find_optional_by_id(&post_id).await {
     Some(post) => post,
     None => return Err(LogicErr::InternalError("Post not found for job".to_string())),
   };
@@ -233,19 +234,17 @@ pub async fn convert_new_post_images(
   post.content_image_uri_small = Some(small_file_name);
   post.content_blurhash = blurhash;
 
-  post.update_post_content(db).await.map_err(map_ext_err)?;
+  posts.update_post_content(&post).await.map_err(map_ext_err)?;
 
-  let job_id = Job::create(
-    NewJob {
+  let job_id = jobs
+    .create(NewJob {
       created_by_id: Some(post.user_id),
       status: JobStatus::NotStarted,
       record_id: Some(post.post_id),
       associated_record_id: None,
-    },
-    db,
-  )
-  .await
-  .map_err(map_db_err)?;
+    })
+    .await
+    .map_err(map_db_err)?;
 
   let job = QueueJob {
     job_id,

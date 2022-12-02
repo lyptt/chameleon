@@ -9,6 +9,10 @@ use std::result::Result;
 
 use super::{cdn_file_store::CdnFileStore, cdn_s3_store::CdnS3Store};
 
+#[cfg(test)]
+use mockall::automock;
+
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait CdnStore {
   async fn upload_tmp_file(&self, local_path: &Tempfile, remote_path: &str) -> Result<String, LogicErr>;
@@ -30,6 +34,11 @@ impl Cdn {
         imp: Box::new(CdnS3Store {}),
       },
     }
+  }
+
+  #[cfg(test)]
+  pub fn new_inner(inner: Box<dyn CdnStore + Sync + Send>) -> Cdn {
+    Cdn { imp: inner }
   }
 
   pub async fn upload_tmp_file(&self, local_file: &Tempfile, remote_path: &str) -> Result<String, LogicErr> {
