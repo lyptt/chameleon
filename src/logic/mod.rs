@@ -2,6 +2,7 @@ use std::error::Error;
 
 use strum::Display;
 
+pub mod app;
 pub mod comment;
 pub mod follow;
 pub mod job;
