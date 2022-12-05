@@ -1074,6 +1074,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "rand",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_qs",
@@ -1084,6 +1085,7 @@ dependencies = [
  "temp-env",
  "tempfile",
  "tokio",
+ "typed-builder",
  "uuid",
 ]
 
@@ -3765,6 +3767,17 @@ checksum = "c57ffb460d7c24cd6eda43694110189030a3d1dfe418416d9468fd1c1d290b47"
 dependencies = [
  "memchr",
  "unchecked-index",
+]
+
+[[package]]
+name = "typed-builder"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47a126a40dbff39e8320900cd61b8de053a2706e1f782cd27145792feb8fd41e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

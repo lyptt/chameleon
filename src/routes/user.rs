@@ -2,26 +2,11 @@ use actix_web::{web, HttpResponse, Responder};
 
 use crate::{
   db::{session_repository::SessionPool, user_repository::UserPool, user_stats_repository::UserStatsPool},
-  helpers::{
-    activitypub::{handle_async_activitypub_alt_get, handle_async_activitypub_get},
-    api::result_into,
-    auth::{query_auth, require_auth},
-  },
+  helpers::auth::{query_auth, require_auth},
   logic::user::{get_user_by_fediverse_id, get_user_by_id},
   model::{response::ObjectResponse, user_account_pub::UserAccountPub},
   net::jwt::JwtContext,
 };
-
-pub async fn api_activitypub_get_user_by_id_astream(
-  users: web::Data<UserPool>,
-  handle: web::Path<String>,
-) -> impl Responder {
-  handle_async_activitypub_alt_get::<UserAccountPub>(&handle, &result_into(get_user_by_id(&handle, &users).await))
-}
-
-pub async fn api_activitypub_get_user_by_id(users: web::Data<UserPool>, handle: web::Path<String>) -> impl Responder {
-  handle_async_activitypub_get::<UserAccountPub>(&handle, &result_into(get_user_by_id(&handle, &users).await))
-}
 
 pub async fn api_get_profile(
   sessions: web::Data<SessionPool>,

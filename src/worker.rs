@@ -6,12 +6,14 @@ mod activitypub;
 mod aws;
 mod cdn;
 mod db;
+mod federation;
 mod helpers;
 mod job;
 mod logic;
 mod model;
 mod net;
 mod rabbitmq;
+mod routes;
 mod settings;
 mod work_queue;
 

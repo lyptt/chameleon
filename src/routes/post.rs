@@ -4,17 +4,17 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::ordered_collection::OrderedCollectionPage,
+  activitypub::helpers::create_activitypub_ordered_collection_page_posts,
   cdn::cdn_store::Cdn,
   db::{
     follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
     user_repository::UserPool,
   },
   helpers::{
-    activitypub::handle_activitypub_collection_metadata_get,
     auth::{query_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
+    types::ACTIVITY_JSON_CONTENT_TYPE,
   },
   logic::post::{
     create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
@@ -42,54 +42,6 @@ pub struct PostsQuery {
 pub struct PostUpload {
   #[multipart(rename = "images[]")]
   images: Vec<Tempfile>,
-}
-
-pub async fn api_activitypub_get_user_public_feed(
-  users: web::Data<UserPool>,
-  posts: web::Data<PostPool>,
-  handle: web::Path<String>,
-  query: web::Query<PostsQuery>,
-) -> impl Responder {
-  let user_id = match users.fetch_id_by_handle(&handle).await {
-    Some(id) => id,
-    None => return build_api_not_found("No such id".to_string()),
-  };
-
-  match query.page {
-    Some(page) => {
-      let page_size = query.page_size.unwrap_or(20);
-      let posts_count = match get_user_posts_count(&user_id, &posts).await {
-        Ok(count) => count,
-        Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-      };
-
-      let posts = match get_user_posts(&user_id, page_size, page * page_size, &posts).await {
-        Ok(posts) => posts,
-        Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-      };
-
-      let collection = OrderedCollectionPage::build(
-        &format!(
-          "{}/users/{}/feed?page={}&page_size={}",
-          SETTINGS.server.api_fqdn, &handle, page, page_size
-        ),
-        &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, &handle),
-        &format!("{}/users/{}/status", SETTINGS.server.api_fqdn, &handle),
-        &format!("{}/users/{}", SETTINGS.server.api_fqdn, &handle),
-        posts,
-        posts_count,
-        page_size,
-        page,
-      );
-
-      HttpResponse::Ok().json(collection)
-    }
-    None => handle_activitypub_collection_metadata_get(
-      &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
-      query.page_size.unwrap_or(20),
-      get_user_posts_count(&user_id, &posts).await,
-    ),
-  }
 }
 
 pub async fn api_get_user_own_feed(
@@ -230,6 +182,45 @@ pub async fn api_get_user_posts(
     total_items: posts_count,
     total_pages: div_up(posts_count, page_size) + 1,
   })
+}
+
+pub async fn api_activitypub_get_federated_user_posts(
+  posts: web::Data<PostPool>,
+  users: web::Data<UserPool>,
+  query: web::Query<PostsQuery>,
+  handle: web::Path<String>,
+) -> impl Responder {
+  let target_id = match users.fetch_id_by_handle(&handle).await {
+    Some(id) => id,
+    None => return HttpResponse::NotFound().finish(),
+  };
+
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_user_public_feed(&target_id, &None).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_user_public_feed(&target_id, &None, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let doc = create_activitypub_ordered_collection_page_posts(
+    &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
+    page.try_into().unwrap_or_default(),
+    page_size.try_into().unwrap_or_default(),
+    posts_count.try_into().unwrap_or_default(),
+    posts,
+  );
+
+  HttpResponse::Ok()
+    .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
+    .json(doc)
 }
 
 pub async fn api_create_post(

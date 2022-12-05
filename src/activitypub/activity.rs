@@ -1,20 +1,21 @@
-use chrono::{DateTime, Utc};
+use super::{object::Object, reference::Reference};
+
 use serde::{Deserialize, Serialize};
+use typed_builder::TypedBuilder;
 
-use super::activity_type::ActivityType;
-
-/// Represents an Activity, which is an action a user performs in
-/// an ActivityPub environment.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Activity<T> {
-  pub id: String,
-  pub actor: String,
-  pub published: DateTime<Utc>,
-  pub object: T,
-  #[serde(rename = "type")]
-  pub activity_type: ActivityType,
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, TypedBuilder)]
+#[builder(field_defaults(default))]
+pub struct ActivityProps {
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub to: Option<Vec<String>>,
+  pub actor: Option<Reference<Object>>,
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub cc: Option<Vec<String>>,
+  pub object: Option<Reference<Object>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub target: Option<Reference<Object>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub result: Option<Reference<Object>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub origin: Option<Reference<Object>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub instrument: Option<Reference<Object>>,
 }
