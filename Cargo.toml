@@ -18,10 +18,10 @@ path = "src/worker.rs"
 [dependencies]
 actix-web = "4.2.1"
 actix-cors = "0.6.4"
-serde = { version = "1.0.148", features = ["derive"] }
+serde = { version = "1.0.149", features = ["derive"] }
 serde_json = "1.0.89"
 serde_qs = "0.10.1"
-config = "0.13.2"
+config = "0.13.3"
 lazy_static = "1.4.0"
 sqlx = { version = "0.6.2", features = [
   "runtime-tokio-rustls",
@@ -53,7 +53,7 @@ aws-types = "0.51.0"
 aws-config = "0.51.0"
 aws-sdk-s3 = "0.21.0"
 aws-sdk-sqs = "0.21.0"
-jsonwebtoken = "8.1.1"
+jsonwebtoken = "8.2.0"
 sha2 = "0.10.6"
 hex = "0.4.3"
 rand = "0.8.5"

@@ -28,6 +28,7 @@ use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
+use routes::apps::api_create_app;
 use routes::comment::{
   api_create_comment, api_create_comment_like, api_delete_comment, api_delete_comment_like, api_get_comments,
 };
@@ -218,6 +219,11 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/job/{job_id}")
           .name("jobs")
           .route(web::get().to(api_job_query_status)),
+      )
+      .service(
+        web::resource("/api/apps")
+          .name("apps")
+          .route(web::post().to(api_create_app)),
       )
       .service(
         web::resource("/.well-known/webfinger")
