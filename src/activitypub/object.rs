@@ -7,6 +7,7 @@ use typed_builder::TypedBuilder;
 
 use super::{
   activity::ActivityProps,
+  actor::ActorProps,
   collection::{CollectionPageProps, CollectionProps},
   link::LinkProps,
   question::QuestionProps,
@@ -127,6 +128,9 @@ pub struct Object {
   pub question: Option<QuestionProps>,
 
   #[serde(flatten)]
+  pub actors: Option<ActorProps>,
+
+  #[serde(flatten)]
   pub extra: Option<serde_json::Value>,
 }
 
@@ -137,6 +141,7 @@ mod tests {
 
   use crate::activitypub::{
     activity::ActivityProps,
+    actor::ActorProps,
     collection::{CollectionPageProps, CollectionProps},
     document::{ActivityPubDocument, RawActivityPubDocument},
     link::LinkProps,
@@ -282,6 +287,7 @@ mod tests {
                   .link(Some(LinkProps::builder().build()))
                   .activity(Some(ActivityProps::builder().build()))
                   .question(Some(QuestionProps::builder().build()))
+                  .actors(Some(ActorProps::builder().build()))
                   .build()
               ))))
               .build()
@@ -290,6 +296,7 @@ mod tests {
           .link(Some(LinkProps::builder().build()))
           .activity(Some(ActivityProps::builder().build()))
           .question(Some(QuestionProps::builder().build()))
+          .actors(Some(ActorProps::builder().build()))
           .extra(Some(json!({})))
           .build()
       ))
@@ -313,6 +320,7 @@ mod tests {
           .collection_page(Some(CollectionPageProps::builder().build()))
           .activity(Some(ActivityProps::builder().build()))
           .question(Some(QuestionProps::builder().build()))
+          .actors(Some(ActorProps::builder().build()))
           .extra(Some(json!({})))
           .build()
       ))]))

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
@@ -7,4 +9,5 @@ pub enum Reference<T> {
   Embedded(Box<T>),
   Remote(String),
   Mixed(Vec<Reference<T>>),
+  Map(HashMap<String, serde_json::Value>),
 }

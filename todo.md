@@ -1,0 +1,2 @@
+- Diagnose get post returning error 500
+- Fix content type being saved in db without `image/` prefix

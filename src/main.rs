@@ -24,7 +24,7 @@ use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use db::repository::Repository;
 use env_logger::WriteStyle;
-use helpers::types::ACTIVITY_JSON_CONTENT_TYPE;
+use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
@@ -43,7 +43,7 @@ use routes::post::{
 };
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
-use routes::user::{api_get_profile, api_get_user_profile, api_get_user_stats};
+use routes::user::{api_activitypub_get_user_profile, api_get_profile, api_get_user_profile, api_get_user_stats};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
@@ -114,16 +114,16 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/users/{handle}")
           .name("get_user_by_id")
-          // .route(
-          //   web::get()
-          //     .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
-          //     .to(api_activitypub_get_user_by_id),
-          // )
-          // .route(
-          //   web::get()
-          //     .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
-          //     .to(api_activitypub_get_user_by_id_astream),
-          // )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_profile),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_profile),
+          )
           .route(web::get().to(api_get_user_profile)),
       )
       .service(
@@ -132,6 +132,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_posts),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_federated_user_posts),
           )
           .route(web::get().to(api_get_user_posts)),

@@ -1,3 +1,10 @@
+use std::collections::HashMap;
+
+use crate::{
+  activitypub::{activity_convertible::ActivityConvertible, actor::ActorProps, object::Object, reference::Reference},
+  settings::SETTINGS,
+};
+
 use super::user::User;
 
 use serde::{Deserialize, Serialize};
@@ -63,6 +70,47 @@ impl From<User> for UserAccountPub {
       intro_md: u.intro_md,
       intro_html: u.intro_html,
     }
+  }
+}
+
+impl ActivityConvertible for UserAccountPub {
+  fn to_object(&self, _actor: &str) -> Object {
+    let handle = self.handle.clone().unwrap_or_default();
+
+    let id = format!("{}/users/{}", SETTINGS.server.api_fqdn, &handle);
+    let public_inbox_uri = format!("{}/federate/activitypub/shared-inbox", SETTINGS.server.api_fqdn);
+    let inbox_uri = format!("{}/federate/activitypub/inbox/{}", SETTINGS.server.api_fqdn, &handle);
+    let outbox_uri = format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, &handle);
+    let followers_uri = format!("{}/api/users/{}/followers", SETTINGS.server.api_fqdn, &handle);
+    let following_uri = format!("{}/api/users/{}/following", SETTINGS.server.api_fqdn, &handle);
+    let icon = self.avatar_url.clone().map(|avatar_url| {
+      Reference::Embedded(Box::new(
+        Object::builder()
+          .kind(Some("Image".to_string()))
+          .media_type(Some("image/jpeg".to_string()))
+          .url(Some(Reference::Remote(avatar_url)))
+          .build(),
+      ))
+    });
+    let mut endpoints = HashMap::new();
+    endpoints.insert("sharedInbox".to_string(), serde_json::Value::String(public_inbox_uri));
+
+    Object::builder()
+      .id(Some(id.clone()))
+      .kind(Some("Person".to_string()))
+      .icon(icon)
+      .url(Some(Reference::Remote(id)))
+      .actors(Some(
+        ActorProps::builder()
+          .endpoints(Some(Reference::Map(endpoints)))
+          .followers(Some(Reference::Remote(followers_uri)))
+          .following(Some(Reference::Remote(following_uri)))
+          .inbox(Some(Reference::Remote(inbox_uri)))
+          .outbox(Some(Reference::Remote(outbox_uri)))
+          .preferred_username(Some(handle))
+          .build(),
+      ))
+      .build()
   }
 }
 

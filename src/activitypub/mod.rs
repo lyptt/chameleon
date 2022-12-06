@@ -1,5 +1,6 @@
 pub mod activity;
 pub mod activity_convertible;
+pub mod actor;
 pub mod collection;
 pub mod document;
 pub mod helpers;
