@@ -95,7 +95,7 @@ pub async fn api_oauth_authorize(apps: web::Data<AppPool>, query: web::Query<OAu
         Err(res) => return res,
       };
 
-      if app.client_id.to_string() != query.client_id {
+      if app.client_id != query.client_id {
         return handle_oauth_app_err(
           "The provided parameters do not match the parameters set for the registered appliction",
         );
@@ -138,7 +138,7 @@ pub async fn api_oauth_authorize_post(
     Err(res) => return res,
   };
 
-  if app.client_id.to_string() != query.client_id {
+  if app.client_id != query.client_id {
     return handle_oauth_app_err(
       "The provided parameters do not match the parameters set for the registered appliction",
     );
@@ -191,11 +191,11 @@ pub async fn api_oauth_token(
     Err(res) => return res,
   };
 
-  if app.client_id.to_string() != req.client_id {
+  if app.client_id != req.client_id {
     return build_api_err(401, "Invalid client configuration".to_string(), None);
   }
 
-  if app.client_secret.to_string() != req.client_secret {
+  if app.client_secret != req.client_secret {
     return build_api_err(401, "Invalid client configuration".to_string(), None);
   }
 

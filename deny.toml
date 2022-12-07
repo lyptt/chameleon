@@ -26,7 +26,6 @@ allow = [
   "Zlib",
   "LGPL-3.0",
   "AGPL-3.0",
-  "GPL-3.0",
   "OpenSSL",
   "BSD-2-Clause",
 ]

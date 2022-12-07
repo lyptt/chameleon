@@ -304,15 +304,15 @@ mod tests {
 
   #[test]
   pub fn document_parses_aliased_object_props() {
-    let raw_json = r#"{ 
+    let raw_json = r##"{ 
       "@context": [
         "https://www.w3.org/ns/activitystreams",
         {
             "backgroundColorFill": "chameleon:backgroundColorFill"
         }
       ],
-      "backgroundColorFill": "\#FF00FF"
-    }"#;
+      "backgroundColorFill": "#FF00FF"
+    }"##;
 
     let raw_doc_result: Result<RawActivityPubDocument, Error> = serde_json::from_str(raw_json);
     assert!(raw_doc_result.is_ok());
