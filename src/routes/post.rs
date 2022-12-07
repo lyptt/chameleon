@@ -4,7 +4,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::helpers::create_activitypub_ordered_collection_page_posts,
+  activitypub::{activity_type::ActivityType, helpers::create_activitypub_ordered_collection_page_post_activity},
   cdn::cdn_store::Cdn,
   db::{
     follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
@@ -122,6 +122,55 @@ pub async fn api_get_post(
   }
 }
 
+pub async fn api_get_user_post(
+  users: web::Data<UserPool>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  follows: web::Data<FollowPool>,
+  ids: web::Path<(String, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  // We discard the user id since post ids are unique in our db
+  let post_id = ids.1;
+
+  let current_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => users.fetch_id_by_fediverse_id(&props.sub).await,
+    None => None,
+  };
+
+  let post = match get_post(&post_id, &current_user_id, &posts).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return build_api_not_found(post_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  if post.visibility == AccessType::PublicFederated
+    || post.visibility == AccessType::PublicLocal
+    || post.visibility == AccessType::Unlisted
+  {
+    return HttpResponse::Ok().json(ObjectResponse { data: post });
+  }
+
+  match current_user_id {
+    Some(current_user_id) => {
+      if post.user_id == current_user_id {
+        return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      if post.visibility == AccessType::FollowersOnly
+        && follows.user_follows_poster(&post.post_id, &current_user_id).await
+      {
+        return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      HttpResponse::NotFound().finish()
+    }
+    None => HttpResponse::NotFound().finish(),
+  }
+}
+
 pub async fn api_get_global_feed(posts: web::Data<PostPool>, query: web::Query<PostsQuery>) -> impl Responder {
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
@@ -184,6 +233,47 @@ pub async fn api_get_user_posts(
   })
 }
 
+pub async fn api_get_user_liked_posts(
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  users: web::Data<UserPool>,
+  query: web::Query<PostsQuery>,
+  handle: web::Path<String>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  let target_id = match users.fetch_id_by_handle(&handle).await {
+    Some(id) => id,
+    None => return HttpResponse::NotFound().finish(),
+  };
+
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_user_public_likes_feed(&target_id, &user_id).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_user_public_likes_feed(&target_id, &user_id, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
 pub async fn api_activitypub_get_federated_user_posts(
   posts: web::Data<PostPool>,
   users: web::Data<UserPool>,
@@ -210,8 +300,49 @@ pub async fn api_activitypub_get_federated_user_posts(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  let doc = create_activitypub_ordered_collection_page_posts(
+  let doc = create_activitypub_ordered_collection_page_post_activity(
     &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
+    ActivityType::Create,
+    page.try_into().unwrap_or_default(),
+    page_size.try_into().unwrap_or_default(),
+    posts_count.try_into().unwrap_or_default(),
+    posts,
+  );
+
+  HttpResponse::Ok()
+    .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
+    .json(doc)
+}
+
+pub async fn api_activitypub_get_federated_user_liked_posts(
+  posts: web::Data<PostPool>,
+  users: web::Data<UserPool>,
+  query: web::Query<PostsQuery>,
+  handle: web::Path<String>,
+) -> impl Responder {
+  let target_id = match users.fetch_id_by_handle(&handle).await {
+    Some(id) => id,
+    None => return HttpResponse::NotFound().finish(),
+  };
+
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_user_public_likes_feed(&target_id, &None).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_user_public_likes_feed(&target_id, &None, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let doc = create_activitypub_ordered_collection_page_post_activity(
+    &format!("{}/users/{}/likes", SETTINGS.server.api_fqdn, handle),
+    ActivityType::Like,
     page.try_into().unwrap_or_default(),
     page_size.try_into().unwrap_or_default(),
     posts_count.try_into().unwrap_or_default(),

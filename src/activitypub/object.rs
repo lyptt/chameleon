@@ -21,6 +21,14 @@ pub enum ObjectType {
   Note,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, TypedBuilder)]
+#[builder(field_defaults(default))]
+pub struct ObjectSource {
+  pub content: String,
+  #[serde(rename = "mediaType")]
+  pub media_type: String,
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, TypedBuilder)]
 #[builder(field_defaults(default))]
 pub struct Object {
@@ -99,18 +107,23 @@ pub struct Object {
   pub sensitive: Option<bool>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub url: Option<Reference<Object>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub source: Option<ObjectSource>,
 
   // Chameleon ActivityPub extensions
   #[serde(
-    rename(serialize = "contentMd", deserialize = "chameleon:contentMd"),
+    rename(serialize = "backgroundColorFill", deserialize = "chameleon:backgroundColorFill"),
     skip_serializing_if = "Option::is_none"
   )]
-  pub content_md: Option<RdfString>,
+  pub background_color_fill: Option<RdfString>,
   #[serde(
-    rename(serialize = "contentMdMap", deserialize = "chameleon:contentMdMap"),
+    rename(
+      serialize = "backgroundColorFillMap",
+      deserialize = "chameleon:backgroundColorFillMap"
+    ),
     skip_serializing_if = "Option::is_none"
   )]
-  pub content_md_map: Option<HashMap<String, RdfString>>,
+  pub background_color_fill_map: Option<HashMap<String, RdfString>>,
 
   #[serde(flatten)]
   pub link: Option<LinkProps>,

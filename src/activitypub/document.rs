@@ -308,10 +308,10 @@ mod tests {
       "@context": [
         "https://www.w3.org/ns/activitystreams",
         {
-            "contentMd": "chameleon:contentMd"
+            "backgroundColorFill": "chameleon:backgroundColorFill"
         }
       ],
-      "contentMd": "**hello** world"
+      "backgroundColorFill": "\#FF00FF"
     }"#;
 
     let raw_doc_result: Result<RawActivityPubDocument, Error> = serde_json::from_str(raw_json);
@@ -324,12 +324,12 @@ mod tests {
     assert!(doc.aliases.is_some());
     let aliases = doc.aliases.unwrap();
     assert!(!aliases.is_empty());
-    assert_eq!(aliases["contentMd"], "chameleon:contentMd");
+    assert_eq!(aliases["backgroundColorFill"], "chameleon:backgroundColorFill");
 
-    assert!(doc.object.content_md.is_some());
+    assert!(doc.object.background_color_fill.is_some());
     assert_eq!(
-      doc.object.content_md,
-      Some(RdfString::Raw("**hello** world".to_string()))
+      doc.object.background_color_fill,
+      Some(RdfString::Raw("#FF00FF".to_string()))
     );
   }
 

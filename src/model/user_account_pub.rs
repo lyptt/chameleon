@@ -1,10 +1,3 @@
-use std::collections::HashMap;
-
-use crate::{
-  activitypub::{activity_convertible::ActivityConvertible, actor::ActorProps, object::Object, reference::Reference},
-  settings::SETTINGS,
-};
-
 use super::user::User;
 
 use serde::{Deserialize, Serialize};
@@ -17,8 +10,8 @@ use uuid::Uuid;
 pub struct UserAccountPub {
   pub user_id: Uuid,
   pub fediverse_id: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub handle: Option<String>,
+  pub handle: String,
+  pub fediverse_uri: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub avatar_url: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -55,6 +48,7 @@ impl From<User> for UserAccountPub {
       user_id: u.user_id,
       fediverse_id: u.fediverse_id,
       handle: u.handle,
+      fediverse_uri: u.fediverse_uri,
       avatar_url: u.avatar_url,
       email: u.email,
       url_1: u.url_1,
@@ -73,47 +67,6 @@ impl From<User> for UserAccountPub {
   }
 }
 
-impl ActivityConvertible for UserAccountPub {
-  fn to_object(&self, _actor: &str) -> Object {
-    let handle = self.handle.clone().unwrap_or_default();
-
-    let id = format!("{}/users/{}", SETTINGS.server.api_fqdn, &handle);
-    let public_inbox_uri = format!("{}/federate/activitypub/shared-inbox", SETTINGS.server.api_fqdn);
-    let inbox_uri = format!("{}/federate/activitypub/inbox/{}", SETTINGS.server.api_fqdn, &handle);
-    let outbox_uri = format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, &handle);
-    let followers_uri = format!("{}/api/users/{}/followers", SETTINGS.server.api_fqdn, &handle);
-    let following_uri = format!("{}/api/users/{}/following", SETTINGS.server.api_fqdn, &handle);
-    let icon = self.avatar_url.clone().map(|avatar_url| {
-      Reference::Embedded(Box::new(
-        Object::builder()
-          .kind(Some("Image".to_string()))
-          .media_type(Some("image/jpeg".to_string()))
-          .url(Some(Reference::Remote(avatar_url)))
-          .build(),
-      ))
-    });
-    let mut endpoints = HashMap::new();
-    endpoints.insert("sharedInbox".to_string(), serde_json::Value::String(public_inbox_uri));
-
-    Object::builder()
-      .id(Some(id.clone()))
-      .kind(Some("Person".to_string()))
-      .icon(icon)
-      .url(Some(Reference::Remote(id)))
-      .actors(Some(
-        ActorProps::builder()
-          .endpoints(Some(Reference::Map(endpoints)))
-          .followers(Some(Reference::Remote(followers_uri)))
-          .following(Some(Reference::Remote(following_uri)))
-          .inbox(Some(Reference::Remote(inbox_uri)))
-          .outbox(Some(Reference::Remote(outbox_uri)))
-          .preferred_username(Some(handle))
-          .build(),
-      ))
-      .build()
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use crate::model::{user::User, user_account_pub::UserAccountPub};
@@ -126,7 +79,8 @@ mod tests {
     let user = User {
       user_id: Uuid::from_str("ae1481a5-2eb7-4c52-93c3-e95839578dce").unwrap(),
       fediverse_id: "user@127.0.0.1:8000".to_string(),
-      handle: Some("a".to_string()),
+      handle: "a".to_string(),
+      fediverse_uri: "d".to_string(),
       avatar_url: None,
       email: Some("b".to_string()),
       password_hash: Some("c".to_string()),

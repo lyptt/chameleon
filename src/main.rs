@@ -39,12 +39,16 @@ use routes::like::{api_create_like, api_delete_like};
 use routes::nodeinfo::{api_get_nodeinfo, api_get_nodeinfo_2_1};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
-  api_activitypub_get_federated_user_posts, api_boost_post, api_create_post, api_get_global_feed, api_get_post,
-  api_get_user_own_feed, api_get_user_posts, api_unboost_post, api_upload_post_image,
+  api_activitypub_get_federated_user_liked_posts, api_activitypub_get_federated_user_posts, api_boost_post,
+  api_create_post, api_get_global_feed, api_get_post, api_get_user_liked_posts, api_get_user_own_feed,
+  api_get_user_post, api_get_user_posts, api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
-use routes::user::{api_activitypub_get_user_profile, api_get_profile, api_get_user_profile, api_get_user_stats};
+use routes::user::{
+  api_activitypub_get_user_followers, api_activitypub_get_user_following, api_activitypub_get_user_profile,
+  api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_profile, api_get_user_stats,
+};
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
 use sqlx::postgres::PgPoolOptions;
@@ -143,10 +147,55 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_get_user_posts)),
       )
       .service(
+        web::resource("/api/users/{handle}/likes")
+          .name("get_user_public_likes_feed")
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_liked_posts),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_liked_posts),
+          )
+          .route(web::get().to(api_get_user_liked_posts)),
+      )
+      .service(
         web::resource("/api/users/{user_handle}/follows")
           .name("user_follows")
           .route(web::post().to(api_create_follow))
           .route(web::delete().to(api_delete_follow)),
+      )
+      .service(
+        web::resource("/api/users/{user_handle}/followers")
+          .name("user_followers")
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_followers),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_followers),
+          )
+          .route(web::get().to(api_get_user_followers)),
+      )
+      .service(
+        web::resource("/api/users/{user_handle}/following")
+          .name("user_following")
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_following),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_following),
+          )
+          .route(web::get().to(api_get_user_following)),
       )
       .service(
         web::resource("/api/users/{handle}/stats")
@@ -177,9 +226,14 @@ async fn main() -> std::io::Result<()> {
       )
       .service(
         web::resource("/api/feed/{post_id}")
-          .name("upload_post_image")
+          .name("post")
           .route(web::get().to(api_get_post))
           .route(web::post().to(api_upload_post_image)),
+      )
+      .service(
+        web::resource("/api/users/{user_handle}/feed/{post_id}")
+          .name("user_post")
+          .route(web::get().to(api_get_user_post)),
       )
       .service(
         web::resource("/api/feed/{post_id}/likes")

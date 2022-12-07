@@ -18,6 +18,10 @@ pub trait UserRepo {
   async fn fetch_password_hash(&self, handle: &str) -> Result<Option<String>, LogicErr>;
   async fn fetch_fediverse_id_by_handle(&self, fediverse_id: &str) -> Option<String>;
   async fn fetch_user_count(&self) -> i64;
+  async fn fetch_followers(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr>;
+  async fn fetch_following(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr>;
+  async fn fetch_followers_count(&self, user_id: &Uuid) -> i64;
+  async fn fetch_following_count(&self, user_id: &Uuid) -> i64;
 }
 
 pub type UserPool = Arc<dyn UserRepo + Send + Sync>;
@@ -93,6 +97,42 @@ impl UserRepo for DbUserRepo {
 
   async fn fetch_user_count(&self) -> i64 {
     sqlx::query_scalar("SELECT COUNT(*) FROM users")
+      .fetch_one(&self.db)
+      .await
+      .unwrap_or(0)
+  }
+
+  async fn fetch_followers(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr> {
+    sqlx::query_as("SELECT u.* FROM users u INNER JOIN followers f ON f.user_id = u.user_id WHERE f.following_user_id = $1 AND f.user_id != following_user_id LIMIT $2 OFFSET $3")
+        .bind(user_id)
+        .bind(limit)
+        .bind(skip)
+        .fetch_all(&self.db)
+        .await
+        .map_err(map_db_err)
+  }
+
+  async fn fetch_following(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr> {
+    sqlx::query_as("SELECT u.* FROM users u INNER JOIN followers f ON f.following_user_id = u.user_id WHERE f.user_id = $1 AND f.user_id != following_user_id LIMIT $2 OFFSET $3")
+        .bind(user_id)
+        .bind(limit)
+        .bind(skip)
+        .fetch_all(&self.db)
+        .await
+        .map_err(map_db_err)
+  }
+
+  async fn fetch_followers_count(&self, user_id: &Uuid) -> i64 {
+    sqlx::query_scalar("SELECT COUNT(*) FROM followers WHERE following_user_id = $1 AND user_id != following_user_id ")
+      .bind(user_id)
+      .fetch_one(&self.db)
+      .await
+      .unwrap_or(0)
+  }
+
+  async fn fetch_following_count(&self, user_id: &Uuid) -> i64 {
+    sqlx::query_scalar("SELECT COUNT(*) FROM followers WHERE user_id = $1 AND user_id != following_user_id ")
+      .bind(user_id)
       .fetch_one(&self.db)
       .await
       .unwrap_or(0)

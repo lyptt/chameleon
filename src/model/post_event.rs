@@ -5,7 +5,10 @@ use uuid::Uuid;
 
 use crate::{
   activitypub::{
-    activity_convertible::ActivityConvertible, collection::CollectionProps, object::Object, rdf_string::RdfString,
+    activity_convertible::ActivityConvertible,
+    collection::CollectionProps,
+    object::{Object, ObjectSource},
+    rdf_string::RdfString,
     reference::Reference,
   },
   settings::SETTINGS,
@@ -55,10 +58,12 @@ pub struct PostEvent {
   pub user_id: Uuid,
   pub user_handle: String,
   pub user_fediverse_id: String,
+  pub user_fediverse_uri: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub user_avatar_url: Option<String>,
   pub event_user_handle: String,
   pub event_user_fediverse_id: String,
+  pub event_user_fediverse_uri: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub event_user_avatar_url: Option<String>,
   pub likes: i64,
@@ -68,7 +73,7 @@ pub struct PostEvent {
 }
 
 impl ActivityConvertible for PostEvent {
-  fn to_object(&self, actor: &str) -> Object {
+  fn to_object(&self, actor: &str) -> Option<Object> {
     let actor_uri = actor.to_string();
     let actor_feed_uri = format!("{}/feed", actor);
     let actor_follower_feed_uri = format!("{}/followers", actor);
@@ -180,16 +185,24 @@ impl ActivityConvertible for PostEvent {
       }
     }
 
-    Object::builder()
-      .id(Some(base_uri.clone()))
-      .url(Some(Reference::Remote(base_uri)))
-      .kind(Some("Note".to_string()))
-      .to(to)
-      .cc(cc)
-      .replies(Some(Box::new(replies_collection)))
-      .content(Some(RdfString::Raw(self.content_html.clone())))
-      .published(Some(self.created_at))
-      .attachment(Some(Reference::Mixed(attachment_refs)))
-      .build()
+    Some(
+      Object::builder()
+        .id(Some(base_uri.clone()))
+        .url(Some(Reference::Remote(base_uri)))
+        .kind(Some("Note".to_string()))
+        .to(to)
+        .cc(cc)
+        .replies(Some(Box::new(replies_collection)))
+        .content(Some(RdfString::Raw(self.content_html.clone())))
+        .source(Some(
+          ObjectSource::builder()
+            .content(self.content_md.clone())
+            .media_type("text/markdown".to_string())
+            .build(),
+        ))
+        .published(Some(self.created_at))
+        .attachment(Some(Reference::Mixed(attachment_refs)))
+        .build(),
+    )
   }
 }

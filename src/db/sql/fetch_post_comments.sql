@@ -1,4 +1,4 @@
-SELECT DISTINCT c.*, count(ul.comment_like_id) >= 1 AS liked, count(DISTINCT ul2.comment_like_id) as likes, u.handle AS user_handle, u.fediverse_id AS user_fediverse_id, u.avatar_url AS user_avatar_url FROM comments c
+SELECT DISTINCT c.*, count(ul.comment_like_id) >= 1 AS liked, count(DISTINCT ul2.comment_like_id) as likes, u.handle AS user_handle, u.fediverse_id AS user_fediverse_id, u.fediverse_uri AS user_fediverse_uri, u.avatar_url AS user_avatar_url FROM comments c
 INNER JOIN posts p
 ON p.post_id = c.post_id
 INNER JOIN users u
@@ -22,7 +22,7 @@ WHERE c.post_id = $2 -- the post id of this comment collection
 AND (
   (p.visibility IN ('public_local', 'public_federated'))
     OR (following IS TRUE AND p.visibility = 'followers_only'))
-GROUP BY c.comment_id, u.handle, u.fediverse_id, u.avatar_url
+GROUP BY c.comment_id, u.user_id
 ORDER BY c.created_at DESC
 LIMIT $3
 OFFSET $4

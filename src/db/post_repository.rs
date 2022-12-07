@@ -55,6 +55,22 @@ pub trait PostRepo {
   async fn fetch_visibility_by_id(&self, post_id: &Uuid) -> Option<AccessType>;
   async fn fetch_owner_by_id(&self, post_id: &Uuid) -> Option<Uuid>;
   async fn fetch_post_count(&self) -> i64;
+  /// Fetches the user's public feed, i.e. what users that follow this user
+  /// can see, or alternatively all the user's public posts
+  async fn fetch_user_public_likes_feed(
+    &self,
+    target_user_id: &Uuid,
+    own_user_id: &Option<Uuid>,
+    limit: i64,
+    skip: i64,
+  ) -> Result<Vec<PostEvent>, LogicErr>;
+  /// Fetches the count of posts in the user's public feed, i.e. what users that follow this
+  /// user can see, or alternatively all the user's public posts
+  async fn count_user_public_likes_feed(
+    &self,
+    target_user_id: &Uuid,
+    own_user_id: &Option<Uuid>,
+  ) -> Result<i64, LogicErr>;
 }
 
 pub type PostPool = Arc<dyn PostRepo + Send + Sync>;
@@ -285,5 +301,39 @@ impl PostRepo for DbPostRepo {
       .fetch_one(&self.db)
       .await
       .unwrap_or(0)
+  }
+
+  async fn fetch_user_public_likes_feed(
+    &self,
+    target_user_id: &Uuid,
+    own_user_id: &Option<Uuid>,
+    limit: i64,
+    skip: i64,
+  ) -> Result<Vec<PostEvent>, LogicErr> {
+    let post = sqlx::query_as(include_str!("./sql/fetch_user_public_likes_feed.sql"))
+      .bind(target_user_id)
+      .bind(own_user_id)
+      .bind(limit)
+      .bind(skip)
+      .fetch_all(&self.db)
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(post)
+  }
+
+  async fn count_user_public_likes_feed(
+    &self,
+    target_user_id: &Uuid,
+    own_user_id: &Option<Uuid>,
+  ) -> Result<i64, LogicErr> {
+    let count = sqlx::query_scalar(include_str!("./sql/count_user_public_likes_feed.sql"))
+      .bind(target_user_id)
+      .bind(own_user_id)
+      .fetch_one(&self.db)
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(count)
   }
 }

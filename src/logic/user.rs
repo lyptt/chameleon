@@ -4,7 +4,7 @@ use crate::{db::user_repository::UserPool, model::user::User, net::jwt::JwtFacto
 
 use super::LogicErr;
 
-pub async fn get_user_by_id(handle: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
+pub async fn get_user_by_handle(handle: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
   users.fetch_by_handle(handle).await
 }
 
@@ -42,7 +42,7 @@ mod tests {
   use crate::{
     db::user_repository::{MockUserRepo, UserPool},
     logic::{
-      user::{authorize_user, get_user_by_fediverse_id, get_user_by_id},
+      user::{authorize_user, get_user_by_fediverse_id, get_user_by_handle},
       LogicErr,
     },
   };
@@ -58,7 +58,7 @@ mod tests {
 
     let users: UserPool = Arc::new(user_repo);
 
-    assert_eq!(get_user_by_id("handle", &users).await, Err(LogicErr::MissingRecord));
+    assert_eq!(get_user_by_handle("handle", &users).await, Err(LogicErr::MissingRecord));
   }
 
   #[async_std::test]
@@ -72,7 +72,7 @@ mod tests {
 
     let users: UserPool = Arc::new(user_repo);
 
-    assert_eq!(get_user_by_id("handle", &users).await, Ok(None));
+    assert_eq!(get_user_by_handle("handle", &users).await, Ok(None));
   }
 
   #[async_std::test]
