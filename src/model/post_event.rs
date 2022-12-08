@@ -81,7 +81,7 @@ impl ActivityConvertible for PostEvent {
     let to = match self.visibility {
       AccessType::Shadow => Some(Reference::Remote::<Object>(actor_feed_uri)),
       AccessType::Unlisted => None,
-      AccessType::Private => Some(Reference::Remote::<Object>(actor_uri)),
+      AccessType::Private => Some(Reference::Remote::<Object>(actor_uri.clone())),
       AccessType::FollowersOnly => Some(Reference::Remote::<Object>(actor_follower_feed_uri)),
       AccessType::PublicLocal => Some(Reference::Remote::<Object>(
         "https://www.w3.org/ns/activitystreams#Local".to_string(),
@@ -190,6 +190,7 @@ impl ActivityConvertible for PostEvent {
         .id(Some(base_uri.clone()))
         .url(Some(Reference::Remote(base_uri)))
         .kind(Some("Note".to_string()))
+        .attributed_to(Some(Reference::Remote(actor_uri)))
         .to(to)
         .cc(cc)
         .replies(Some(Box::new(replies_collection)))

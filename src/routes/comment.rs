@@ -5,7 +5,10 @@ use crate::{
   },
   helpers::auth::{query_auth, require_auth},
   helpers::core::{build_api_err, map_api_err},
-  logic::comment::{create_comment, create_comment_like, delete_comment, delete_comment_like, get_comments},
+  logic::comment::{
+    activitypub_get_comment, activitypub_get_comments, create_comment, create_comment_like, delete_comment,
+    delete_comment_like, get_comment, get_comments,
+  },
   net::jwt::JwtContext,
 };
 use actix_web::{web, HttpResponse, Responder};
@@ -74,6 +77,60 @@ pub async fn api_get_comments(
   };
 
   match get_comments(&comments, &post_id, &own_user_id, &query.page, &query.page_size).await {
+    Ok(response) => HttpResponse::Ok().json(response),
+    Err(err) => map_api_err(err),
+  }
+}
+
+pub async fn api_get_comment(
+  sessions: web::Data<SessionPool>,
+  comments: web::Data<CommentPool>,
+  ids: web::Path<(Uuid, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let own_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  match get_comment(&comments, &ids.0, &ids.1, &own_user_id).await {
+    Ok(response) => HttpResponse::Ok().json(response),
+    Err(err) => map_api_err(err),
+  }
+}
+
+pub async fn api_activitypub_get_comment(
+  sessions: web::Data<SessionPool>,
+  comments: web::Data<CommentPool>,
+  posts: web::Data<PostPool>,
+  ids: web::Path<(Uuid, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let own_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  match activitypub_get_comment(&comments, &posts, &ids.0, &ids.1, &own_user_id).await {
+    Ok(response) => HttpResponse::Ok().json(response),
+    Err(err) => map_api_err(err),
+  }
+}
+
+pub async fn api_activitypub_get_comments(
+  sessions: web::Data<SessionPool>,
+  comments: web::Data<CommentPool>,
+  posts: web::Data<PostPool>,
+  query: web::Query<CommentsQuery>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let own_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  match activitypub_get_comments(&posts, &comments, &post_id, &own_user_id, &query.page, &query.page_size).await {
     Ok(response) => HttpResponse::Ok().json(response),
     Err(err) => map_api_err(err),
   }

@@ -19,10 +19,10 @@ ON ul.comment_id = c.comment_id
 LEFT OUTER JOIN (SELECT DISTINCT comment_id, comment_like_id FROM comment_likes) AS ul2
 ON ul2.comment_id = c.comment_id
 WHERE c.post_id = $2 -- the post id of this comment collection
+AND c.comment_id = $3
 AND (
   (p.visibility IN ('public_local', 'public_federated'))
     OR (following IS TRUE AND p.visibility = 'followers_only'))
 GROUP BY c.comment_id, u.user_id, p.post_id
 ORDER BY c.created_at DESC
-LIMIT $3
-OFFSET $4
+LIMIT 1

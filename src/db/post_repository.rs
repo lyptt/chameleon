@@ -54,6 +54,7 @@ pub trait PostRepo {
   async fn update_post_content(&self, post: &Post) -> Result<(), LogicErr>;
   async fn fetch_visibility_by_id(&self, post_id: &Uuid) -> Option<AccessType>;
   async fn fetch_owner_by_id(&self, post_id: &Uuid) -> Option<Uuid>;
+  async fn fetch_owner_handle_by_id(&self, post_id: &Uuid) -> Option<String>;
   async fn fetch_post_count(&self) -> i64;
   /// Fetches the user's public feed, i.e. what users that follow this user
   /// can see, or alternatively all the user's public posts
@@ -290,6 +291,19 @@ impl PostRepo for DbPostRepo {
       .bind(post_id)
       .fetch_optional(&self.db)
       .await
+    {
+      Ok(user) => user,
+      Err(_) => None,
+    }
+  }
+
+  async fn fetch_owner_handle_by_id(&self, post_id: &Uuid) -> Option<String> {
+    match sqlx::query_scalar(
+      "SELECT u.handle FROM posts p INNER JOIN users u ON u.user_id = p.user_id WHERE p.post_id = $1",
+    )
+    .bind(post_id)
+    .fetch_optional(&self.db)
+    .await
     {
       Ok(user) => user,
       Err(_) => None,

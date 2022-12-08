@@ -4,7 +4,10 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::{activity_type::ActivityType, helpers::create_activitypub_ordered_collection_page_post_activity},
+  activitypub::{
+    activity_convertible::ActivityConvertible, activity_type::ActivityType, document::ActivityPubDocument,
+    helpers::create_activitypub_ordered_collection_page_post_activity,
+  },
   cdn::cdn_store::Cdn,
   db::{
     follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
@@ -114,6 +117,59 @@ pub async fn api_get_post(
         && follows.user_follows_poster(&post.post_id, &current_user_id).await
       {
         return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      HttpResponse::NotFound().finish()
+    }
+    None => HttpResponse::NotFound().finish(),
+  }
+}
+
+pub async fn api_activitypub_get_post(
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  follows: web::Data<FollowPool>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let user_props = query_auth(&jwt, &sessions).await;
+  let current_user_id = match user_props {
+    Some(p) => Some(p.uid),
+    None => None,
+  };
+
+  let post = match get_post(&post_id, &current_user_id, &posts).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return build_api_not_found(post_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let post_obj = match post.to_object(&format!("{}/users/{}", SETTINGS.server.api_fqdn, post.user_handle)) {
+    Some(post) => post,
+    None => return build_api_not_found(post_id.to_string()),
+  };
+
+  let doc = ActivityPubDocument::new(post_obj);
+
+  if post.visibility == AccessType::PublicFederated
+    || post.visibility == AccessType::PublicLocal
+    || post.visibility == AccessType::Unlisted
+  {
+    return HttpResponse::Ok().json(doc);
+  }
+
+  match current_user_id {
+    Some(current_user_id) => {
+      if post.user_id == current_user_id {
+        return HttpResponse::Ok().json(doc);
+      }
+
+      if post.visibility == AccessType::FollowersOnly
+        && follows.user_follows_poster(&post.post_id, &current_user_id).await
+      {
+        return HttpResponse::Ok().json(doc);
       }
 
       HttpResponse::NotFound().finish()

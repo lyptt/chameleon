@@ -167,6 +167,7 @@ pub async fn api_activitypub_get_user_followers(
     page_size.try_into().unwrap_or_default(),
     users_count.try_into().unwrap_or_default(),
     users,
+    None,
   );
 
   HttpResponse::Ok()
@@ -199,6 +200,7 @@ pub async fn api_activitypub_get_user_following(
     page_size.try_into().unwrap_or_default(),
     users_count.try_into().unwrap_or_default(),
     users,
+    None,
   );
 
   HttpResponse::Ok()

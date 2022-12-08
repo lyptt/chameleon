@@ -1,1 +1,3 @@
-- Implement URL "replies.items": "http://127.0.0.1:8000/api/feed/41f33447-bef9-4a2d-b5bd-e6b38686b1b1/comments",
+- ActivityStreams server to server federation
+- HTTP request signing
+- Exposing likes and boosts in feeds as other activities

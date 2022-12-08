@@ -1,9 +1,14 @@
 use uuid::Uuid;
 
 use crate::{
+  activitypub::{
+    activity_convertible::ActivityConvertible, document::ActivityPubDocument,
+    helpers::create_activitypub_ordered_collection_page,
+  },
   db::{comment_repository::CommentPool, follow_repository::FollowPool, post_repository::PostPool},
   helpers::math::div_up,
   model::{access_type::AccessType, comment_pub::CommentPub, response::ListResponse},
+  settings::SETTINGS,
 };
 
 use super::LogicErr;
@@ -123,6 +128,84 @@ pub async fn get_comments(
       total_pages: div_up(comments_count, page_size) + 1,
     }),
     Err(err) => Err(err),
+  }
+}
+
+pub async fn activitypub_get_comments(
+  posts: &PostPool,
+  comments: &CommentPool,
+  post_id: &Uuid,
+  own_user_id: &Option<Uuid>,
+  page: &Option<i64>,
+  page_size: &Option<i64>,
+) -> Result<ActivityPubDocument, LogicErr> {
+  let author_handle = match posts.fetch_owner_handle_by_id(post_id).await {
+    Some(h) => h,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let page = page.unwrap_or(0);
+  let page_size = page_size.unwrap_or(20);
+  let comments_count = match comments.fetch_comments_count(post_id, own_user_id).await {
+    Ok(count) => count,
+    Err(err) => return Err(err),
+  };
+
+  if comments_count == 0 {
+    return Err(LogicErr::MissingRecord);
+  }
+
+  match comments
+    .fetch_comments(post_id, own_user_id, page_size, page * page_size)
+    .await
+  {
+    Ok(comments) => Ok(create_activitypub_ordered_collection_page(
+      &format!("{}/feed/{}/comments", SETTINGS.server.api_fqdn, post_id),
+      page.try_into().unwrap_or_default(),
+      page_size.try_into().unwrap_or_default(),
+      comments_count.try_into().unwrap_or_default(),
+      comments,
+      Some(format!("{}/users/{}", SETTINGS.server.api_fqdn, author_handle)),
+    )),
+    Err(err) => Err(err),
+  }
+}
+
+pub async fn get_comment(
+  comments: &CommentPool,
+  post_id: &Uuid,
+  comment_id: &Uuid,
+  own_user_id: &Option<Uuid>,
+) -> Result<CommentPub, LogicErr> {
+  match comments.fetch_comment(post_id, comment_id, own_user_id).await {
+    Some(comment) => Ok(comment),
+    None => Err(LogicErr::MissingRecord),
+  }
+}
+
+pub async fn activitypub_get_comment(
+  comments: &CommentPool,
+  posts: &PostPool,
+  post_id: &Uuid,
+  comment_id: &Uuid,
+  own_user_id: &Option<Uuid>,
+) -> Result<ActivityPubDocument, LogicErr> {
+  let author_handle = match posts.fetch_owner_handle_by_id(post_id).await {
+    Some(h) => h,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let actor = format!("{}/users/{}", SETTINGS.server.api_fqdn, author_handle);
+
+  match comments.fetch_comment(post_id, comment_id, own_user_id).await {
+    Some(comment) => match comment.to_object(&actor) {
+      Some(comment) => {
+        let comment = ActivityPubDocument::new(comment);
+        Ok(comment)
+      }
+      None => Err(LogicErr::MissingRecord),
+    },
+    None => Err(LogicErr::MissingRecord),
   }
 }
 
