@@ -23,7 +23,7 @@ pub struct RawActivityPubDocument {
   pub other: Map<String, Value>,
 }
 
-#[derive(Serialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct ActivityPubDocument {
   #[serde(rename = "@context")]
   pub context: JsonLdContext,

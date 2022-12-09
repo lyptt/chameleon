@@ -96,6 +96,9 @@ pub async fn upload_post_file(
   let job = QueueJob {
     job_id,
     job_type: QueueJobType::ConvertNewPostImages,
+    data: None,
+    origin: None,
+    context: None,
   };
 
   match queue.send_job(job).await {

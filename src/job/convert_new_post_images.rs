@@ -249,6 +249,9 @@ pub async fn convert_new_post_images(
   let job = QueueJob {
     job_id,
     job_type: QueueJobType::CreatePostEvents,
+    data: None,
+    origin: None,
+    context: None,
   };
 
   queue.send_job(job).await?;

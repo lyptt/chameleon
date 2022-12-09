@@ -48,6 +48,9 @@ pub async fn create_boost_events(
     let job = QueueJob {
       job_id,
       job_type: QueueJobType::CreateBoostEvent,
+      data: None,
+      origin: None,
+      context: None,
     };
 
     queue.send_job(job).await?;

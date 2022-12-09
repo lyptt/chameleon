@@ -1,3 +1,4 @@
+pub mod activitypub;
 pub mod apps;
 pub mod comment;
 pub mod follow;

@@ -4,10 +4,6 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::{
-    activity_convertible::ActivityConvertible, activity_type::ActivityType, document::ActivityPubDocument,
-    helpers::create_activitypub_ordered_collection_page_post_activity,
-  },
   cdn::cdn_store::Cdn,
   db::{
     follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
@@ -17,7 +13,6 @@ use crate::{
     auth::{query_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
-    types::ACTIVITY_JSON_CONTENT_TYPE,
   },
   logic::post::{
     create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
@@ -31,7 +26,6 @@ use crate::{
     response::{JobResponse, ListResponse, ObjectResponse},
   },
   net::jwt::JwtContext,
-  settings::SETTINGS,
   work_queue::queue::Queue,
 };
 
@@ -117,59 +111,6 @@ pub async fn api_get_post(
         && follows.user_follows_poster(&post.post_id, &current_user_id).await
       {
         return HttpResponse::Ok().json(ObjectResponse { data: post });
-      }
-
-      HttpResponse::NotFound().finish()
-    }
-    None => HttpResponse::NotFound().finish(),
-  }
-}
-
-pub async fn api_activitypub_get_post(
-  sessions: web::Data<SessionPool>,
-  posts: web::Data<PostPool>,
-  follows: web::Data<FollowPool>,
-  post_id: web::Path<Uuid>,
-  jwt: web::ReqData<JwtContext>,
-) -> impl Responder {
-  let user_props = query_auth(&jwt, &sessions).await;
-  let current_user_id = match user_props {
-    Some(p) => Some(p.uid),
-    None => None,
-  };
-
-  let post = match get_post(&post_id, &current_user_id, &posts).await {
-    Ok(post) => match post {
-      Some(post) => post,
-      None => return build_api_not_found(post_id.to_string()),
-    },
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  let post_obj = match post.to_object(&format!("{}/users/{}", SETTINGS.server.api_fqdn, post.user_handle)) {
-    Some(post) => post,
-    None => return build_api_not_found(post_id.to_string()),
-  };
-
-  let doc = ActivityPubDocument::new(post_obj);
-
-  if post.visibility == AccessType::PublicFederated
-    || post.visibility == AccessType::PublicLocal
-    || post.visibility == AccessType::Unlisted
-  {
-    return HttpResponse::Ok().json(doc);
-  }
-
-  match current_user_id {
-    Some(current_user_id) => {
-      if post.user_id == current_user_id {
-        return HttpResponse::Ok().json(doc);
-      }
-
-      if post.visibility == AccessType::FollowersOnly
-        && follows.user_follows_poster(&post.post_id, &current_user_id).await
-      {
-        return HttpResponse::Ok().json(doc);
       }
 
       HttpResponse::NotFound().finish()
@@ -330,86 +271,6 @@ pub async fn api_get_user_liked_posts(
   })
 }
 
-pub async fn api_activitypub_get_federated_user_posts(
-  posts: web::Data<PostPool>,
-  users: web::Data<UserPool>,
-  query: web::Query<PostsQuery>,
-  handle: web::Path<String>,
-) -> impl Responder {
-  let target_id = match users.fetch_id_by_handle(&handle).await {
-    Some(id) => id,
-    None => return HttpResponse::NotFound().finish(),
-  };
-
-  let page = query.page.unwrap_or(0);
-  let page_size = query.page_size.unwrap_or(20);
-  let posts_count = match posts.count_user_public_feed(&target_id, &None).await {
-    Ok(count) => count,
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  let posts = match posts
-    .fetch_user_public_feed(&target_id, &None, page_size, page * page_size)
-    .await
-  {
-    Ok(posts) => posts,
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  let doc = create_activitypub_ordered_collection_page_post_activity(
-    &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
-    ActivityType::Create,
-    page.try_into().unwrap_or_default(),
-    page_size.try_into().unwrap_or_default(),
-    posts_count.try_into().unwrap_or_default(),
-    posts,
-  );
-
-  HttpResponse::Ok()
-    .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
-    .json(doc)
-}
-
-pub async fn api_activitypub_get_federated_user_liked_posts(
-  posts: web::Data<PostPool>,
-  users: web::Data<UserPool>,
-  query: web::Query<PostsQuery>,
-  handle: web::Path<String>,
-) -> impl Responder {
-  let target_id = match users.fetch_id_by_handle(&handle).await {
-    Some(id) => id,
-    None => return HttpResponse::NotFound().finish(),
-  };
-
-  let page = query.page.unwrap_or(0);
-  let page_size = query.page_size.unwrap_or(20);
-  let posts_count = match posts.count_user_public_likes_feed(&target_id, &None).await {
-    Ok(count) => count,
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  let posts = match posts
-    .fetch_user_public_likes_feed(&target_id, &None, page_size, page * page_size)
-    .await
-  {
-    Ok(posts) => posts,
-    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-  };
-
-  let doc = create_activitypub_ordered_collection_page_post_activity(
-    &format!("{}/users/{}/likes", SETTINGS.server.api_fqdn, handle),
-    ActivityType::Like,
-    page.try_into().unwrap_or_default(),
-    page_size.try_into().unwrap_or_default(),
-    posts_count.try_into().unwrap_or_default(),
-    posts,
-  );
-
-  HttpResponse::Ok()
-    .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
-    .json(doc)
-}
-
 pub async fn api_create_post(
   sessions: web::Data<SessionPool>,
   posts: web::Data<PostPool>,
@@ -482,6 +343,9 @@ pub async fn api_boost_post(
   let job = QueueJob {
     job_id,
     job_type: QueueJobType::CreateBoostEvents,
+    data: None,
+    origin: None,
+    context: None,
   };
 
   match queue.send_job(job).await {
@@ -520,6 +384,9 @@ pub async fn api_unboost_post(
   let job = QueueJob {
     job_id,
     job_type: QueueJobType::DeleteBoostEvents,
+    data: None,
+    origin: None,
+    context: None,
   };
 
   match queue.send_job(job).await {

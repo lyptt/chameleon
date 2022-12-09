@@ -24,10 +24,15 @@ use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use db::repository::Repository;
 use env_logger::WriteStyle;
-use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
+use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_JSON_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
+use routes::activitypub::{
+  api_activitypub_federate_user_inbox, api_activitypub_get_federated_user_liked_posts,
+  api_activitypub_get_federated_user_posts, api_activitypub_get_post, api_activitypub_get_user_followers,
+  api_activitypub_get_user_following, api_activitypub_get_user_profile,
+};
 use routes::apps::api_create_app;
 use routes::comment::{
   api_activitypub_get_comment, api_activitypub_get_comments, api_create_comment, api_create_comment_like,
@@ -40,14 +45,12 @@ use routes::like::{api_create_like, api_delete_like};
 use routes::nodeinfo::{api_get_nodeinfo, api_get_nodeinfo_2_1};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
-  api_activitypub_get_federated_user_liked_posts, api_activitypub_get_federated_user_posts, api_activitypub_get_post,
   api_boost_post, api_create_post, api_get_global_feed, api_get_post, api_get_user_liked_posts, api_get_user_own_feed,
   api_get_user_post, api_get_user_posts, api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
 use routes::user::{
-  api_activitypub_get_user_followers, api_activitypub_get_user_following, api_activitypub_get_user_profile,
   api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_profile, api_get_user_stats,
 };
 use routes::webfinger::api_webfinger_query_resource;
@@ -130,6 +133,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_profile),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_profile),
+          )
           .route(web::get().to(api_get_user_profile)),
       )
       .service(
@@ -145,6 +153,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_federated_user_posts),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_posts),
+          )
           .route(web::get().to(api_get_user_posts)),
       )
       .service(
@@ -158,6 +171,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_liked_posts),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_federated_user_liked_posts),
           )
           .route(web::get().to(api_get_user_liked_posts)),
@@ -181,6 +199,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_followers),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_followers),
+          )
           .route(web::get().to(api_get_user_followers)),
       )
       .service(
@@ -194,6 +217,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_following),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_following),
           )
           .route(web::get().to(api_get_user_following)),
@@ -238,6 +266,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_post),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_post),
+          )
           .route(web::get().to(api_get_post))
           .route(web::post().to(api_upload_post_image)),
       )
@@ -263,6 +296,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_comments),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_comments),
           )
           .route(web::get().to(api_get_comments))
@@ -293,6 +331,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_comment),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_comment),
+          )
           .route(web::get().to(api_get_comment))
           .route(web::delete().to(api_delete_comment)),
       )
@@ -310,6 +353,11 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/apps")
           .name("apps")
           .route(web::post().to(api_create_app)),
+      )
+      .service(
+        web::resource("/api/federate/activitypub/inbox/{user_handle}")
+          .name("federate_activitypub")
+          .route(web::post().to(api_activitypub_federate_user_inbox)),
       )
       .service(
         web::resource("/.well-known/webfinger")

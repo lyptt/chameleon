@@ -12,6 +12,7 @@ mod create_boost_events;
 mod create_post_event;
 mod create_post_events;
 mod delete_boost_events;
+mod federate_activitypub;
 
 pub async fn delegate_job(
   queue_job: &QueueJob,
@@ -64,6 +65,18 @@ pub async fn delegate_job(
     }
     QueueJobType::DeleteBoostEvents => {
       delete_boost_events::delete_boost_events(queue_job.job_id, &repositories.jobs, &repositories.events).await
+    }
+    QueueJobType::FederateActivityPub => {
+      federate_activitypub::federate_activitypub(
+        queue_job.job_id,
+        &queue_job.data,
+        &queue_job.origin,
+        &queue_job.context,
+        repositories,
+        cdn,
+        queue,
+      )
+      .await
     }
   }
 }

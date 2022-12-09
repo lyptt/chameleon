@@ -74,6 +74,9 @@ pub async fn create_post_events(
     let job = QueueJob {
       job_id,
       job_type: QueueJobType::CreatePostEvent,
+      data: None,
+      origin: None,
+      context: None,
     };
 
     queue.send_job(job).await?;
