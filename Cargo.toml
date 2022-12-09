@@ -43,7 +43,7 @@ chrono = { version = "0.4.23", features = [
   "serde",
 ], default-features = false }
 async-trait = "0.1.59"
-tokio = { version = "1.22.0", features = ["macros", "process"] }
+tokio = { version = "1.23.0", features = ["macros", "process"] }
 actix-easy-multipart = "3.0.0"
 uuid = { version = "1.2.2", features = ["std", "serde", "v4"] }
 num-traits = "0.2"
