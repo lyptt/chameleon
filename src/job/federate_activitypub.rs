@@ -16,6 +16,7 @@ use crate::{
   logic::LogicErr,
   model::{access_type::AccessType, queue_job::OriginDataEntry, user::User},
   net::http_sig::verify_http_signature,
+  settings::SETTINGS,
   work_queue::queue::Queue,
 };
 
@@ -218,7 +219,7 @@ pub async fn federate_activitypub(
     Err(err) => return Err(err),
   };
 
-  if !verify_http_signature(origin_data, &actor_user.public_key) {
+  if SETTINGS.app.secure && !verify_http_signature(origin_data, &actor_user.public_key) {
     return Err(LogicErr::UnauthorizedError);
   }
 
