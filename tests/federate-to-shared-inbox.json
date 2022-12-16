@@ -1,0 +1,69 @@
+{
+  "@context": [
+    "https://w3id.org/security/v1",
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "Emoji": "toot:Emoji",
+      "Hashtag": "as:Hashtag",
+      "announce": {
+        "@id": "pixelfed:canAnnounce",
+        "@type": "@id"
+      },
+      "capabilities": {
+        "@container": "@set",
+        "@id": "pixelfed:capabilities"
+      },
+      "commentsEnabled": {
+        "@id": "pixelfed:commentsEnabled",
+        "@type": "schema:Boolean"
+      },
+      "like": {
+        "@id": "pixelfed:canLike",
+        "@type": "@id"
+      },
+      "pixelfed": "http://pixelfed.org/ns#",
+      "reply": {
+        "@id": "pixelfed:canReply",
+        "@type": "@id"
+      },
+      "schema": "http://schema.org/",
+      "sensitive": "as:sensitive",
+      "toot": "http://joinmastodon.org/ns#"
+    }
+  ],
+  "actor": "https://pixelfed.test/users/boop",
+  "cc": ["https://pixelfed.test/users/boop/followers"],
+  "id": "https://pixelfed.test/p/boop/508775718032605187/activity",
+  "object": {
+    "attachment": [
+      {
+        "mediaType": "image/png",
+        "name": null,
+        "type": "Image",
+        "url": "https://pixelfed.test/storage/m/_v2/507358095798165505/8d46c944c-26de5d/zSveEBQA2Dub/xjJvFbFYSO7xauT0ShObii3IndwhRDpzL3kZInkg.png"
+      }
+    ],
+    "attributedTo": "https://pixelfed.test/users/boop",
+    "capabilities": {
+      "announce": "https://www.w3.org/ns/activitystreams#Public",
+      "like": "https://www.w3.org/ns/activitystreams#Public",
+      "reply": "https://www.w3.org/ns/activitystreams#Public"
+    },
+    "cc": ["https://pixelfed.test/users/boop/followers"],
+    "commentsEnabled": true,
+    "content": "",
+    "id": "https://pixelfed.test/p/boop/508775718032605187",
+    "inReplyTo": null,
+    "location": null,
+    "published": "2022-12-14T22:53:03+00:00",
+    "sensitive": false,
+    "summary": null,
+    "tag": [],
+    "to": ["https://www.w3.org/ns/activitystreams#Public"],
+    "type": "Note",
+    "url": "https://pixelfed.test/p/boop/508775718032605187"
+  },
+  "published": "2022-12-14T22:53:03+00:00",
+  "to": ["https://www.w3.org/ns/activitystreams#Public"],
+  "type": "Create"
+}

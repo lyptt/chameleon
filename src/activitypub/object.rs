@@ -9,6 +9,7 @@ use super::{
   activity::ActivityProps,
   actor::ActorProps,
   collection::{CollectionPageProps, CollectionProps},
+  key::KeyProps,
   link::LinkProps,
   question::QuestionProps,
   rdf_string::RdfString,
@@ -109,6 +110,8 @@ pub struct Object {
   pub url: Option<Reference<Object>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub source: Option<ObjectSource>,
+  #[serde(rename = "publicKey", skip_serializing_if = "Option::is_none")]
+  pub key: Option<KeyProps>,
 
   // Chameleon ActivityPub extensions
   #[serde(

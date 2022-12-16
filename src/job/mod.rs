@@ -71,6 +71,7 @@ pub async fn delegate_job(
         queue_job.job_id,
         &queue_job.data,
         &queue_job.origin,
+        &queue_job.origin_data,
         &queue_job.context,
         repositories,
         cdn,
@@ -78,5 +79,6 @@ pub async fn delegate_job(
       )
       .await
     }
+    QueueJobType::Unknown => Err(LogicErr::Unimplemented),
   }
 }

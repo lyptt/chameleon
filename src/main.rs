@@ -29,9 +29,9 @@ use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
 use routes::activitypub::{
-  api_activitypub_federate_user_inbox, api_activitypub_get_federated_user_liked_posts,
-  api_activitypub_get_federated_user_posts, api_activitypub_get_post, api_activitypub_get_user_followers,
-  api_activitypub_get_user_following, api_activitypub_get_user_profile,
+  api_activitypub_federate_shared_inbox, api_activitypub_federate_user_inbox,
+  api_activitypub_get_federated_user_liked_posts, api_activitypub_get_federated_user_posts, api_activitypub_get_post,
+  api_activitypub_get_user_followers, api_activitypub_get_user_following, api_activitypub_get_user_profile,
 };
 use routes::apps::api_create_app;
 use routes::comment::{
@@ -51,7 +51,8 @@ use routes::post::{
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
 use routes::user::{
-  api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_profile, api_get_user_stats,
+  api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_key, api_get_user_profile,
+  api_get_user_stats,
 };
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -232,6 +233,11 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_get_user_stats)),
       )
       .service(
+        web::resource("/api/users/{handle}/key")
+          .name("user_keys")
+          .route(web::get().to(api_get_user_key)),
+      )
+      .service(
         web::resource("/api/oauth/authorize")
           .name("oauth_authorize")
           .route(web::get().to(api_oauth_authorize))
@@ -358,6 +364,11 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/federate/activitypub/inbox/{user_handle}")
           .name("federate_activitypub")
           .route(web::post().to(api_activitypub_federate_user_inbox)),
+      )
+      .service(
+        web::resource("/api/federate/activitypub/shared-inbox")
+          .name("federate_activitypub")
+          .route(web::post().to(api_activitypub_federate_shared_inbox)),
       )
       .service(
         web::resource("/.well-known/webfinger")

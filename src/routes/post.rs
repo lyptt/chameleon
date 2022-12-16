@@ -340,13 +340,10 @@ pub async fn api_boost_post(
     Err(err) => return build_api_err(500, err.to_string(), None),
   };
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::CreateBoostEvents,
-    data: None,
-    origin: None,
-    context: None,
-  };
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::CreateBoostEvents)
+    .build();
 
   match queue.send_job(job).await {
     Ok(_) => HttpResponse::Created().finish(),
@@ -381,13 +378,10 @@ pub async fn api_unboost_post(
     Err(err) => return build_api_err(500, err.to_string(), None),
   };
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::DeleteBoostEvents,
-    data: None,
-    origin: None,
-    context: None,
-  };
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::DeleteBoostEvents)
+    .build();
 
   match queue.send_job(job).await {
     Ok(_) => HttpResponse::Created().finish(),

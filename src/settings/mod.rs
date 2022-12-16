@@ -81,6 +81,7 @@ pub struct Queue {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Application {
   pub imagemagick_exe_path: String,
+  pub secure: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -138,6 +139,7 @@ impl Settings {
       },
       app: Application {
         imagemagick_exe_path: "convert".to_string(),
+        secure: false,
       },
     }
   }

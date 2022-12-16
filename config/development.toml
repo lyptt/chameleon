@@ -25,3 +25,4 @@ level = "Debug"
 
 [app]
 imagemagick_exe_path = "convert"
+secure = false

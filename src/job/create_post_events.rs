@@ -71,13 +71,10 @@ pub async fn create_post_events(
       .await
       .map_err(map_db_err)?;
 
-    let job = QueueJob {
-      job_id,
-      job_type: QueueJobType::CreatePostEvent,
-      data: None,
-      origin: None,
-      context: None,
-    };
+    let job = QueueJob::builder()
+      .job_id(job_id)
+      .job_type(QueueJobType::CreatePostEvent)
+      .build();
 
     queue.send_job(job).await?;
   }

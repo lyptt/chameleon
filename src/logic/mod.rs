@@ -18,6 +18,8 @@ pub enum LogicErr {
   InternalError(String),
   InvalidOperation(String),
   MissingRecord,
+  InvalidData,
+  Unimplemented,
 }
 
 impl Error for LogicErr {}

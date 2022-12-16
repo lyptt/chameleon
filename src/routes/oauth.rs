@@ -11,11 +11,15 @@ use crate::{
     core::build_api_err,
     html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
   },
-  logic::{user::authorize_user, LogicErr},
+  logic::{
+    user::{authorize_user, register_user},
+    LogicErr,
+  },
   net::{
     jwt::{JwtContext, JwtFactory},
     templates::HANDLEBARS,
   },
+  settings::SETTINGS,
 };
 
 #[derive(Debug, EnumString, Display, Serialize, Deserialize)]
@@ -34,6 +38,14 @@ pub enum OAuthGrantType {
   RefreshToken,
 }
 
+#[derive(Deserialize, Serialize, EnumString, Display, Debug, PartialEq, Eq, Clone)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum OAuthAuthorizeRequestType {
+  Login,
+  Register,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OAuthAuthorizeQuery {
   pub response_type: OAuthAuthorizeResponseType,
@@ -42,12 +54,15 @@ pub struct OAuthAuthorizeQuery {
   // TODO: Support scopes when we have permission controls
   #[serde(skip_serializing_if = "Option::is_none")]
   pub scope: Option<String>,
+  pub request_type: Option<OAuthAuthorizeRequestType>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OAuthAuthorizeRequest {
   pub username: String,
   pub password: String,
+  pub email: Option<String>,
+  pub request_type: Option<OAuthAuthorizeRequestType>,
 }
 
 #[derive(Debug, Serialize)]
@@ -57,6 +72,9 @@ struct OAuthAuthorizeData<'a> {
   pub blessed: bool,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub app_name: Option<&'a str>,
+  pub sign_up_url: &'a str,
+  pub sign_in_url: &'a str,
+  pub registering: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -113,6 +131,28 @@ pub async fn api_oauth_authorize(apps: web::Data<AppPool>, query: web::Query<OAu
           username: None,
           blessed: app.blessed,
           app_name: Some(&app.name),
+          sign_up_url: &(match query.scope.as_ref() {
+            Some(scope) => format!(
+              "{}/oauth/authorize?response_type={}&client_id={}&redirect_uri={}&scope={}&request_type=register",
+              SETTINGS.server.api_fqdn, query.response_type, query.client_id, query.redirect_uri, scope,
+            ),
+            None => format!(
+              "{}/oauth/authorize?response_type={}&client_id={}&redirect_uri={}&request_type=register",
+              SETTINGS.server.api_fqdn, query.response_type, query.client_id, query.redirect_uri,
+            ),
+          }),
+          sign_in_url: &(match query.scope.as_ref() {
+            Some(scope) => format!(
+              "{}/oauth/authorize?response_type={}&client_id={}&redirect_uri={}&scope={}",
+              SETTINGS.server.api_fqdn, query.response_type, query.client_id, query.redirect_uri, scope,
+            ),
+            None => format!(
+              "{}/oauth/authorize?response_type={}&client_id={}&redirect_uri={}",
+              SETTINGS.server.api_fqdn, query.response_type, query.client_id, query.redirect_uri,
+            ),
+          }),
+          registering: query.request_type.clone().unwrap_or(OAuthAuthorizeRequestType::Login)
+            == OAuthAuthorizeRequestType::Register,
         },
       ) {
         Ok(body) => body,
@@ -150,21 +190,42 @@ pub async fn api_oauth_authorize_post(
     );
   }
 
-  let authorization_code = match authorize_user(&req.username, &req.password, &users).await {
-    Ok(code) => code,
-    Err(err) => match err {
-      LogicErr::UnauthorizedError => {
-        return handle_oauth_app_body(
-          &app,
-          "The credentials you provided did not match our records, please check you've entered your username and password correctly.",
-        )
-      }
-      _ => {
-        return handle_oauth_app_body(
-          &app,
-          "Something went wrong, please try again later",
-        )
-      }
+  let request_type = req.request_type.clone().unwrap_or(OAuthAuthorizeRequestType::Login);
+
+  let authorization_code = match request_type {
+    OAuthAuthorizeRequestType::Login => match authorize_user(&req.username, &req.password, &users).await {
+      Ok(code) => code,
+      Err(err) => match err {
+        LogicErr::UnauthorizedError => {
+          return handle_oauth_app_body(
+            &app,
+            "The credentials you provided did not match our records, please check you've entered your username and password correctly.",
+          )
+        }
+        _ => {
+          return handle_oauth_app_body(
+            &app,
+            "Something went wrong, please try again later",
+          )
+        }
+      },
+    },
+    OAuthAuthorizeRequestType::Register => match register_user(&req.username, &req.password, &req.email, &users).await {
+      Ok(code) => code,
+      Err(err) => match err {
+        LogicErr::InvalidOperation(err) => {
+          return handle_oauth_app_body(
+            &app,
+            &err,
+          )
+        }
+        _ => {
+          return handle_oauth_app_body(
+            &app,
+            "Something went wrong, please try again later",
+          )
+        }
+      },
     },
   };
 

@@ -16,6 +16,12 @@ use crate::{
   net::jwt::JwtContext,
 };
 
+#[derive(Debug, Deserialize)]
+pub struct FollowersQuery {
+  pub page: Option<i64>,
+  pub page_size: Option<i64>,
+}
+
 pub async fn api_get_profile(
   sessions: web::Data<SessionPool>,
   users: web::Data<UserPool>,
@@ -60,12 +66,6 @@ pub async fn api_get_user_stats(
     Some(user) => HttpResponse::Ok().json(ObjectResponse { data: user }),
     None => HttpResponse::NotFound().finish(),
   }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct FollowersQuery {
-  pub page: Option<i64>,
-  pub page_size: Option<i64>,
 }
 
 pub async fn api_get_user_followers(
@@ -115,5 +115,15 @@ pub async fn api_get_user_following(
       total_pages: div_up(users_count, page_size) + 1,
     }),
     Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_get_user_key(users: web::Data<UserPool>, handle: web::Path<String>) -> impl Responder {
+  match get_user_by_handle(&handle, &users).await {
+    Ok(user) => match user {
+      Some(user) => HttpResponse::Ok().content_type("text/plain").body(user.public_key),
+      None => HttpResponse::NotFound().finish(),
+    },
+    Err(_) => HttpResponse::NotFound().finish(),
   }
 }

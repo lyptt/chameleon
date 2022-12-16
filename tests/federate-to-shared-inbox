@@ -1,0 +1,2 @@
+#!/bin/sh
+http post http://127.0.0.1:8000/api/federate/activitypub/shared-inbox < tests/federate-to-shared-inbox.json

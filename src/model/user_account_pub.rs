@@ -97,6 +97,12 @@ mod tests {
       url_5_title: None,
       intro_md: None,
       intro_html: None,
+      private_key: "d".to_string(),
+      public_key: "e".to_string(),
+      ext_apub_followers_uri: None,
+      ext_apub_following_uri: None,
+      ext_apub_inbox_uri: None,
+      ext_apub_outbox_uri: None,
     };
     let user_cmp = user.clone();
 

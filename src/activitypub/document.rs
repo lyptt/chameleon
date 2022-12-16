@@ -75,6 +75,7 @@ impl ActivityPubDocument {
 
     let ctx = JsonLdContext::Multi(vec![
       JsonLdContextEntry::Uri("https://www.w3.org/ns/activitystreams".to_string()),
+      JsonLdContextEntry::Uri("https://w3id.org/security/v1".to_string()),
       JsonLdContextEntry::Map(aliases),
     ]);
 

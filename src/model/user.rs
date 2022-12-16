@@ -4,7 +4,9 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::{activity_convertible::ActivityConvertible, actor::ActorProps, object::Object, reference::Reference},
+  activitypub::{
+    activity_convertible::ActivityConvertible, actor::ActorProps, key::KeyProps, object::Object, reference::Reference,
+  },
   helpers::api::relative_to_absolute_uri,
   settings::SETTINGS,
 };
@@ -33,6 +35,12 @@ pub struct User {
   pub url_5_title: Option<String>,
   pub intro_md: Option<String>,
   pub intro_html: Option<String>,
+  pub private_key: String,
+  pub public_key: String,
+  pub ext_apub_followers_uri: Option<String>,
+  pub ext_apub_following_uri: Option<String>,
+  pub ext_apub_inbox_uri: Option<String>,
+  pub ext_apub_outbox_uri: Option<String>,
 }
 
 impl User {
@@ -74,12 +82,19 @@ impl ActivityConvertible for User {
     let mut endpoints = HashMap::new();
     endpoints.insert("sharedInbox".to_string(), serde_json::Value::String(public_inbox_uri));
 
+    let key_props = KeyProps::builder()
+      .id(Some(format!("{}/key", id)))
+      .owner(Some(id.clone()))
+      .public_key_pem(Some(self.public_key.clone()))
+      .build();
+
     Some(
       Object::builder()
         .id(Some(id.clone()))
         .kind(Some("Person".to_string()))
         .icon(icon)
         .url(Some(Reference::Remote(id)))
+        .name(Some(self.handle.clone()))
         .actors(Some(
           ActorProps::builder()
             .endpoints(Some(Reference::Map(endpoints)))
@@ -91,6 +106,7 @@ impl ActivityConvertible for User {
             .preferred_username(Some(self.handle.clone()))
             .build(),
         ))
+        .key(Some(key_props))
         .build(),
     )
   }
@@ -125,6 +141,12 @@ mod tests {
       url_5_title: None,
       intro_md: None,
       intro_html: None,
+      private_key: "a".to_string(),
+      public_key: "b".to_string(),
+      ext_apub_followers_uri: None,
+      ext_apub_following_uri: None,
+      ext_apub_inbox_uri: None,
+      ext_apub_outbox_uri: None,
     };
 
     temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {

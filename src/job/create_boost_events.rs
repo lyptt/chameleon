@@ -45,13 +45,10 @@ pub async fn create_boost_events(
       .await
       .map_err(map_db_err)?;
 
-    let job = QueueJob {
-      job_id,
-      job_type: QueueJobType::CreateBoostEvent,
-      data: None,
-      origin: None,
-      context: None,
-    };
+    let job = QueueJob::builder()
+      .job_id(job_id)
+      .job_type(QueueJobType::CreateBoostEvent)
+      .build();
 
     queue.send_job(job).await?;
   }

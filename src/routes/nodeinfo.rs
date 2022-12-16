@@ -157,7 +157,7 @@ pub async fn api_get_nodeinfo_2_1(
       repository: env!("CARGO_PKG_REPOSITORY"),
       homepage: env!("CARGO_PKG_HOMEPAGE"),
     },
-    protocols: vec![],
+    protocols: vec![NodeInfoProtocol2_1::ActivityPub],
     services: NodeInfoServices2_1 {
       inbound: vec![],
       outbound: vec![],

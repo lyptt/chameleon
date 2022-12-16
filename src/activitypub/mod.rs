@@ -6,6 +6,7 @@ pub mod collection;
 pub mod document;
 pub mod helpers;
 pub mod json_ld;
+pub mod key;
 pub mod link;
 pub mod note;
 pub mod object;

@@ -26,7 +26,7 @@ use crate::{
     job::{JobStatus, NewJob},
     queue_job::{QueueJob, QueueJobType},
   },
-  net::jwt::JwtContext,
+  net::{http_sig::build_origin_data, jwt::JwtContext},
   settings::SETTINGS,
   work_queue::queue::Queue,
 };
@@ -249,13 +249,18 @@ pub async fn api_activitypub_get_user_profile(users: web::Data<UserPool>, handle
   }
 }
 
-pub async fn api_activitypub_federate_user_inbox(
+pub async fn api_activitypub_federate_shared_inbox(
   req: HttpRequest,
-  user_handle: web::Path<String>,
   data: web::Json<serde_json::Value>,
   jobs: web::Data<JobPool>,
   queue: web::Data<Queue>,
 ) -> impl Responder {
+  let origin_data = build_origin_data(&req);
+
+  if SETTINGS.app.secure && origin_data.is_none() {
+    return build_api_err(401, "signature".to_string(), None);
+  }
+
   let job_id = match jobs
     .create(NewJob {
       created_by_id: None,
@@ -269,13 +274,57 @@ pub async fn api_activitypub_federate_user_inbox(
     Err(err) => return build_api_err(500, err.to_string(), None),
   };
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::FederateActivityPub,
-    data: Some((*data).clone()),
-    origin: Some(req.connection_info().host().to_string()),
-    context: Some(vec![user_handle.clone()]),
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::FederateActivityPub)
+    .data((*data).clone())
+    .origin(req.connection_info().host().to_string())
+    .origin_data(origin_data)
+    .build();
+
+  let json = serde_json::to_string_pretty(&job).unwrap();
+  println!("{}", json);
+
+  match queue.send_job(job).await {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_activitypub_federate_user_inbox(
+  req: HttpRequest,
+  user_handle: web::Path<String>,
+  data: web::Json<serde_json::Value>,
+  jobs: web::Data<JobPool>,
+  queue: web::Data<Queue>,
+) -> impl Responder {
+  let origin_data = build_origin_data(&req);
+
+  if SETTINGS.app.secure && origin_data.is_none() {
+    return build_api_err(401, "signature".to_string(), None);
+  }
+
+  let job_id = match jobs
+    .create(NewJob {
+      created_by_id: None,
+      status: JobStatus::NotStarted,
+      record_id: None,
+      associated_record_id: None,
+    })
+    .await
+  {
+    Ok(id) => id,
+    Err(err) => return build_api_err(500, err.to_string(), None),
   };
+
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::FederateActivityPub)
+    .data((*data).clone())
+    .origin(req.connection_info().host().to_string())
+    .context(vec![(*user_handle).clone()])
+    .origin_data(origin_data)
+    .build();
 
   match queue.send_job(job).await {
     Ok(_) => HttpResponse::Created().finish(),
