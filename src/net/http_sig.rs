@@ -1,6 +1,9 @@
 use actix_web::{web::Bytes, HttpRequest};
 use lazy_static::lazy_static;
 use regex::Regex;
+use rsa::pkcs1v15::Signature;
+use rsa::signature::Verifier;
+use rsa::{pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use url::Url;
@@ -54,12 +57,17 @@ pub fn build_origin_data(req: &HttpRequest, bytes: &Bytes) -> Option<HashMap<Str
 }
 
 pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>, public_key_pem: &str) -> bool {
+  let public_key = match RsaPublicKey::from_public_key_pem(public_key_pem) {
+    Ok(key) => key,
+    Err(_) => return false,
+  };
+
   let context = match context {
     Some(ctx) => ctx,
     None => return false,
   };
 
-  if !context.contains_key("headers") || !context.contains_key("digest") {
+  if !context.contains_key("headers") || !context.contains_key("digest") || !context.contains_key("path") {
     return false;
   }
 
@@ -69,7 +77,12 @@ pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>,
   };
 
   let digest = match &context["digest"] {
-    OriginDataEntry::Raw(data) => data.to_owned(),
+    OriginDataEntry::Raw(data) => data,
+    OriginDataEntry::Map(_) => return false,
+  };
+
+  let path = match &context["path"] {
+    OriginDataEntry::Raw(data) => data,
     OriginDataEntry::Map(_) => return false,
   };
 
@@ -93,11 +106,48 @@ pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>,
     return false;
   }
 
+  let signature = match base64::decode(&signature_data["signature"]) {
+    Ok(sig) => sig,
+    Err(_) => return false,
+  };
+
   if Url::parse(&signature_data["keyId"]).is_err() {
     return false;
   }
 
-  false
+  let mut headers_to_sign: HashMap<String, String> = HashMap::new();
+
+  for component in signature_data["headers"].split(' ') {
+    if headers_to_sign.contains_key(component) {
+      continue;
+    }
+
+    if component == "(request-target)" {
+      headers_to_sign.insert(component.to_string(), path.to_owned());
+    } else if component == "digest" {
+      headers_to_sign.insert(component.to_string(), digest.to_owned());
+    } else if headers.contains_key(component) {
+      headers_to_sign.insert(component.to_string(), headers[component].to_owned());
+    }
+  }
+
+  let signing_string = headers_to_sign
+    .into_iter()
+    .map(|(k, v)| format!("{}: {}", k.to_lowercase(), v))
+    .collect::<Vec<String>>()
+    .join("\n")
+    .into_bytes();
+
+  let signature = Signature::from(signature);
+
+  let verifying_key: VerifyingKey<Sha256> = public_key.into();
+  match verifying_key.verify(&signing_string, &signature) {
+    Ok(_) => true,
+    Err(err) => {
+      println!("{}", err);
+      false
+    }
+  }
 }
 
 #[cfg(test)]
