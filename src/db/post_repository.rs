@@ -48,6 +48,7 @@ pub trait PostRepo {
     content_html: &str,
     visibility: &AccessType,
   ) -> Result<Uuid, LogicErr>;
+  async fn create_post_from(&self, post: Post) -> Result<(), LogicErr>;
   async fn update_post_content_storage(&self, post_id: &Uuid, content_image_storage_ref: &str) -> Result<(), LogicErr>;
   async fn user_owns_post(&self, user_id: &Uuid, post_id: &Uuid) -> bool;
   async fn find_optional_by_id(&self, post_id: &Uuid) -> Option<Post>;
@@ -210,6 +211,44 @@ impl PostRepo for DbPostRepo {
     .await.map_err(map_db_err)?;
 
     Ok(id)
+  }
+
+  async fn create_post_from(&self, post: Post) -> Result<(), LogicErr> {
+    sqlx::query(
+      "INSERT INTO posts (post_id, user_id, uri, is_external, content_md, content_html, content_image_uri_small, content_image_uri_medium, 
+        content_image_uri_large, content_width_small, content_width_medium, content_width_large, content_height_small, content_height_medium, 
+        content_height_large, content_type_small, content_type_medium, content_type_large, content_image_storage_ref, content_blurhash, 
+        visibility, created_at, updated_at, deletion_scheduled_at) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)",
+    )
+    .bind(post.post_id)
+    .bind(post.user_id)
+    .bind(post.uri)
+    .bind(post.is_external)
+    .bind(post.content_md)
+    .bind(post.content_html)
+    .bind(post.content_image_uri_small)
+    .bind(post.content_image_uri_medium)
+    .bind(post.content_image_uri_large)
+    .bind(post.content_width_small)
+    .bind(post.content_width_medium)
+    .bind(post.content_width_large)
+    .bind(post.content_height_small)
+    .bind(post.content_height_medium)
+    .bind(post.content_height_large)
+    .bind(post.content_type_small)
+    .bind(post.content_type_medium)
+    .bind(post.content_type_large)
+    .bind(post.content_image_storage_ref)
+    .bind(post.content_blurhash)
+    .bind(post.visibility.to_string())
+    .bind(post.created_at)
+    .bind(post.updated_at)
+    .bind(post.deletion_scheduled_at)
+    .execute(&self.db)
+    .await.map_err(map_db_err)?;
+
+    Ok(())
   }
 
   async fn update_post_content_storage(&self, post_id: &Uuid, content_image_storage_ref: &str) -> Result<(), LogicErr> {

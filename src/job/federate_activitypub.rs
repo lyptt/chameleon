@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
 use serde_json::Value;
-use uuid::Uuid;
+use std::collections::HashMap;
 
 use crate::{
   activitypub::document::{ActivityPubDocument, RawActivityPubDocument},
-  cdn::cdn_store::Cdn,
   db::repositories::Repositories,
   federation::activitypub::federate,
   logic::LogicErr,
@@ -14,12 +11,10 @@ use crate::{
 };
 
 pub async fn federate_activitypub(
-  _job_id: Uuid,
   data: &Option<Value>,
   origin_data: &Option<HashMap<String, OriginDataEntry>>,
   repositories: &Repositories,
-  _cdn: &Cdn,
-  _queue: &Queue,
+  queue: &Queue,
 ) -> Result<(), LogicErr> {
   let doc: RawActivityPubDocument = match data.to_owned() {
     Some(value) => match serde_json::from_value(value) {
@@ -34,5 +29,14 @@ pub async fn federate_activitypub(
     Err(err) => return Err(LogicErr::InvalidOperation(err.to_string())),
   };
 
-  federate(doc, origin_data, &repositories.users).await
+  federate(
+    doc,
+    origin_data,
+    &repositories.users,
+    &repositories.follows,
+    &repositories.posts,
+    &repositories.jobs,
+    queue,
+  )
+  .await
 }

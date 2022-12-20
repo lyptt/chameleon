@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,18 @@ pub enum ObjectType {
   Relationship,
   Tombstone,
   Video,
+}
+
+impl ObjectType {
+  pub fn from_str_opt(data: &Option<String>) -> Option<Self> {
+    match &data {
+      Some(val) => match ObjectType::from_str(val) {
+        Ok(val) => Some(val),
+        Err(_) => None,
+      },
+      None => None,
+    }
+  }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, TypedBuilder)]

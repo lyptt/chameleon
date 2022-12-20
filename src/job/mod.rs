@@ -67,15 +67,7 @@ pub async fn delegate_job(
       delete_boost_events::delete_boost_events(queue_job.job_id, &repositories.jobs, &repositories.events).await
     }
     QueueJobType::FederateActivityPub => {
-      federate_activitypub::federate_activitypub(
-        queue_job.job_id,
-        &queue_job.data,
-        &queue_job.origin_data,
-        repositories,
-        cdn,
-        queue,
-      )
-      .await
+      federate_activitypub::federate_activitypub(&queue_job.data, &queue_job.origin_data, repositories, queue).await
     }
     QueueJobType::Unknown => Err(LogicErr::Unimplemented),
   }
