@@ -1112,6 +1112,8 @@ dependencies = [
  "gravatar",
  "handlebars",
  "hex",
+ "http",
+ "http-signing",
  "image",
  "jsonwebtoken",
  "lapin",
@@ -1990,6 +1992,21 @@ dependencies = [
  "bytes",
  "http",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http-signing"
+version = "1.1.0"
+source = "git+https://github.com/lyptt/http-signing.git?rev=aa354b55ba948325a7fa633713b2bddf0a7685de#aa354b55ba948325a7fa633713b2bddf0a7685de"
+dependencies = [
+ "base64 0.20.0",
+ "http",
+ "nom",
+ "rand",
+ "rsa",
+ "sha2",
+ "thiserror",
+ "typed-builder",
 ]
 
 [[package]]

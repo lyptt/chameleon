@@ -55,7 +55,7 @@ aws-smithy-http = "0.52.0"
 aws-sdk-s3 = "0.22.0"
 aws-sdk-sqs = "0.22.0"
 jsonwebtoken = "8.2.0"
-sha2 = "0.10.6"
+sha2 = { version = "0.10.6", features = ["oid"] }
 hex = "0.4.3"
 rand = "0.8.5"
 futures-util = "0.3.25"
@@ -76,6 +76,10 @@ gravatar = "0.2.0"
 regex = "1.7.0"
 url = "2.3.1"
 base64 = "0.20.0"
+http-signing = { git = "https://github.com/lyptt/http-signing.git", rev = "aa354b55ba948325a7fa633713b2bddf0a7685de", features = [
+  "rsa",
+], default-features = false }
+http = "0.2.8"
 
 [dev-dependencies]
 mockall = "0.11.3"

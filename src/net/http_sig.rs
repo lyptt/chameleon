@@ -1,18 +1,10 @@
 use actix_web::{web::Bytes, HttpRequest};
-use lazy_static::lazy_static;
-use regex::Regex;
-use rsa::pkcs1v15::Signature;
-use rsa::signature::Verifier;
-use rsa::{pkcs1v15::VerifyingKey, pkcs8::DecodePublicKey, RsaPublicKey};
+use http::HeaderMap;
+use http_signing::{Key, PublicKey, Signature};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use url::Url;
 
 use crate::{model::queue_job::OriginDataEntry, settings::SETTINGS};
-
-lazy_static! {
-  pub static ref SIGNATURE_REGEX: Regex = Regex::new(r#"(.+)="(.+)""#).unwrap();
-}
 
 pub fn build_origin_data(req: &HttpRequest, bytes: &Bytes) -> Option<HashMap<String, OriginDataEntry>> {
   match SETTINGS.app.secure {
@@ -57,8 +49,8 @@ pub fn build_origin_data(req: &HttpRequest, bytes: &Bytes) -> Option<HashMap<Str
 }
 
 pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>, public_key_pem: &str) -> bool {
-  let public_key = match RsaPublicKey::from_public_key_pem(public_key_pem) {
-    Ok(key) => key,
+  let key = match PublicKey::from_pem(public_key_pem.as_bytes()) {
+    Ok(k) => k,
     Err(_) => return false,
   };
 
@@ -67,7 +59,11 @@ pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>,
     None => return false,
   };
 
-  if !context.contains_key("headers") || !context.contains_key("digest") || !context.contains_key("path") {
+  if !context.contains_key("headers")
+    || !context.contains_key("digest")
+    || !context.contains_key("path")
+    || !context.contains_key("method")
+  {
     return false;
   }
 
@@ -76,78 +72,46 @@ pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>,
     OriginDataEntry::Map(data) => data,
   };
 
-  let digest = match &context["digest"] {
-    OriginDataEntry::Raw(data) => data,
-    OriginDataEntry::Map(_) => return false,
-  };
-
   let path = match &context["path"] {
     OriginDataEntry::Raw(data) => data,
     OriginDataEntry::Map(_) => return false,
   };
 
-  if !headers.contains_key("signature") {
-    return false;
-  }
+  let query = match context.contains_key("query") {
+    true => match &context["query"] {
+      OriginDataEntry::Raw(data) => Some(data.to_owned()),
+      OriginDataEntry::Map(_) => return false,
+    },
+    false => None,
+  };
 
-  let signature = &headers["signature"].replace(r#"\""#, r#"""#);
-  let mut signature_data: HashMap<String, String> = HashMap::new();
+  let method = match &context["method"] {
+    OriginDataEntry::Raw(data) => data.to_lowercase(),
+    OriginDataEntry::Map(_) => return false,
+  };
 
-  for component in signature.split(',') {
-    for cap in SIGNATURE_REGEX.captures_iter(component) {
-      signature_data.insert(cap[1].to_string(), cap[2].to_string());
+  let request_target = match query {
+    None => format!("{} {}", method, path),
+    Some(query) => {
+      if query.is_empty() {
+        format!("{} {}", method, path)
+      } else {
+        format!("{} {}?{}", method, path, query)
+      }
     }
-  }
+  };
 
-  if !signature_data.contains_key("keyId")
-    || !signature_data.contains_key("headers")
-    || !signature_data.contains_key("signature")
-  {
-    return false;
-  }
-
-  let signature = match base64::decode(&signature_data["signature"]) {
-    Ok(sig) => sig,
+  let headers: HeaderMap = match headers.try_into() {
+    Ok(v) => v,
     Err(_) => return false,
   };
 
-  if Url::parse(&signature_data["keyId"]).is_err() {
-    return false;
-  }
+  let sig = Signature::builder()
+    .request_target(request_target)
+    .headers(headers)
+    .build();
 
-  let mut headers_to_sign: HashMap<String, String> = HashMap::new();
-
-  for component in signature_data["headers"].split(' ') {
-    if headers_to_sign.contains_key(component) {
-      continue;
-    }
-
-    if component == "(request-target)" {
-      headers_to_sign.insert(component.to_string(), path.to_owned());
-    } else if component == "digest" {
-      headers_to_sign.insert(component.to_string(), digest.to_owned());
-    } else if headers.contains_key(component) {
-      headers_to_sign.insert(component.to_string(), headers[component].to_owned());
-    }
-  }
-
-  let signing_string = headers_to_sign
-    .into_iter()
-    .map(|(k, v)| format!("{}: {}", k.to_lowercase(), v))
-    .collect::<Vec<String>>()
-    .join("\n")
-    .into_bytes();
-
-  let signature = Signature::from(signature);
-
-  let verifying_key: VerifyingKey<Sha256> = public_key.into();
-  match verifying_key.verify(&signing_string, &signature) {
-    Ok(_) => true,
-    Err(err) => {
-      println!("{}", err);
-      false
-    }
-  }
+  sig.verify(&key).unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -173,7 +137,7 @@ mod tests {
       },
       "headers": {
         "Map": {
-          "host": "127.0.0.1:8000",
+          "host": "chameleon.test",
           "content-length": "1744",
           "digest": "SHA-256=8ABV5BVEYHozFIb5xm2epgd7eb2SYQgGt4K5ndxCwx0=",
           "user-agent": "(Pixelfed/0.11.4; +https://pixelfed.test)",
