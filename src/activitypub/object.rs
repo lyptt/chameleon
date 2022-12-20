@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use strum::Display;
+use strum::{Display, EnumString};
 use typed_builder::TypedBuilder;
 
 use super::{
@@ -11,15 +11,30 @@ use super::{
   collection::{CollectionPageProps, CollectionProps},
   key::KeyProps,
   link::LinkProps,
+  place::PlaceProps,
+  profile::ProfileProps,
   question::QuestionProps,
   rdf_string::RdfString,
   reference::Reference,
+  relationship::RelationshipProps,
+  tombstone::TombstoneProps,
 };
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Display, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Display, Debug, EnumString)]
 #[serde(untagged)]
 pub enum ObjectType {
+  Article,
+  Audio,
+  Document,
+  Event,
+  Image,
   Note,
+  Page,
+  Place,
+  Profile,
+  Relationship,
+  Tombstone,
+  Video,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug, TypedBuilder)]
@@ -128,25 +143,37 @@ pub struct Object {
   )]
   pub background_color_fill_map: Option<HashMap<String, RdfString>>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub link: Option<LinkProps>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub collection: Option<CollectionProps>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub collection_page: Option<CollectionPageProps>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub activity: Option<ActivityProps>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub question: Option<QuestionProps>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub actors: Option<ActorProps>,
 
-  #[serde(flatten)]
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
+  pub place: Option<PlaceProps>,
+
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
+  pub profile: Option<ProfileProps>,
+
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
+  pub relationship: Option<RelationshipProps>,
+
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
+  pub tombstone: Option<TombstoneProps>,
+
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub extra: Option<serde_json::Value>,
 }
 
@@ -162,8 +189,12 @@ mod tests {
     document::{ActivityPubDocument, RawActivityPubDocument},
     link::LinkProps,
     object::Object,
+    place::PlaceProps,
+    profile::ProfileProps,
     question::QuestionProps,
     reference::Reference,
+    relationship::RelationshipProps,
+    tombstone::TombstoneProps,
   };
 
   #[test]
@@ -304,6 +335,10 @@ mod tests {
                   .activity(Some(ActivityProps::builder().build()))
                   .question(Some(QuestionProps::builder().build()))
                   .actors(Some(ActorProps::builder().build()))
+                  .place(Some(PlaceProps::builder().build()))
+                  .profile(Some(ProfileProps::builder().build()))
+                  .relationship(Some(RelationshipProps::builder().build()))
+                  .tombstone(Some(TombstoneProps::builder().build()))
                   .build()
               ))))
               .build()
@@ -313,6 +348,10 @@ mod tests {
           .activity(Some(ActivityProps::builder().build()))
           .question(Some(QuestionProps::builder().build()))
           .actors(Some(ActorProps::builder().build()))
+          .place(Some(PlaceProps::builder().build()))
+          .profile(Some(ProfileProps::builder().build()))
+          .relationship(Some(RelationshipProps::builder().build()))
+          .tombstone(Some(TombstoneProps::builder().build()))
           .extra(Some(json!({})))
           .build()
       ))
@@ -337,6 +376,10 @@ mod tests {
           .activity(Some(ActivityProps::builder().build()))
           .question(Some(QuestionProps::builder().build()))
           .actors(Some(ActorProps::builder().build()))
+          .place(Some(PlaceProps::builder().build()))
+          .profile(Some(ProfileProps::builder().build()))
+          .relationship(Some(RelationshipProps::builder().build()))
+          .tombstone(Some(TombstoneProps::builder().build()))
           .extra(Some(json!({})))
           .build()
       ))]))

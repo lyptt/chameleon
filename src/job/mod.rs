@@ -70,9 +70,7 @@ pub async fn delegate_job(
       federate_activitypub::federate_activitypub(
         queue_job.job_id,
         &queue_job.data,
-        &queue_job.origin,
         &queue_job.origin_data,
-        &queue_job.context,
         repositories,
         cdn,
         queue,
