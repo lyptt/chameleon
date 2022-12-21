@@ -18,8 +18,8 @@ path = "src/worker.rs"
 [dependencies]
 actix-web = "4.2.1"
 actix-cors = "0.6.4"
-serde = { version = "1.0.150", features = ["derive"] }
-serde_json = "1.0.89"
+serde = { version = "1.0.151", features = ["derive"] }
+serde_json = "1.0.91"
 serde_qs = "0.10.1"
 config = "0.13.3"
 lazy_static = "1.4.0"
@@ -42,7 +42,7 @@ chrono = { version = "0.4.23", features = [
   "wasmbind",
   "serde",
 ], default-features = false }
-async-trait = "0.1.59"
+async-trait = "0.1.60"
 tokio = { version = "1.23.0", features = ["macros", "process"] }
 actix-easy-multipart = "3.0.0"
 uuid = { version = "1.2.2", features = ["std", "serde", "v4"] }
@@ -59,7 +59,7 @@ sha2 = { version = "0.10.6", features = ["oid"] }
 hex = "0.4.3"
 rand = "0.8.5"
 futures-util = "0.3.25"
-handlebars = "4.3.5"
+handlebars = "4.3.6"
 argon2 = "0.4.1"
 markdown = "1.0.0-alpha.5"
 tempfile = "3.3.0"
