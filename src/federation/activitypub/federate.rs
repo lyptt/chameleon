@@ -1,6 +1,7 @@
 use super::{
   actor::federate_actor,
   note::federate_create_note,
+  person::federate_create_follow,
   util::{deref_activitypub_ref, determine_activity_visibility},
 };
 use crate::{
@@ -39,10 +40,7 @@ pub async fn federate(
     return Err(LogicErr::UnauthorizedError);
   }
 
-  let activity_visibility = match determine_activity_visibility(&doc.object.to, &actor_user) {
-    Some(v) => v,
-    None => return Err(LogicErr::InvalidData),
-  };
+  let activity_visibility = determine_activity_visibility(&doc.object.to, &actor_user);
 
   let activity = match &doc.object.activity {
     Some(ac) => ac,
@@ -65,8 +63,17 @@ pub async fn federate(
   match object_type {
     ObjectType::Note => match kind {
       ActivityType::Create => {
+        let activity_visibility = match activity_visibility {
+          Some(v) => v,
+          None => return Err(LogicErr::InvalidData),
+        };
+
         federate_create_note(object, actor_user, activity_visibility, follows, posts, jobs, queue).await
       }
+      _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+    },
+    ObjectType::Person => match kind {
+      ActivityType::Follow => federate_create_follow(object, actor_user, follows, users).await,
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
     _ => Err(LogicErr::InternalError("Unimplemented".to_string())),

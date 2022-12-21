@@ -35,6 +35,12 @@ pub enum ObjectType {
   Relationship,
   Tombstone,
   Video,
+  Application,
+  Group,
+  Organization,
+  Person,
+  Service,
+  Mention,
 }
 
 impl ObjectType {
