@@ -6,7 +6,7 @@ use crate::{
     object::{Object, ObjectType},
     rdf_string::RdfString,
   },
-  db::{follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool},
+  db::{follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, post_repository::PostPool},
   helpers::api::map_db_err,
   logic::LogicErr,
   model::{
@@ -162,4 +162,152 @@ pub async fn federate_create_note(
   queue.send_job(job).await?;
 
   Ok(())
+}
+
+pub async fn federate_update_note(
+  activity_object: Object,
+  actor: User,
+  access: AccessType,
+  posts: &PostPool,
+) -> Result<(), LogicErr> {
+  let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
+    Some(uri) => uri,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let mut post = match posts.find_optional_by_uri(&uri).await {
+    Some(post) => post,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  if !post.is_external || post.user_id != actor.user_id {
+    return Err(LogicErr::UnauthorizedError);
+  }
+
+  // TODO: Figure out some presentation method for text posts
+  let attachment_obj = match deref_activitypub_ref(&activity_object.attachment).await {
+    Some(obj) => {
+      let obj_type = match ObjectType::from_str_opt(&obj.kind) {
+        Some(t) => t,
+        None => return Err(LogicErr::InvalidData),
+      };
+
+      if obj_type != ObjectType::Image {
+        return Err(LogicErr::Unimplemented);
+      }
+
+      obj
+    }
+    None => return Err(LogicErr::Unimplemented),
+  };
+
+  let content_html: Option<RdfString> = match activity_object.content_map {
+    Some(content) => {
+      // TODO: Once we support multiple content languages for a post we should
+      //       do a mapping here instead of pulling out english values
+      if content.contains_key("en") {
+        content.get("en").cloned()
+      } else if content.contains_key("en-US") {
+        content.get("en-US").cloned()
+      } else if content.contains_key("en-GB") {
+        content.get("en-GB").cloned()
+      } else {
+        None
+      }
+    }
+    None => None,
+  };
+
+  let content_html = match content_html {
+    Some(content) => match content {
+      RdfString::Raw(content) => content,
+      RdfString::Props(props) => props.string,
+    },
+    None => match activity_object.content {
+      Some(content) => match content {
+        RdfString::Raw(content) => content,
+        RdfString::Props(props) => props.string,
+      },
+      None => "".to_string(),
+    },
+  };
+
+  let content_md = match activity_object.source {
+    Some(source) => {
+      if source.media_type == "text/markdown" {
+        source.content
+      } else {
+        "".to_string()
+      }
+    }
+    None => "".to_string(),
+  };
+
+  let created_at = match activity_object.published {
+    Some(date) => date,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let image_content_type = match attachment_obj.media_type {
+    Some(val) => val,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let image_uri = match activitypub_ref_to_uri_opt(&attachment_obj.url) {
+    Some(val) => val,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  post.content_image_uri_large = Some(image_uri);
+  post.content_type_large = Some(image_content_type);
+  post.content_html = content_html;
+  post.content_md = content_md;
+  post.visibility = access;
+  post.created_at = created_at;
+  post.updated_at = created_at;
+
+  posts.update_post_content(&post).await
+}
+
+pub async fn federate_delete_note(target: String, actor: User, posts: &PostPool) -> Result<(), LogicErr> {
+  posts.delete_post_from_uri(&target, &actor.user_id).await
+}
+
+pub async fn federate_like_note(
+  activity_object: Object,
+  actor: User,
+  posts: &PostPool,
+  likes: &LikePool,
+) -> Result<(), LogicErr> {
+  let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
+    Some(uri) => uri,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let post = match posts.fetch_post_from_uri(&uri, &Some(actor.user_id)).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return Err(LogicErr::MissingRecord),
+    },
+    Err(err) => return Err(map_db_err(err)),
+  };
+
+  likes.create_like(&actor.user_id, &post.post_id).await.map(|_| ())
+}
+
+pub async fn federate_unlike_note(
+  target: String,
+  actor: User,
+  posts: &PostPool,
+  likes: &LikePool,
+) -> Result<(), LogicErr> {
+  let post = match posts.fetch_post_from_uri(&target, &Some(actor.user_id)).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return Err(LogicErr::MissingRecord),
+    },
+    Err(err) => return Err(map_db_err(err)),
+  };
+
+  likes.delete_like(&actor.user_id, &post.post_id).await.map(|_| ())
 }

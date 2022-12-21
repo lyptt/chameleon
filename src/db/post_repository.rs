@@ -41,6 +41,7 @@ pub trait PostRepo {
   async fn count_global_federated_feed(&self) -> Result<i64, LogicErr>;
   /// Fetches the specified post from a user's own perspective
   async fn fetch_post(&self, post_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr>;
+  async fn fetch_post_from_uri(&self, post_uri: &str, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr>;
   async fn create_post(
     &self,
     user_id: &Uuid,
@@ -52,6 +53,7 @@ pub trait PostRepo {
   async fn update_post_content_storage(&self, post_id: &Uuid, content_image_storage_ref: &str) -> Result<(), LogicErr>;
   async fn user_owns_post(&self, user_id: &Uuid, post_id: &Uuid) -> bool;
   async fn find_optional_by_id(&self, post_id: &Uuid) -> Option<Post>;
+  async fn find_optional_by_uri(&self, post_uri: &String) -> Option<Post>;
   async fn update_post_content(&self, post: &Post) -> Result<(), LogicErr>;
   async fn fetch_visibility_by_id(&self, post_id: &Uuid) -> Option<AccessType>;
   async fn fetch_owner_by_id(&self, post_id: &Uuid) -> Option<Uuid>;
@@ -73,6 +75,8 @@ pub trait PostRepo {
     target_user_id: &Uuid,
     own_user_id: &Option<Uuid>,
   ) -> Result<i64, LogicErr>;
+  async fn delete_post(&self, post_id: &Uuid, user_id: &Uuid) -> Result<(), LogicErr>;
+  async fn delete_post_from_uri(&self, uri: &str, user_id: &Uuid) -> Result<(), LogicErr>;
 }
 
 pub type PostPool = Arc<dyn PostRepo + Send + Sync>;
@@ -188,6 +192,17 @@ impl PostRepo for DbPostRepo {
     Ok(post)
   }
 
+  async fn fetch_post_from_uri(&self, post_uri: &str, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr> {
+    let post = sqlx::query_as(include_str!("./sql/fetch_post_from_uri.sql"))
+      .bind(post_uri)
+      .bind(user_id)
+      .fetch_optional(&self.db)
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(post)
+  }
+
   async fn create_post(
     &self,
     user_id: &Uuid,
@@ -280,6 +295,18 @@ impl PostRepo for DbPostRepo {
   async fn find_optional_by_id(&self, post_id: &Uuid) -> Option<Post> {
     let result = sqlx::query_as("SELECT * FROM posts WHERE post_id = $1")
       .bind(post_id)
+      .fetch_optional(&self.db)
+      .await;
+
+    match result {
+      Ok(post) => post,
+      Err(_) => None,
+    }
+  }
+
+  async fn find_optional_by_uri(&self, uri: &String) -> Option<Post> {
+    let result = sqlx::query_as("SELECT * FROM posts WHERE uri = $1")
+      .bind(uri)
       .fetch_optional(&self.db)
       .await;
 
@@ -388,5 +415,27 @@ impl PostRepo for DbPostRepo {
       .map_err(map_db_err)?;
 
     Ok(count)
+  }
+
+  async fn delete_post(&self, post_id: &Uuid, user_id: &Uuid) -> Result<(), LogicErr> {
+    sqlx::query("DELETE FROM posts WHERE post_id = $1 AND user_id = $2")
+      .bind(post_id)
+      .bind(user_id)
+      .execute(&self.db)
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(())
+  }
+
+  async fn delete_post_from_uri(&self, uri: &str, user_id: &Uuid) -> Result<(), LogicErr> {
+    sqlx::query("DELETE FROM posts WHERE uri = $1 AND user_id = $2")
+      .bind(uri)
+      .bind(user_id)
+      .execute(&self.db)
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(())
   }
 }

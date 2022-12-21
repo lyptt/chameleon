@@ -35,6 +35,7 @@ pub async fn federate_activitypub(
     &repositories.users,
     &repositories.follows,
     &repositories.posts,
+    &repositories.likes,
     &repositories.jobs,
     queue,
   )

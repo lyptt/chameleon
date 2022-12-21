@@ -25,3 +25,17 @@ pub async fn federate_create_follow(
 
   Ok(())
 }
+
+pub async fn federate_remove_follow(
+  target: String,
+  actor: User,
+  follows: &FollowPool,
+  users: &UserPool,
+) -> Result<(), LogicErr> {
+  let unfollowed_user = match users.fetch_by_fediverse_uri(&target).await {
+    Some(user) => user,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  follows.delete_follow(&actor.user_id, &unfollowed_user.user_id).await
+}

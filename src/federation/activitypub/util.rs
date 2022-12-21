@@ -17,12 +17,29 @@ lazy_static! {
   };
 }
 
+pub enum ActivityTarget {
+  Unknown,
+  UserFollowers(String),
+  Post(String),
+  PostLikes(String),
+}
+
 pub fn activitypub_ref_to_uri(obj_ref: &Reference<Object>) -> Option<String> {
   match obj_ref {
-    Reference::Embedded(_) => None,
+    Reference::Embedded(obj) => activitypub_ref_to_uri_opt(&obj.url),
     Reference::Remote(uri) => Some(uri.to_owned()),
-    Reference::Mixed(_) => None,
-    Reference::Map(_) => None,
+    Reference::Mixed(vals) => vals.iter().find_map(activitypub_ref_to_uri),
+    Reference::Map(data) => {
+      if let Some(value) = data.get("url") {
+        let uri: Result<String, serde_json::Error> = serde_json::from_value(value.to_owned());
+        match uri {
+          Ok(uri) => Some(uri),
+          Err(_) => None,
+        }
+      } else {
+        None
+      }
+    }
   }
 }
 
@@ -78,5 +95,24 @@ pub async fn deref_activitypub_ref(obj_ref: &Option<Reference<Object>>) -> Optio
       Reference::Map(_) => None,
     },
     None => None,
+  }
+}
+
+pub fn determine_activity_target(target: Option<String>) -> ActivityTarget {
+  match target {
+    Some(target) => {
+      if target.ends_with("/followers") {
+        let user_uri = target.replace("/followers", "");
+        ActivityTarget::UserFollowers(user_uri)
+      } else if target.contains("/api/feed") && target.ends_with("/likes") {
+        let post_uri = target.replace("/likes", "");
+        ActivityTarget::PostLikes(post_uri)
+      } else if target.contains("/api/feed") {
+        ActivityTarget::Post(target)
+      } else {
+        ActivityTarget::Unknown
+      }
+    }
+    None => ActivityTarget::Unknown,
   }
 }

@@ -1,12 +1,18 @@
 use super::{
   actor::federate_actor,
-  note::federate_create_note,
-  person::federate_create_follow,
-  util::{deref_activitypub_ref, determine_activity_visibility},
+  note::{federate_create_note, federate_delete_note, federate_like_note, federate_unlike_note, federate_update_note},
+  person::{federate_create_follow, federate_remove_follow},
+  util::{
+    activitypub_ref_to_uri_opt, deref_activitypub_ref, determine_activity_target, determine_activity_visibility,
+    ActivityTarget,
+  },
 };
 use crate::{
   activitypub::{activity_type::ActivityType, document::ActivityPubDocument, object::ObjectType},
-  db::{follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, user_repository::UserPool},
+  db::{
+    follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, post_repository::PostPool,
+    user_repository::UserPool,
+  },
   helpers::core::unwrap_or_fail,
   logic::LogicErr,
   model::queue_job::OriginDataEntry,
@@ -23,6 +29,7 @@ pub async fn federate(
   users: &UserPool,
   follows: &FollowPool,
   posts: &PostPool,
+  likes: &LikePool,
   jobs: &JobPool,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
@@ -52,6 +59,8 @@ pub async fn federate(
     None => return Err(LogicErr::InvalidData),
   };
 
+  let target = activitypub_ref_to_uri_opt(&activity.target);
+
   let object_type = match &object.kind {
     Some(v) => match ObjectType::from_str(v) {
       Ok(t) => t,
@@ -70,10 +79,37 @@ pub async fn federate(
 
         federate_create_note(object, actor_user, activity_visibility, follows, posts, jobs, queue).await
       }
+      ActivityType::Update => {
+        let activity_visibility = match activity_visibility {
+          Some(v) => v,
+          None => return Err(LogicErr::InvalidData),
+        };
+
+        federate_update_note(object, actor_user, activity_visibility, posts).await
+      }
+      ActivityType::Like => federate_like_note(object, actor_user, posts, likes).await,
+      ActivityType::Remove => match determine_activity_target(target) {
+        ActivityTarget::PostLikes(target) => federate_unlike_note(target, actor_user, posts, likes).await,
+        ActivityTarget::Post(target) => federate_delete_note(target, actor_user, posts).await,
+        _ => Err(LogicErr::InvalidData),
+      },
+      ActivityType::Delete => match determine_activity_target(target) {
+        ActivityTarget::PostLikes(target) => federate_unlike_note(target, actor_user, posts, likes).await,
+        ActivityTarget::Post(target) => federate_delete_note(target, actor_user, posts).await,
+        _ => Err(LogicErr::InvalidData),
+      },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
     ObjectType::Person => match kind {
       ActivityType::Follow => federate_create_follow(object, actor_user, follows, users).await,
+      ActivityType::Remove => match determine_activity_target(target) {
+        ActivityTarget::UserFollowers(target) => federate_remove_follow(target, actor_user, follows, users).await,
+        _ => Err(LogicErr::InvalidData),
+      },
+      ActivityType::Delete => match determine_activity_target(target) {
+        ActivityTarget::UserFollowers(target) => federate_remove_follow(target, actor_user, follows, users).await,
+        _ => Err(LogicErr::InvalidData),
+      },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
     _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
