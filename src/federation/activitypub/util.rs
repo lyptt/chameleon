@@ -3,10 +3,12 @@ use std::time::Duration;
 use crate::{
   activitypub::{document::ActivityPubDocument, object::Object, reference::Reference},
   model::{access_type::AccessType, user::User},
+  settings::SETTINGS,
 };
 
 use backoff::{future::retry, ExponentialBackoff};
 use lazy_static::lazy_static;
+use tokio_stream::{self as stream, StreamExt};
 
 lazy_static! {
   pub static ref BACKOFF_POLICY: ExponentialBackoff = {
@@ -14,6 +16,12 @@ lazy_static! {
       max_elapsed_time: Some(Duration::from_millis(300_000)),
       ..Default::default()
     }
+  };
+  pub static ref HTTP_CLIENT: reqwest::Client = {
+    reqwest::Client::builder()
+      .danger_accept_invalid_certs(!SETTINGS.app.verify_external_https_certificates)
+      .build()
+      .unwrap()
   };
 }
 
@@ -76,7 +84,15 @@ pub fn determine_activity_visibility(to: &Option<Reference<Object>>, author: &Us
 
 pub async fn fetch_activitypub_object(obj_ref: &str) -> Option<Object> {
   let result: Result<Option<ActivityPubDocument>, reqwest::Error> = retry(BACKOFF_POLICY.clone(), || async {
-    Ok(reqwest::get(obj_ref).await?.json().await?)
+    Ok(
+      HTTP_CLIENT
+        .get(obj_ref)
+        .header("accept", "application/activity+json")
+        .send()
+        .await?
+        .json()
+        .await?,
+    )
   })
   .await;
 
@@ -91,7 +107,24 @@ pub async fn deref_activitypub_ref(obj_ref: &Option<Reference<Object>>) -> Optio
     Some(a) => match a {
       Reference::Embedded(obj) => Some((**obj).clone()),
       Reference::Remote(uri) => fetch_activitypub_object(uri).await,
-      Reference::Mixed(_) => None,
+      Reference::Mixed(values) => {
+        // EDITOR'S NOTE: We could do recursion instead here, but it requires boxing which makes things much slower
+        let mut stream = stream::iter(values);
+        while let Some(value) = stream.next().await {
+          let ret = match value {
+            Reference::Embedded(obj) => Some((**obj).clone()),
+            Reference::Remote(uri) => fetch_activitypub_object(uri).await,
+            Reference::Mixed(_) => None,
+            Reference::Map(_) => None,
+          };
+
+          if ret.is_some() {
+            return ret;
+          }
+        }
+
+        None
+      }
       Reference::Map(_) => None,
     },
     None => None,

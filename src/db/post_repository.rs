@@ -53,7 +53,7 @@ pub trait PostRepo {
   async fn update_post_content_storage(&self, post_id: &Uuid, content_image_storage_ref: &str) -> Result<(), LogicErr>;
   async fn user_owns_post(&self, user_id: &Uuid, post_id: &Uuid) -> bool;
   async fn find_optional_by_id(&self, post_id: &Uuid) -> Option<Post>;
-  async fn find_optional_by_uri(&self, post_uri: &String) -> Option<Post>;
+  async fn find_optional_by_uri(&self, post_uri: &str) -> Option<Post>;
   async fn update_post_content(&self, post: &Post) -> Result<(), LogicErr>;
   async fn fetch_visibility_by_id(&self, post_id: &Uuid) -> Option<AccessType>;
   async fn fetch_owner_by_id(&self, post_id: &Uuid) -> Option<Uuid>;
@@ -304,7 +304,7 @@ impl PostRepo for DbPostRepo {
     }
   }
 
-  async fn find_optional_by_uri(&self, uri: &String) -> Option<Post> {
+  async fn find_optional_by_uri(&self, uri: &str) -> Option<Post> {
     let result = sqlx::query_as("SELECT * FROM posts WHERE uri = $1")
       .bind(uri)
       .fetch_optional(&self.db)

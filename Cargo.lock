@@ -1153,6 +1153,7 @@ dependencies = [
  "temp-env",
  "tempfile",
  "tokio",
+ "tokio-stream",
  "typed-builder",
  "url 2.3.1",
  "uuid",

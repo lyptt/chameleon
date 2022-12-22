@@ -252,15 +252,10 @@ pub async fn api_activitypub_get_user_profile(users: web::Data<UserPool>, handle
 pub async fn api_activitypub_federate_shared_inbox(
   req: HttpRequest,
   jobs: web::Data<JobPool>,
-  body_data: web::Bytes,
+  data: web::Json<serde_json::Value>,
   queue: web::Data<Queue>,
 ) -> impl Responder {
-  let data: serde_json::Value = match serde_json::from_slice(&body_data) {
-    Ok(data) => data,
-    Err(_) => return build_api_err(400, "body".to_string(), None),
-  };
-
-  let origin_data = build_origin_data(&req, &body_data);
+  let origin_data = build_origin_data(&req);
 
   if SETTINGS.app.secure && origin_data.is_none() {
     return build_api_err(401, "signature".to_string(), None);
@@ -282,8 +277,8 @@ pub async fn api_activitypub_federate_shared_inbox(
   let job = QueueJob::builder()
     .job_id(job_id)
     .job_type(QueueJobType::FederateActivityPub)
-    .data(data)
-    .origin(req.connection_info().host().to_string())
+    .data((*data).to_owned())
+    .origin(SETTINGS.server.api_root_fqdn.to_owned())
     .origin_data(origin_data)
     .build();
 
@@ -299,16 +294,11 @@ pub async fn api_activitypub_federate_shared_inbox(
 pub async fn api_activitypub_federate_user_inbox(
   req: HttpRequest,
   user_handle: web::Path<String>,
-  body_data: web::Bytes,
+  data: web::Json<serde_json::Value>,
   jobs: web::Data<JobPool>,
   queue: web::Data<Queue>,
 ) -> impl Responder {
-  let data: serde_json::Value = match serde_json::from_slice(&body_data) {
-    Ok(data) => data,
-    Err(_) => return build_api_err(400, "body".to_string(), None),
-  };
-
-  let origin_data = build_origin_data(&req, &body_data);
+  let origin_data = build_origin_data(&req);
 
   if SETTINGS.app.secure && origin_data.is_none() {
     return build_api_err(401, "signature".to_string(), None);
@@ -330,7 +320,7 @@ pub async fn api_activitypub_federate_user_inbox(
   let job = QueueJob::builder()
     .job_id(job_id)
     .job_type(QueueJobType::FederateActivityPub)
-    .data(data)
+    .data((*data).to_owned())
     .origin(req.connection_info().host().to_string())
     .context(vec![(*user_handle).clone()])
     .origin_data(origin_data)

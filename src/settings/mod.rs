@@ -82,6 +82,7 @@ pub struct Queue {
 pub struct Application {
   pub imagemagick_exe_path: String,
   pub secure: bool,
+  pub verify_external_https_certificates: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -140,6 +141,7 @@ impl Settings {
       app: Application {
         imagemagick_exe_path: "convert".to_string(),
         secure: false,
+        verify_external_https_certificates: false,
       },
     }
   }
