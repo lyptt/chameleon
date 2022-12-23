@@ -2,7 +2,8 @@ use uuid::Uuid;
 
 use super::{
   actor::federate_actor,
-  note::{federate_create_note, federate_delete_note, federate_like_note, federate_unlike_note, federate_update_note},
+  note::{federate_create_note, federate_like_note, federate_unlike_note, federate_update_note},
+  object::federate_delete_remote_object,
   person::{federate_create_follow, federate_remove_follow},
   util::{
     activitypub_ref_to_uri_opt, deref_activitypub_ref, determine_activity_target, determine_activity_visibility,
@@ -98,12 +99,16 @@ pub async fn federate(
       ActivityType::Like => federate_like_note(object, &actor_user, posts, likes).await,
       ActivityType::Remove => match determine_activity_target(target) {
         ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
-        ActivityTarget::Post(target) => federate_delete_note(target, &actor_user, posts).await,
+        ActivityTarget::Unknown(target) => {
+          federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
+        }
         _ => Err(LogicErr::InvalidData),
       },
       ActivityType::Delete => match determine_activity_target(target) {
         ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
-        ActivityTarget::Post(target) => federate_delete_note(target, &actor_user, posts).await,
+        ActivityTarget::Unknown(target) => {
+          federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
+        }
         _ => Err(LogicErr::InvalidData),
       },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
@@ -112,13 +117,30 @@ pub async fn federate(
       ActivityType::Follow => federate_create_follow(object, &actor_user, follows, users).await,
       ActivityType::Remove => match determine_activity_target(target) {
         ActivityTarget::UserFollowers(target) => federate_remove_follow(target, &actor_user, follows, users).await,
+        ActivityTarget::Unknown(target) => {
+          federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
+        }
         _ => Err(LogicErr::InvalidData),
       },
       ActivityType::Delete => match determine_activity_target(target) {
         ActivityTarget::UserFollowers(target) => federate_remove_follow(target, &actor_user, follows, users).await,
+        ActivityTarget::Unknown(target) => {
+          federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
+        }
         _ => Err(LogicErr::InvalidData),
       },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+    },
+    ObjectType::Tombstone => match object.id {
+      Some(id) => match id.starts_with(&SETTINGS.server.api_root_fqdn) {
+        true => match determine_activity_target(Some(id)) {
+          ActivityTarget::UserFollowers(target) => federate_remove_follow(target, &actor_user, follows, users).await,
+          ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
+          _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+        },
+        false => federate_delete_remote_object(id, &actor_user, object_type, origin_data, posts, users, likes).await,
+      },
+      None => Err(LogicErr::InvalidData),
     },
     _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
   };

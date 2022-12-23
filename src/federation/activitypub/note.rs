@@ -34,7 +34,7 @@ pub async fn federate_create_note(
     return Ok(FederateResult::None);
   }
 
-  let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
+  let uri = match activity_object.id {
     Some(uri) => uri,
     None => return Err(LogicErr::InvalidData),
   };
@@ -47,7 +47,7 @@ pub async fn federate_create_note(
         None => return Err(LogicErr::InvalidData),
       };
 
-      if obj_type != ObjectType::Image {
+      if obj_type != ObjectType::Image && obj_type != ObjectType::Document {
         return Err(LogicErr::Unimplemented);
       }
 
@@ -170,7 +170,7 @@ pub async fn federate_update_note(
   access: AccessType,
   posts: &PostPool,
 ) -> Result<FederateResult, LogicErr> {
-  let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
+  let uri = match activity_object.id {
     Some(uri) => uri,
     None => return Err(LogicErr::InvalidData),
   };

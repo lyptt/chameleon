@@ -1,3 +1,4 @@
+use log::debug;
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -16,6 +17,11 @@ pub async fn federate_activitypub(
   repositories: &Repositories,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
+  debug!(
+    "federating activitypub job with document: {:?}",
+    data.clone().map(|v| serde_json::to_string_pretty(&v))
+  );
+
   let doc: RawActivityPubDocument = match data.to_owned() {
     Some(value) => match serde_json::from_value(value) {
       Ok(doc) => doc,

@@ -36,6 +36,7 @@ pub trait UserRepo {
     public_key: &str,
   ) -> Result<Uuid, LogicErr>;
   async fn create_from(&self, user: &User) -> Result<User, LogicErr>;
+  async fn delete_user_from_uri(&self, uri: &str) -> Result<(), LogicErr>;
 }
 
 pub type UserPool = Arc<dyn UserRepo + Send + Sync>;
@@ -232,5 +233,15 @@ impl UserRepo for DbUserRepo {
     u.user_id = user_id;
 
     Ok(u)
+  }
+
+  async fn delete_user_from_uri(&self, uri: &str) -> Result<(), LogicErr> {
+    sqlx::query("DELETE FROM users WHERE fediverse_uri = $1")
+      .bind(uri)
+      .execute(&self.db)
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(())
   }
 }

@@ -2,6 +2,7 @@ use actix_web::HttpRequest;
 use http::HeaderMap;
 use http_signing::{Key, PublicKey, Signature};
 use std::collections::HashMap;
+use url::Url;
 
 use crate::{model::queue_job::OriginDataEntry, settings::SETTINGS};
 
@@ -110,6 +111,73 @@ pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>,
     .build();
 
   sig.verify(&key).unwrap_or(false)
+}
+
+pub fn extract_http_signature_origin(context: &Option<HashMap<String, OriginDataEntry>>) -> Option<String> {
+  let context = match context {
+    Some(ctx) => ctx,
+    None => return None,
+  };
+
+  if !context.contains_key("headers") || !context.contains_key("path") || !context.contains_key("method") {
+    return None;
+  }
+
+  let headers = match &context["headers"] {
+    OriginDataEntry::Raw(_) => return None,
+    OriginDataEntry::Map(data) => data,
+  };
+
+  let path = match &context["path"] {
+    OriginDataEntry::Raw(data) => data,
+    OriginDataEntry::Map(_) => return None,
+  };
+
+  let query = match context.contains_key("query") {
+    true => match &context["query"] {
+      OriginDataEntry::Raw(data) => Some(data.to_owned()),
+      OriginDataEntry::Map(_) => return None,
+    },
+    false => None,
+  };
+
+  let method = match &context["method"] {
+    OriginDataEntry::Raw(data) => data.to_lowercase(),
+    OriginDataEntry::Map(_) => return None,
+  };
+
+  let request_target = match query {
+    None => format!("{} {}", method, path),
+    Some(query) => {
+      if query.is_empty() {
+        format!("{} {}", method, path)
+      } else {
+        format!("{} {}?{}", method, path, query)
+      }
+    }
+  };
+
+  let headers: HeaderMap = match headers.try_into() {
+    Ok(v) => v,
+    Err(_) => return None,
+  };
+
+  let sig = Signature::builder()
+    .request_target(request_target)
+    .headers(headers)
+    .build();
+
+  let key = match sig.key_id() {
+    Some(key) => key,
+    None => return None,
+  };
+
+  let uri = match Url::parse(key) {
+    Ok(uri) => uri,
+    Err(_) => return None,
+  };
+
+  uri.host_str().map(|h| h.to_owned())
 }
 
 #[cfg(test)]

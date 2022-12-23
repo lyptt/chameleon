@@ -40,10 +40,11 @@ pub enum FederateResult {
 }
 
 pub enum ActivityTarget {
-  Unknown,
+  Unknown(String),
   UserFollowers(String),
   Post(String),
   PostLikes(String),
+  Invalid,
 }
 
 pub fn activitypub_ref_to_uri(obj_ref: &Reference<Object>) -> Option<String> {
@@ -202,18 +203,20 @@ pub async fn deref_activitypub_ref(obj_ref: &Option<Reference<Object>>) -> Optio
 pub fn determine_activity_target(target: Option<String>) -> ActivityTarget {
   match target {
     Some(target) => {
-      if target.ends_with("/followers") {
-        let user_uri = target.replace("/followers", "");
-        ActivityTarget::UserFollowers(user_uri)
-      } else if target.contains("/api/feed") && target.ends_with("/likes") {
-        let post_uri = target.replace("/likes", "");
-        ActivityTarget::PostLikes(post_uri)
-      } else if target.contains("/api/feed") {
-        ActivityTarget::Post(target)
+      if target.starts_with(&SETTINGS.server.api_root_fqdn) {
+        if target.ends_with("/followers") {
+          let user_uri = target.replace("/followers", "");
+          ActivityTarget::UserFollowers(user_uri)
+        } else if target.contains("/api/feed") && target.ends_with("/likes") {
+          let post_uri = target.replace("/likes", "");
+          ActivityTarget::PostLikes(post_uri)
+        } else {
+          ActivityTarget::Unknown(target)
+        }
       } else {
-        ActivityTarget::Unknown
+        ActivityTarget::Unknown(target)
       }
     }
-    None => ActivityTarget::Unknown,
+    None => ActivityTarget::Invalid,
   }
 }

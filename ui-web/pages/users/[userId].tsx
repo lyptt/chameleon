@@ -16,6 +16,7 @@ import UserProfileTile from '@/components/molecules/UserProfileTile'
 import Link from 'next/link'
 import Config from '@/core/config'
 import { LazyImage } from '@/components/atoms/LazyImage'
+import { buildSrcSet, determineFallbackContentImageUri } from '@/core/utils'
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -185,8 +186,8 @@ export default function UserPage({
                 className="chameleon-page-user__post-image"
                 contentClassName="chameleon-page-user__post-image-content"
                 blurhash={post.content_blurhash}
-                srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
-                src={`${Config.cdn}/${post.content_image_uri_medium}`}
+                srcSet={buildSrcSet(post)}
+                src={determineFallbackContentImageUri(post)}
               />
             </Link>
           ))}
