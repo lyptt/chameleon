@@ -24,7 +24,10 @@ use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use db::repository::Repository;
 use env_logger::WriteStyle;
-use helpers::types::{ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_JSON_JSON_CONTENT_TYPE, ACTIVITY_LD_JSON_CONTENT_TYPE};
+use helpers::types::{
+  ACTIVITY_JSON_CONTENT_TYPE, ACTIVITY_JSON_JSON_CONTENT_TYPE, ACTIVITY_JSON_LD_JSON_CONTENT_TYPE,
+  ACTIVITY_LD_JSON_CONTENT_TYPE,
+};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
@@ -139,6 +142,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_profile),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_profile),
+          )
           .route(web::get().to(api_get_user_profile)),
       )
       .service(
@@ -159,6 +167,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_federated_user_posts),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_posts),
+          )
           .route(web::get().to(api_get_user_posts)),
       )
       .service(
@@ -177,6 +190,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_federated_user_liked_posts),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_federated_user_liked_posts),
           )
           .route(web::get().to(api_get_user_liked_posts)),
@@ -205,6 +223,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_followers),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_followers),
+          )
           .route(web::get().to(api_get_user_followers)),
       )
       .service(
@@ -223,6 +246,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_user_following),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_user_following),
           )
           .route(web::get().to(api_get_user_following)),
@@ -277,6 +305,11 @@ async fn main() -> std::io::Result<()> {
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_post),
           )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_post),
+          )
           .route(web::get().to(api_get_post))
           .route(web::post().to(api_upload_post_image)),
       )
@@ -307,6 +340,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_comments),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_comments),
           )
           .route(web::get().to(api_get_comments))
@@ -340,6 +378,11 @@ async fn main() -> std::io::Result<()> {
           .route(
             web::get()
               .guard(guard::Header("accept", ACTIVITY_JSON_JSON_CONTENT_TYPE))
+              .to(api_activitypub_get_comment),
+          )
+          .route(
+            web::get()
+              .guard(guard::Header("accept", ACTIVITY_JSON_LD_JSON_CONTENT_TYPE))
               .to(api_activitypub_get_comment),
           )
           .route(web::get().to(api_get_comment))

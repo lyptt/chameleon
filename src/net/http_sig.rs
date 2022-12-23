@@ -153,31 +153,30 @@ mod tests {
   #[test]
   pub fn verifies_signature_2() {
     let context: HashMap<String, OriginDataEntry> = serde_json::from_str(r#"{
-      "method": {
-        "Raw": "POST"
+      "path": {
+        "Raw": "/api/federate/activitypub/inbox/lyptt"
       },
       "query": {
         "Raw": ""
       },
       "headers": {
         "Map": {
-          "content-type": "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-          "accept-encoding": "deflate, gzip, br, zstd",
-          "digest": "SHA-256=7fmXGROnmCtlxnElMHv/KD9Pyu8BdXwJ+Btx/mCLgCM=",
-          "signature": "keyId=\"https://pixelfed.test/users/boop#main-key\",headers=\"(request-target) date host accept digest content-type user-agent\",algorithm=\"rsa-sha256\",signature=\"ZLHbOtH3Sb1kNKpi/lz5A4i8dhW07EsHs/cEE/MD21ojcayNHbqQV2zp2UowsevLWe2y2GgdwB54DwGudBgwVV6LA/Ewx8My6Axai3jVWKmeXGQZflUfxCrg0L4KpACfAdfWhXDLkFDR8/v5Qk3ZR3LI4DyJhv0eWWzgmkfKIssaJXqSph3aqF5e+UzmkVNRVpltSxIY9yUU1MA/YCqncd2LMnEqWwWihj93i3mtU4wdJc8ks+P2pb0OcWurEST78nz9ExBTXKnEE/MbzpZnNoeDhC6wcqY5AJatE3Olo/MkNxjw4ErncROFfFnchSrkz5byVaWwebZW+gASHEU0BQ==\"",
-          "user-agent": "(Pixelfed/0.11.4; +https://pixelfed.test)",
-          "connection": "close",
-          "date": "Thu, 22 Dec 2022 01:33:39 GMT",
-          "accept": "application/activity+json, application/json",
           "host": "chameleon.test",
-          "content-length": "1744"
+          "digest": "SHA-256=Ufp4anDd4L/lf4L7DeopzBfyujdnLJb6BJG16hQbWc4=",
+          "connection": "Keep-Alive",
+          "accept-encoding": "gzip",
+          "user-agent": "http.rb/5.1.1 (Mastodon/4.0.2; +http://mastodon.test/)",
+          "content-length": "225",
+          "signature": "keyId=\"http://mastodon.test/users/boop#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) date digest content-type\",signature=\"ltPCWRdH4TNyS7QqK9FIaLmku7KvhwERttMSBtmq/96ed6/1JqmJl197zTjZqVX5/KVXwYMIAeSec3sbg7xNUDCFFrKdjhy8tqpwE4WunJWeWuACyYMfL5NJgsW4/TLJtc7QoWZKJzyugDa+bhfV8Jw4n9Un78WXf/ZqPgqQV+3d81SP+3XjJ/PVvyuMqZ8l7HthA0MKmLL8wIXrFa6yGPpfhai9iO3iwPr/xRQ8uf+SW7x9+mTz6GbVYSMdKwpc8OEPp6EnJBt7DdUbqYBQRw+xC+tNzF7ycmiDzV9je5GuAwMWZNXdjWXiK1yWKRaTXRHuaFCSlsZSMF+8cMpi1A==\"",
+          "content-type": "application/activity+json",
+          "date": "Fri, 23 Dec 2022 16:33:19 GMT"
         }
       },
-      "path": {
-        "Raw": "/api/federate/activitypub/shared-inbox"
+      "method": {
+        "Raw": "POST"
       }
     }"#).unwrap();
-    let public_key_pem = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmv2ro1ZJ28y9NLnCPiZ0\nhkaY34Oq8sriUBEwlhkmplpIcjR8icWahuiZJM2ILM4aY76zGfQphF8NBD1FlBp9\njLOccZwy4GqpZK7AQxNiCoRWM/qkXmSRbTYPy38WG4x2rFeA15n24hsHuC09yMx7\n+HUSioFipe1c4iDQf14HBuZ5cDfUequKjN49e/wDwN2aTB4hmlPrZVpUbYnrXu80\nlPclYi8idU89n2QposSgKSjloGKKOZjGqOjeeKzK01RDoU3cqVRdP3DBMwjTtTXe\nJordf+Z0HZ/1EqLeYXoR3O2L1ybElQrq50rEyFAVs6gLKT1PTece/m9DpvYZBau1\nDQIDAQAB\n-----END PUBLIC KEY-----\n";
+    let public_key_pem = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3PvjlJZ59Z18a4gVRrRb\nfJshlNI90Sb7PpeG7ma2xquyYkZlP79f5kk+GKxSPtUwWC/KMKgSoUDJVzbguRsJ\n236zS7BgYw7+JcmHoe5yzMNn0XbeFjzExE0xCejoXOty3Cz5zp9JSvJRBttR1Iyh\nF6nzCcDVirH5lo1ErTSpFHU5IRxq7CT2j5BLPy8RotqyM8ausEO205zqa4EHjfIS\nykZ6xCGC+1jx8O5ZYGwefm1JrFrdW6puxCQrsAxTOEiKvm3xBaDn7xNMz7EzKxPb\nijNtBFKJ3rB4QMuC1vb8DVUBvbxkchCPQODBt43/AzNIdCtxFmlInUuJxPvUDFtK\nLwIDAQAB\n-----END PUBLIC KEY-----\n";
 
     assert!(verify_http_signature(&Some(context), public_key_pem));
   }

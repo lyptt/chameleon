@@ -3,6 +3,7 @@ use crate::{
   db::{follow_repository::FollowPool, user_repository::UserPool},
   logic::LogicErr,
   model::user::User,
+  settings::SETTINGS,
 };
 
 pub async fn federate_create_follow(
@@ -12,7 +13,10 @@ pub async fn federate_create_follow(
   users: &UserPool,
 ) -> Result<(), LogicErr> {
   let uri = match activity_object.id {
-    Some(uri) => uri,
+    Some(uri) => match uri.starts_with(&SETTINGS.server.api_fqdn) {
+      true => uri.replace(&SETTINGS.server.api_fqdn, ""),
+      false => uri,
+    },
     None => return Err(LogicErr::MissingRecord),
   };
 
