@@ -5,6 +5,7 @@ use crate::{
   db::user_repository::UserPool,
   logic::LogicErr,
   model::user::User,
+  settings::SETTINGS,
 };
 
 use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref};
@@ -23,6 +24,11 @@ async fn query_activitypub_user_ref(obj_ref: &Option<Reference<Object>>, users: 
   let uri = match uri {
     Some(uri) => uri,
     None => return None,
+  };
+
+  let uri = match uri.starts_with(&SETTINGS.server.api_fqdn) {
+    true => uri.replace(&SETTINGS.server.api_fqdn, ""),
+    false => uri,
   };
 
   users.fetch_by_fediverse_uri(&uri).await

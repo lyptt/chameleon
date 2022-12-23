@@ -83,7 +83,7 @@ impl ActivityConvertible for User {
     endpoints.insert("sharedInbox".to_string(), serde_json::Value::String(public_inbox_uri));
 
     let key_props = KeyProps::builder()
-      .id(Some(format!("{}/key", id)))
+      .id(Some(format!("{}#main-key", id)))
       .owner(Some(id.clone()))
       .public_key_pem(Some(self.public_key.clone()))
       .build();

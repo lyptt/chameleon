@@ -117,13 +117,3 @@ pub async fn api_get_user_following(
     Err(err) => build_api_err(500, err.to_string(), None),
   }
 }
-
-pub async fn api_get_user_key(users: web::Data<UserPool>, handle: web::Path<String>) -> impl Responder {
-  match get_user_by_handle(&handle, &users).await {
-    Ok(user) => match user {
-      Some(user) => HttpResponse::Ok().content_type("text/plain").body(user.public_key),
-      None => HttpResponse::NotFound().finish(),
-    },
-    Err(_) => HttpResponse::NotFound().finish(),
-  }
-}

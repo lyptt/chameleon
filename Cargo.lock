@@ -1135,6 +1135,7 @@ dependencies = [
  "lazy_static",
  "log",
  "markdown",
+ "mediatype",
  "mime",
  "mockall",
  "num-traits",
@@ -2013,12 +2014,13 @@ dependencies = [
 [[package]]
 name = "http-signing"
 version = "1.1.0"
-source = "git+https://github.com/lyptt/http-signing.git?rev=aa354b55ba948325a7fa633713b2bddf0a7685de#aa354b55ba948325a7fa633713b2bddf0a7685de"
+source = "git+https://github.com/lyptt/http-signing.git?rev=3047bc572b6cc2e3b0b16e246a9c2a3b69670426#3047bc572b6cc2e3b0b16e246a9c2a3b69670426"
 dependencies = [
  "base64 0.20.0",
  "http",
  "nom",
  "rand",
+ "reqwest",
  "rsa",
  "sha2",
  "thiserror",
@@ -2435,6 +2437,12 @@ checksum = "6365506850d44bff6e2fbcb5176cf63650e48bd45ef2fe2665ae1570e0f4b9ca"
 dependencies = [
  "digest 0.10.6",
 ]
+
+[[package]]
+name = "mediatype"
+version = "0.19.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a280afd79e5a4c3e7f298c6139321aad0365690f24a57539e18590b5a606966"
 
 [[package]]
 name = "memchr"

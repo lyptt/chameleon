@@ -1,14 +1,22 @@
+use uuid::Uuid;
+
 use super::{
   actor::federate_actor,
   note::{federate_create_note, federate_delete_note, federate_like_note, federate_unlike_note, federate_update_note},
   person::{federate_create_follow, federate_remove_follow},
   util::{
     activitypub_ref_to_uri_opt, deref_activitypub_ref, determine_activity_target, determine_activity_visibility,
-    ActivityTarget,
+    send_activitypub_object, ActivityTarget, FederateResult,
   },
 };
 use crate::{
-  activitypub::{activity_type::ActivityType, document::ActivityPubDocument, object::ObjectType},
+  activitypub::{
+    activity::ActivityProps,
+    activity_type::ActivityType,
+    document::ActivityPubDocument,
+    object::{Object, ObjectType},
+    reference::Reference,
+  },
   db::{
     follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, post_repository::PostPool,
     user_repository::UserPool,
@@ -69,7 +77,7 @@ pub async fn federate(
     None => return Err(LogicErr::InvalidData),
   };
 
-  match object_type {
+  let result = match object_type {
     ObjectType::Note => match kind {
       ActivityType::Create => {
         let activity_visibility = match activity_visibility {
@@ -77,7 +85,7 @@ pub async fn federate(
           None => return Err(LogicErr::InvalidData),
         };
 
-        federate_create_note(object, actor_user, activity_visibility, follows, posts, jobs, queue).await
+        federate_create_note(object, &actor_user, activity_visibility, follows, posts, jobs, queue).await
       }
       ActivityType::Update => {
         let activity_visibility = match activity_visibility {
@@ -85,33 +93,70 @@ pub async fn federate(
           None => return Err(LogicErr::InvalidData),
         };
 
-        federate_update_note(object, actor_user, activity_visibility, posts).await
+        federate_update_note(object, &actor_user, activity_visibility, posts).await
       }
-      ActivityType::Like => federate_like_note(object, actor_user, posts, likes).await,
+      ActivityType::Like => federate_like_note(object, &actor_user, posts, likes).await,
       ActivityType::Remove => match determine_activity_target(target) {
-        ActivityTarget::PostLikes(target) => federate_unlike_note(target, actor_user, posts, likes).await,
-        ActivityTarget::Post(target) => federate_delete_note(target, actor_user, posts).await,
+        ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
+        ActivityTarget::Post(target) => federate_delete_note(target, &actor_user, posts).await,
         _ => Err(LogicErr::InvalidData),
       },
       ActivityType::Delete => match determine_activity_target(target) {
-        ActivityTarget::PostLikes(target) => federate_unlike_note(target, actor_user, posts, likes).await,
-        ActivityTarget::Post(target) => federate_delete_note(target, actor_user, posts).await,
+        ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
+        ActivityTarget::Post(target) => federate_delete_note(target, &actor_user, posts).await,
         _ => Err(LogicErr::InvalidData),
       },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
     ObjectType::Person => match kind {
-      ActivityType::Follow => federate_create_follow(object, actor_user, follows, users).await,
+      ActivityType::Follow => federate_create_follow(object, &actor_user, follows, users).await,
       ActivityType::Remove => match determine_activity_target(target) {
-        ActivityTarget::UserFollowers(target) => federate_remove_follow(target, actor_user, follows, users).await,
+        ActivityTarget::UserFollowers(target) => federate_remove_follow(target, &actor_user, follows, users).await,
         _ => Err(LogicErr::InvalidData),
       },
       ActivityType::Delete => match determine_activity_target(target) {
-        ActivityTarget::UserFollowers(target) => federate_remove_follow(target, actor_user, follows, users).await,
+        ActivityTarget::UserFollowers(target) => federate_remove_follow(target, &actor_user, follows, users).await,
         _ => Err(LogicErr::InvalidData),
       },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
     _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+  };
+
+  match result {
+    Ok(result) => {
+      let (activity_type, actor) = match result {
+        FederateResult::None => return Ok(()),
+        FederateResult::Accept(actor) => (ActivityType::Accept, actor),
+        FederateResult::TentativeAccept(actor) => (ActivityType::TentativeAccept, actor),
+        FederateResult::Ignore(actor) => (ActivityType::Ignore, actor),
+        FederateResult::Reject(actor) => (ActivityType::Reject, actor),
+        FederateResult::TentativeReject(actor) => (ActivityType::TentativeReject, actor),
+      };
+
+      let response_object = Object::builder()
+        .kind(Some(activity_type.to_string()))
+        .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
+        .actor(Some(Reference::Remote(format!(
+          "{}{}",
+          SETTINGS.server.api_fqdn, actor.fediverse_uri
+        ))))
+        .activity(Some(
+          ActivityProps::builder()
+            .object(Some(Reference::Embedded(Box::new(doc.object))))
+            .build(),
+        ))
+        .build();
+
+      let doc = ActivityPubDocument::new(response_object);
+
+      let response_uri = match actor_user.ext_apub_inbox_uri {
+        Some(uri) => uri,
+        None => return Ok(()),
+      };
+
+      send_activitypub_object(&response_uri, doc, actor).await
+    }
+    Err(err) => Err(err),
   }
 }

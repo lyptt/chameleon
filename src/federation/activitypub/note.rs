@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref};
+use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref, FederateResult};
 use crate::{
   activitypub::{
     object::{Object, ObjectType},
@@ -21,17 +21,17 @@ use crate::{
 
 pub async fn federate_create_note(
   activity_object: Object,
-  actor: User,
+  actor: &User,
   access: AccessType,
   follows: &FollowPool,
   posts: &PostPool,
   jobs: &JobPool,
   queue: &Queue,
-) -> Result<(), LogicErr> {
+) -> Result<FederateResult, LogicErr> {
   let followers = follows.fetch_user_followers(&actor.user_id).await.unwrap_or_default();
   // Skip federating posts from users that our instance's users don't follow
   if followers.is_empty() {
-    return Ok(());
+    return Ok(FederateResult::None);
   }
 
   let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
@@ -161,15 +161,15 @@ pub async fn federate_create_note(
 
   queue.send_job(job).await?;
 
-  Ok(())
+  Ok(FederateResult::None)
 }
 
 pub async fn federate_update_note(
   activity_object: Object,
-  actor: User,
+  actor: &User,
   access: AccessType,
   posts: &PostPool,
-) -> Result<(), LogicErr> {
+) -> Result<FederateResult, LogicErr> {
   let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
     Some(uri) => uri,
     None => return Err(LogicErr::InvalidData),
@@ -266,19 +266,23 @@ pub async fn federate_update_note(
   post.created_at = created_at;
   post.updated_at = created_at;
 
-  posts.update_post_content(&post).await
+  posts.update_post_content(&post).await?;
+
+  Ok(FederateResult::None)
 }
 
-pub async fn federate_delete_note(target: String, actor: User, posts: &PostPool) -> Result<(), LogicErr> {
-  posts.delete_post_from_uri(&target, &actor.user_id).await
+pub async fn federate_delete_note(target: String, actor: &User, posts: &PostPool) -> Result<FederateResult, LogicErr> {
+  posts.delete_post_from_uri(&target, &actor.user_id).await?;
+
+  Ok(FederateResult::None)
 }
 
 pub async fn federate_like_note(
   activity_object: Object,
-  actor: User,
+  actor: &User,
   posts: &PostPool,
   likes: &LikePool,
-) -> Result<(), LogicErr> {
+) -> Result<FederateResult, LogicErr> {
   let uri = match activitypub_ref_to_uri_opt(&activity_object.url) {
     Some(uri) => uri,
     None => return Err(LogicErr::InvalidData),
@@ -292,15 +296,17 @@ pub async fn federate_like_note(
     Err(err) => return Err(map_db_err(err)),
   };
 
-  likes.create_like(&actor.user_id, &post.post_id).await.map(|_| ())
+  likes.create_like(&actor.user_id, &post.post_id).await.map(|_| ())?;
+
+  Ok(FederateResult::None)
 }
 
 pub async fn federate_unlike_note(
   target: String,
-  actor: User,
+  actor: &User,
   posts: &PostPool,
   likes: &LikePool,
-) -> Result<(), LogicErr> {
+) -> Result<FederateResult, LogicErr> {
   let post = match posts.fetch_post_from_uri(&target, &Some(actor.user_id)).await {
     Ok(post) => match post {
       Some(post) => post,
@@ -309,5 +315,7 @@ pub async fn federate_unlike_note(
     Err(err) => return Err(map_db_err(err)),
   };
 
-  likes.delete_like(&actor.user_id, &post.post_id).await.map(|_| ())
+  likes.delete_like(&actor.user_id, &post.post_id).await.map(|_| ())?;
+
+  Ok(FederateResult::None)
 }

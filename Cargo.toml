@@ -76,12 +76,14 @@ gravatar = "0.2.0"
 regex = "1.7.0"
 url = "2.3.1"
 base64 = "0.20.0"
-http-signing = { git = "https://github.com/lyptt/http-signing.git", rev = "aa354b55ba948325a7fa633713b2bddf0a7685de", features = [
+http-signing = { git = "https://github.com/lyptt/http-signing.git", rev = "3047bc572b6cc2e3b0b16e246a9c2a3b69670426", features = [
   "rsa",
+  "reqwest",
 ], default-features = false }
 http = "0.2.8"
 backoff = { version = "0.4.0", features = ["tokio", "futures"] }
 tokio-stream = "0.1.11"
+mediatype = "0.19.11"
 
 [dev-dependencies]
 mockall = "0.11.3"

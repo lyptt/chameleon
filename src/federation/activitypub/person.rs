@@ -6,12 +6,14 @@ use crate::{
   settings::SETTINGS,
 };
 
+use super::util::FederateResult;
+
 pub async fn federate_create_follow(
   activity_object: Object,
-  actor: User,
+  actor: &User,
   follows: &FollowPool,
   users: &UserPool,
-) -> Result<(), LogicErr> {
+) -> Result<FederateResult, LogicErr> {
   let uri = match activity_object.id {
     Some(uri) => match uri.starts_with(&SETTINGS.server.api_fqdn) {
       true => uri.replace(&SETTINGS.server.api_fqdn, ""),
@@ -25,21 +27,38 @@ pub async fn federate_create_follow(
     None => return Err(LogicErr::MissingRecord),
   };
 
-  follows.create_follow(&actor.user_id, &followed_user.user_id).await?;
+  if followed_user.is_external {
+    return Err(LogicErr::MissingRecord);
+  }
 
-  Ok(())
+  if !follows.user_follows_user(&actor.user_id, &followed_user.user_id).await {
+    follows.create_follow(&actor.user_id, &followed_user.user_id).await?;
+  }
+
+  Ok(FederateResult::Accept(followed_user))
 }
 
 pub async fn federate_remove_follow(
   target: String,
-  actor: User,
+  actor: &User,
   follows: &FollowPool,
   users: &UserPool,
-) -> Result<(), LogicErr> {
-  let unfollowed_user = match users.fetch_by_fediverse_uri(&target).await {
+) -> Result<FederateResult, LogicErr> {
+  let uri = match target.starts_with(&SETTINGS.server.api_fqdn) {
+    true => target.replace(&SETTINGS.server.api_fqdn, ""),
+    false => target,
+  };
+
+  let unfollowed_user = match users.fetch_by_fediverse_uri(&uri).await {
     Some(user) => user,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  follows.delete_follow(&actor.user_id, &unfollowed_user.user_id).await
+  if unfollowed_user.is_external {
+    return Err(LogicErr::MissingRecord);
+  }
+
+  follows.delete_follow(&actor.user_id, &unfollowed_user.user_id).await?;
+
+  Ok(FederateResult::Accept(unfollowed_user))
 }

@@ -2,13 +2,18 @@ use std::time::Duration;
 
 use crate::{
   activitypub::{document::ActivityPubDocument, object::Object, reference::Reference},
+  helpers::api::map_ext_err,
+  logic::LogicErr,
   model::{access_type::AccessType, user::User},
   settings::SETTINGS,
 };
 
 use backoff::{future::retry, ExponentialBackoff};
+use http_signing::{alg::RsaSha256, Key, PrivateKey, SigningConfig};
 use lazy_static::lazy_static;
+use sha2::{Digest, Sha256};
 use tokio_stream::{self as stream, StreamExt};
+use url::Url;
 
 lazy_static! {
   pub static ref BACKOFF_POLICY: ExponentialBackoff = {
@@ -23,6 +28,15 @@ lazy_static! {
       .build()
       .unwrap()
   };
+}
+
+pub enum FederateResult {
+  None,
+  Accept(User),
+  TentativeAccept(User),
+  Ignore(User),
+  Reject(User),
+  TentativeReject(User),
 }
 
 pub enum ActivityTarget {
@@ -99,6 +113,60 @@ pub async fn fetch_activitypub_object(obj_ref: &str) -> Option<Object> {
   match result {
     Ok(v) => v.map(|v| v.object),
     Err(_) => None,
+  }
+}
+
+pub async fn send_activitypub_object(uri: &str, doc: ActivityPubDocument, actor: User) -> Result<(), LogicErr> {
+  let result: Result<reqwest::Response, LogicErr> = retry(BACKOFF_POLICY.clone(), || async {
+    let body = serde_json::to_vec(&doc).map_err(map_ext_err)?;
+
+    let mut body_hasher = Sha256::new();
+    body_hasher.update(body);
+    let body_hash_digest = body_hasher.finalize();
+    let body_hash_digest = base64::encode(body_hash_digest);
+
+    let digest = format!("SHA-256={}", body_hash_digest);
+
+    let host = match Url::parse(uri).map_err(map_ext_err)?.host() {
+      Some(host) => host.to_string(),
+      None => return Err(backoff::Error::Permanent(LogicErr::InvalidData)),
+    };
+
+    let mut req = HTTP_CLIENT
+      .post(uri)
+      .header("accept", "application/activity+json")
+      .header("content-type", "application/activity+json")
+      .header("digest", digest)
+      .header("host", host)
+      .json(&doc)
+      .build()
+      .map_err(map_ext_err)?;
+
+    if SETTINGS.app.secure {
+      let private_key = PrivateKey::from_pem(actor.private_key.as_bytes()).map_err(map_ext_err)?;
+      SigningConfig::new(
+        RsaSha256,
+        &private_key,
+        format!("{}{}#main-key", SETTINGS.server.api_fqdn, actor.fediverse_uri),
+      )
+      .sign(&mut req)
+      .map_err(map_ext_err)?;
+    }
+
+    Ok(
+      HTTP_CLIENT
+        .execute(req)
+        .await
+        .map_err(map_ext_err)?
+        .error_for_status()
+        .map_err(map_ext_err)?,
+    )
+  })
+  .await;
+
+  match result {
+    Ok(_) => Ok(()),
+    Err(err) => Err(err),
   }
 }
 
