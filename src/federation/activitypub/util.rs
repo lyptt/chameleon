@@ -117,7 +117,7 @@ pub async fn fetch_activitypub_object(obj_ref: &str) -> Option<Object> {
   }
 }
 
-pub async fn send_activitypub_object(uri: &str, doc: ActivityPubDocument, actor: User) -> Result<(), LogicErr> {
+pub async fn send_activitypub_object(uri: &str, doc: ActivityPubDocument, actor: &User) -> Result<(), LogicErr> {
   let result: Result<reqwest::Response, LogicErr> = retry(BACKOFF_POLICY.clone(), || async {
     let body = serde_json::to_vec(&doc).map_err(map_ext_err)?;
 

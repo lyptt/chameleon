@@ -1,7 +1,8 @@
 use uuid::Uuid;
 
 use crate::{
-  db::{event_repository::EventPool, job_repository::JobPool, post_repository::PostPool},
+  db::{event_repository::EventPool, job_repository::JobPool, post_repository::PostPool, user_repository::UserPool},
+  federation::activitypub::{federate_ext, FederateExtAction},
   helpers::api::map_ext_err,
   logic::LogicErr,
   model::{event::NewEvent, event_type::EventType},
@@ -11,6 +12,7 @@ pub async fn create_post_event(
   jobs: &JobPool,
   posts: &PostPool,
   events: &EventPool,
+  users: &UserPool,
   job_id: Uuid,
 ) -> Result<(), LogicErr> {
   let job = match jobs.fetch_optional_by_id(&job_id).await {
@@ -37,6 +39,20 @@ pub async fn create_post_event(
     Some(v) => v,
     None => return Err(LogicErr::InternalError("Visibility not found for post".to_string())),
   };
+
+  let dest_user = match users.fetch_by_id(&target_user_id).await {
+    Ok(user) => user,
+    Err(err) => return Err(err),
+  };
+
+  if dest_user.fediverse_uri.starts_with("http") {
+    let user = match users.fetch_by_id(&user_id).await {
+      Ok(user) => user,
+      Err(err) => return Err(err),
+    };
+
+    return federate_ext(FederateExtAction::CreatePost(&post_id), &user, &dest_user, posts).await;
+  }
 
   let own_event = NewEvent {
     source_user_id: user_id,

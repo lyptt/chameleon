@@ -116,52 +116,6 @@ impl ActivityConvertible for PostEvent {
 
     let mut attachment_refs = vec![];
 
-    if let Some(uri) = &self.content_image_uri_small {
-      if let Some(width) = self.content_width_small {
-        if let Some(height) = self.content_height_small {
-          if let Some(content_type) = &self.content_type_small {
-            let abs_uri = match uri.starts_with("http") {
-              true => uri.clone(),
-              false => format!("{}/{}", SETTINGS.server.cdn_fqdn, uri),
-            };
-
-            attachment_refs.push(Reference::Embedded(Box::new(
-              Object::builder()
-                .kind(Some("Image".to_string()))
-                .media_type(Some(content_type.clone()))
-                .width(Some(width.try_into().unwrap_or_default()))
-                .height(Some(height.try_into().unwrap_or_default()))
-                .url(Some(Reference::Remote(abs_uri)))
-                .build(),
-            )))
-          }
-        }
-      }
-    }
-
-    if let Some(uri) = &self.content_image_uri_medium {
-      if let Some(width) = self.content_width_medium {
-        if let Some(height) = self.content_height_medium {
-          if let Some(content_type) = &self.content_type_medium {
-            let abs_uri = match uri.starts_with("http") {
-              true => uri.clone(),
-              false => format!("{}/{}", SETTINGS.server.cdn_fqdn, uri),
-            };
-
-            attachment_refs.push(Reference::Embedded(Box::new(
-              Object::builder()
-                .kind(Some("Image".to_string()))
-                .media_type(Some(content_type.clone()))
-                .width(Some(width.try_into().unwrap_or_default()))
-                .height(Some(height.try_into().unwrap_or_default()))
-                .url(Some(Reference::Remote(abs_uri)))
-                .build(),
-            )))
-          }
-        }
-      }
-    }
-
     if let Some(uri) = &self.content_image_uri_large {
       if let Some(width) = self.content_width_large {
         if let Some(height) = self.content_height_large {

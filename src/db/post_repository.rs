@@ -39,6 +39,7 @@ pub trait PostRepo {
   async fn fetch_global_federated_feed(&self, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr>;
   /// Fetches the post count for the global federated feed, i.e. what users not signed into this instance can see
   async fn count_global_federated_feed(&self) -> Result<i64, LogicErr>;
+  async fn fetch_by_id(&self, id: &Uuid) -> Result<Post, LogicErr>;
   /// Fetches the specified post from a user's own perspective
   async fn fetch_post(&self, post_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr>;
   async fn fetch_post_from_uri(&self, post_uri: &str, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr>;
@@ -179,6 +180,14 @@ impl PostRepo for DbPostRepo {
       .map_err(map_db_err)?;
 
     Ok(count)
+  }
+
+  async fn fetch_by_id(&self, id: &Uuid) -> Result<Post, LogicErr> {
+    sqlx::query_as("SELECT * FROM posts WHERE post_id = $1")
+      .bind(id)
+      .fetch_one(&self.db)
+      .await
+      .map_err(map_db_err)
   }
 
   async fn fetch_post(&self, post_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr> {

@@ -1,10 +1,15 @@
 use uuid::Uuid;
 
-use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref, FederateResult};
+use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref, send_activitypub_object, FederateResult};
 use crate::{
   activitypub::{
+    activity::ActivityProps,
+    activity_convertible::ActivityConvertible,
+    activity_type::ActivityType,
+    document::ActivityPubDocument,
     object::{Object, ObjectType},
     rdf_string::RdfString,
+    reference::Reference,
   },
   db::{follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, post_repository::PostPool},
   helpers::api::map_db_err,
@@ -16,6 +21,7 @@ use crate::{
     queue_job::{QueueJob, QueueJobType},
     user::User,
   },
+  settings::SETTINGS,
   work_queue::queue::Queue,
 };
 
@@ -269,6 +275,52 @@ pub async fn federate_update_note(
   posts.update_post_content(&post).await?;
 
   Ok(FederateResult::None)
+}
+
+pub async fn federate_ext_create_note(
+  post_id: &Uuid,
+  actor: &User,
+  dest_actor: &User,
+  posts: &PostPool,
+) -> Result<(), LogicErr> {
+  let post = match posts.fetch_post(post_id, &Some(actor.user_id)).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return Err(LogicErr::MissingRecord),
+    },
+    Err(err) => {
+      println!("{}", err);
+      return Err(err);
+    }
+  };
+
+  let obj = match post.to_object(&actor.fediverse_uri) {
+    Some(obj) => obj,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let response_object = Object::builder()
+    .kind(Some(ActivityType::Create.to_string()))
+    .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
+    .actor(Some(Reference::Remote(format!(
+      "{}{}",
+      SETTINGS.server.api_fqdn, actor.fediverse_uri
+    ))))
+    .activity(Some(
+      ActivityProps::builder()
+        .object(Some(Reference::Embedded(Box::new(obj))))
+        .build(),
+    ))
+    .build();
+
+  let doc = ActivityPubDocument::new(response_object);
+
+  let response_uri = match &dest_actor.ext_apub_inbox_uri {
+    Some(uri) => uri,
+    None => return Ok(()),
+  };
+
+  send_activitypub_object(response_uri, doc, actor).await
 }
 
 pub async fn federate_delete_note(target: String, actor: &User, posts: &PostPool) -> Result<FederateResult, LogicErr> {

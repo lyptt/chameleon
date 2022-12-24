@@ -47,6 +47,7 @@ pub async fn delegate_job(
         &repositories.jobs,
         &repositories.posts,
         &repositories.events,
+        &repositories.users,
         queue_job.job_id,
       )
       .await

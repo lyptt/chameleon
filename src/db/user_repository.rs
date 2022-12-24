@@ -11,6 +11,7 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait UserRepo {
+  async fn fetch_by_id(&self, id: &Uuid) -> Result<User, LogicErr>;
   async fn fetch_by_handle(&self, handle: &str) -> Result<Option<User>, LogicErr>;
   async fn fetch_id_by_handle(&self, handle: &str) -> Option<Uuid>;
   async fn fetch_id_by_fediverse_id(&self, fediverse_id: &str) -> Option<Uuid>;
@@ -47,6 +48,14 @@ pub struct DbUserRepo {
 
 #[async_trait]
 impl UserRepo for DbUserRepo {
+  async fn fetch_by_id(&self, id: &Uuid) -> Result<User, LogicErr> {
+    sqlx::query_as("SELECT * FROM users WHERE user_id = $1")
+      .bind(id)
+      .fetch_one(&self.db)
+      .await
+      .map_err(map_db_err)
+  }
+
   async fn fetch_by_handle(&self, handle: &str) -> Result<Option<User>, LogicErr> {
     let user = sqlx::query_as("SELECT * FROM users WHERE handle = $1")
       .bind(handle)

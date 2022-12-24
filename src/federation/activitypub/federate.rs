@@ -2,7 +2,9 @@ use uuid::Uuid;
 
 use super::{
   actor::federate_actor,
-  note::{federate_create_note, federate_like_note, federate_unlike_note, federate_update_note},
+  note::{
+    federate_create_note, federate_ext_create_note, federate_like_note, federate_unlike_note, federate_update_note,
+  },
   object::federate_delete_remote_object,
   person::{federate_create_follow, federate_remove_follow},
   util::{
@@ -24,7 +26,7 @@ use crate::{
   },
   helpers::core::unwrap_or_fail,
   logic::LogicErr,
-  model::queue_job::OriginDataEntry,
+  model::{queue_job::OriginDataEntry, user::User},
   net::http_sig::verify_http_signature,
   settings::SETTINGS,
   work_queue::queue::Queue,
@@ -177,8 +179,25 @@ pub async fn federate(
         None => return Ok(()),
       };
 
-      send_activitypub_object(&response_uri, doc, actor).await
+      send_activitypub_object(&response_uri, doc, &actor).await
     }
     Err(err) => Err(err),
+  }
+}
+
+pub enum FederateExtAction<'a> {
+  CreatePost(&'a Uuid),
+  UpdatePost(&'a Uuid),
+}
+
+pub async fn federate_ext<'a>(
+  action: FederateExtAction<'a>,
+  actor: &User,
+  dest_actor: &User,
+  posts: &PostPool,
+) -> Result<(), LogicErr> {
+  match action {
+    FederateExtAction::CreatePost(post_id) => federate_ext_create_note(post_id, actor, dest_actor, posts).await,
+    FederateExtAction::UpdatePost(_) => Err(LogicErr::Unimplemented),
   }
 }

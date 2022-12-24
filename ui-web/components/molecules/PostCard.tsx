@@ -65,12 +65,9 @@ export default function PostCard({
       .to(dayjs.utc(post.created_at).local(), true)
   }
 
-  const postUri =
-    post.uri.indexOf('http') === 0
-      ? `${post.uri}${backUri ? `?from=${backUri}` : ''}`
-      : `${Config.fqdn}/users/${post.user_handle}/${post.uri}${
-          backUri ? `?from=${backUri}` : ''
-        }`
+  const postUri = `${Config.fqdn}/users/${post.user_handle}/${post.post_id}${
+    backUri ? `?from=${backUri}` : ''
+  }`
 
   const image = (
     <LazyImage
