@@ -1,10 +1,17 @@
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use gravatar::{Gravatar, Rating};
+use rsa::{
+  pkcs1::{EncodeRsaPrivateKey, EncodeRsaPublicKey},
+  pkcs8::LineEnding,
+  rand_core::OsRng,
+  RsaPrivateKey, RsaPublicKey,
+};
 
-use crate::{db::user_repository::UserPool, model::user::User, net::jwt::JwtFactory};
+use crate::{db::user_repository::UserPool, model::user::User, net::jwt::JwtFactory, settings::SETTINGS};
 
 use super::LogicErr;
 
-pub async fn get_user_by_id(handle: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
+pub async fn get_user_by_handle(handle: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
   users.fetch_by_handle(handle).await
 }
 
@@ -33,6 +40,71 @@ pub async fn authorize_user(username: &str, password: &str, users: &UserPool) ->
   JwtFactory::generate_jwt_short_lived(username)
 }
 
+pub async fn register_user(
+  username: &str,
+  password: &str,
+  email: &Option<String>,
+  users: &UserPool,
+) -> Result<String, LogicErr> {
+  let salt = SaltString::generate(&mut OsRng);
+  let argon2 = Argon2::default();
+
+  let password_hash = match argon2.hash_password(password.as_bytes(), &salt) {
+    Ok(h) => h,
+    Err(err) => return Err(LogicErr::InternalError(err.to_string())),
+  }
+  .to_string();
+
+  let fediverse_id = format!("acct:{}@{}", username, SETTINGS.server.fqdn);
+  let fediverse_uri = format!("/users/{username}");
+
+  let avatar_url = Some(
+    Gravatar::new(&email.clone().unwrap_or_else(|| fediverse_id.clone()))
+      .set_size(Some(512))
+      .set_rating(Some(Rating::Pg))
+      .image_url()
+      .to_string(),
+  );
+
+  let mut rng = rand::thread_rng();
+  let bits = 2048;
+  let priv_key = match RsaPrivateKey::new(&mut rng, bits) {
+    Ok(key) => key,
+    Err(err) => return Err(LogicErr::InternalError(err.to_string())),
+  };
+  let pub_key = RsaPublicKey::from(&priv_key);
+
+  let priv_key = match priv_key.to_pkcs1_pem(LineEnding::LF) {
+    Ok(key) => key.to_string(),
+    Err(err) => return Err(LogicErr::InternalError(err.to_string())),
+  };
+
+  let pub_key = match pub_key.to_pkcs1_pem(LineEnding::LF) {
+    Ok(key) => key.to_string(),
+    Err(err) => return Err(LogicErr::InternalError(err.to_string())),
+  };
+
+  match users
+    .create(
+      username,
+      &fediverse_id,
+      &fediverse_uri,
+      &avatar_url,
+      email,
+      &password_hash,
+      false,
+      &priv_key,
+      &pub_key,
+    )
+    .await
+  {
+    Ok(_) => {}
+    Err(err) => return Err(LogicErr::DbError(err.to_string())),
+  };
+
+  JwtFactory::generate_jwt_short_lived(username)
+}
+
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
@@ -42,7 +114,7 @@ mod tests {
   use crate::{
     db::user_repository::{MockUserRepo, UserPool},
     logic::{
-      user::{authorize_user, get_user_by_fediverse_id, get_user_by_id},
+      user::{authorize_user, get_user_by_fediverse_id, get_user_by_handle},
       LogicErr,
     },
   };
@@ -58,7 +130,7 @@ mod tests {
 
     let users: UserPool = Arc::new(user_repo);
 
-    assert_eq!(get_user_by_id("handle", &users).await, Err(LogicErr::MissingRecord));
+    assert_eq!(get_user_by_handle("handle", &users).await, Err(LogicErr::MissingRecord));
   }
 
   #[async_std::test]
@@ -72,7 +144,7 @@ mod tests {
 
     let users: UserPool = Arc::new(user_repo);
 
-    assert_eq!(get_user_by_id("handle", &users).await, Ok(None));
+    assert_eq!(get_user_by_handle("handle", &users).await, Ok(None));
   }
 
   #[async_std::test]

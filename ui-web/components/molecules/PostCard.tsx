@@ -9,6 +9,7 @@ import dayjsRelative from 'dayjs/plugin/relativeTime'
 import dayjsLocalizedFormat from 'dayjs/plugin/localizedFormat'
 import { LazyImage } from '@/components/atoms/LazyImage'
 import { IoEarth } from 'react-icons/io5'
+import { buildSrcSet, determineFallbackContentImageUri } from '@/core/utils'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -64,20 +65,17 @@ export default function PostCard({
       .to(dayjs.utc(post.created_at).local(), true)
   }
 
-  const postUri =
-    post.uri.indexOf('http') === 0
-      ? `${post.uri}${backUri ? `?from=${backUri}` : ''}`
-      : `${Config.fqdn}/users/${post.user_handle}/${post.uri}${
-          backUri ? `?from=${backUri}` : ''
-        }`
+  const postUri = `${Config.fqdn}/users/${post.user_handle}/${post.post_id}${
+    backUri ? `?from=${backUri}` : ''
+  }`
 
   const image = (
     <LazyImage
       className="chameleon-post__image"
       contentClassName="chameleon-post__image-content"
       blurhash={post.content_blurhash}
-      srcSet={`${Config.cdn}/${post.content_image_uri_large} ${post.content_width_large}w, ${Config.cdn}/${post.content_image_uri_medium} ${post.content_width_medium}w, ${Config.cdn}/${post.content_image_uri_small} ${post.content_width_small}w`}
-      src={`${Config.cdn}/${post.content_image_uri_medium}`}
+      srcSet={buildSrcSet(post)}
+      src={determineFallbackContentImageUri(post)}
     />
   )
 

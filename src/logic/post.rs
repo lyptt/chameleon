@@ -93,10 +93,10 @@ pub async fn upload_post_file(
     })
     .await?;
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::ConvertNewPostImages,
-  };
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::ConvertNewPostImages)
+    .build();
 
   match queue.send_job(job).await {
     Ok(_) => Ok(job_id),
@@ -216,9 +216,11 @@ mod tests {
       user_id: user_id.unwrap(),
       user_handle: "a".to_string(),
       user_fediverse_id: "a".to_string(),
+      user_fediverse_uri: "a".to_string(),
       user_avatar_url: None,
       event_user_handle: "a".to_string(),
       event_user_fediverse_id: "a".to_string(),
+      event_user_fediverse_uri: "a".to_string(),
       event_user_avatar_url: None,
       likes: 1,
       liked: Some(false),

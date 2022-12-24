@@ -4,14 +4,12 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::ordered_collection::OrderedCollectionPage,
   cdn::cdn_store::Cdn,
   db::{
     follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
     user_repository::UserPool,
   },
   helpers::{
-    activitypub::handle_activitypub_collection_metadata_get,
     auth::{query_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
@@ -28,7 +26,6 @@ use crate::{
     response::{JobResponse, ListResponse, ObjectResponse},
   },
   net::jwt::JwtContext,
-  settings::SETTINGS,
   work_queue::queue::Queue,
 };
 
@@ -42,54 +39,6 @@ pub struct PostsQuery {
 pub struct PostUpload {
   #[multipart(rename = "images[]")]
   images: Vec<Tempfile>,
-}
-
-pub async fn api_activitypub_get_user_public_feed(
-  users: web::Data<UserPool>,
-  posts: web::Data<PostPool>,
-  handle: web::Path<String>,
-  query: web::Query<PostsQuery>,
-) -> impl Responder {
-  let user_id = match users.fetch_id_by_handle(&handle).await {
-    Some(id) => id,
-    None => return build_api_not_found("No such id".to_string()),
-  };
-
-  match query.page {
-    Some(page) => {
-      let page_size = query.page_size.unwrap_or(20);
-      let posts_count = match get_user_posts_count(&user_id, &posts).await {
-        Ok(count) => count,
-        Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-      };
-
-      let posts = match get_user_posts(&user_id, page_size, page * page_size, &posts).await {
-        Ok(posts) => posts,
-        Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
-      };
-
-      let collection = OrderedCollectionPage::build(
-        &format!(
-          "{}/users/{}/feed?page={}&page_size={}",
-          SETTINGS.server.api_fqdn, &handle, page, page_size
-        ),
-        &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, &handle),
-        &format!("{}/users/{}/status", SETTINGS.server.api_fqdn, &handle),
-        &format!("{}/users/{}", SETTINGS.server.api_fqdn, &handle),
-        posts,
-        posts_count,
-        page_size,
-        page,
-      );
-
-      HttpResponse::Ok().json(collection)
-    }
-    None => handle_activitypub_collection_metadata_get(
-      &format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle),
-      query.page_size.unwrap_or(20),
-      get_user_posts_count(&user_id, &posts).await,
-    ),
-  }
 }
 
 pub async fn api_get_user_own_feed(
@@ -132,6 +81,55 @@ pub async fn api_get_post(
   post_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
+  let current_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => users.fetch_id_by_fediverse_id(&props.sub).await,
+    None => None,
+  };
+
+  let post = match get_post(&post_id, &current_user_id, &posts).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return build_api_not_found(post_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  if post.visibility == AccessType::PublicFederated
+    || post.visibility == AccessType::PublicLocal
+    || post.visibility == AccessType::Unlisted
+  {
+    return HttpResponse::Ok().json(ObjectResponse { data: post });
+  }
+
+  match current_user_id {
+    Some(current_user_id) => {
+      if post.user_id == current_user_id {
+        return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      if post.visibility == AccessType::FollowersOnly
+        && follows.user_follows_poster(&post.post_id, &current_user_id).await
+      {
+        return HttpResponse::Ok().json(ObjectResponse { data: post });
+      }
+
+      HttpResponse::NotFound().finish()
+    }
+    None => HttpResponse::NotFound().finish(),
+  }
+}
+
+pub async fn api_get_user_post(
+  users: web::Data<UserPool>,
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  follows: web::Data<FollowPool>,
+  ids: web::Path<(String, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  // We discard the user id since post ids are unique in our db
+  let post_id = ids.1;
+
   let current_user_id = match query_auth(&jwt, &sessions).await {
     Some(props) => users.fetch_id_by_fediverse_id(&props.sub).await,
     None => None,
@@ -232,6 +230,47 @@ pub async fn api_get_user_posts(
   })
 }
 
+pub async fn api_get_user_liked_posts(
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  users: web::Data<UserPool>,
+  query: web::Query<PostsQuery>,
+  handle: web::Path<String>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  let target_id = match users.fetch_id_by_handle(&handle).await {
+    Some(id) => id,
+    None => return HttpResponse::NotFound().finish(),
+  };
+
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_user_public_likes_feed(&target_id, &user_id).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_user_public_likes_feed(&target_id, &user_id, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
 pub async fn api_create_post(
   sessions: web::Data<SessionPool>,
   posts: web::Data<PostPool>,
@@ -301,10 +340,10 @@ pub async fn api_boost_post(
     Err(err) => return build_api_err(500, err.to_string(), None),
   };
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::CreateBoostEvents,
-  };
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::CreateBoostEvents)
+    .build();
 
   match queue.send_job(job).await {
     Ok(_) => HttpResponse::Created().finish(),
@@ -339,10 +378,10 @@ pub async fn api_unboost_post(
     Err(err) => return build_api_err(500, err.to_string(), None),
   };
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::DeleteBoostEvents,
-  };
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::DeleteBoostEvents)
+    .build();
 
   match queue.send_job(job).await {
     Ok(_) => HttpResponse::Created().finish(),

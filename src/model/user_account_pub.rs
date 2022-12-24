@@ -10,8 +10,8 @@ use uuid::Uuid;
 pub struct UserAccountPub {
   pub user_id: Uuid,
   pub fediverse_id: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub handle: Option<String>,
+  pub handle: String,
+  pub fediverse_uri: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub avatar_url: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -48,6 +48,7 @@ impl From<User> for UserAccountPub {
       user_id: u.user_id,
       fediverse_id: u.fediverse_id,
       handle: u.handle,
+      fediverse_uri: u.fediverse_uri,
       avatar_url: u.avatar_url,
       email: u.email,
       url_1: u.url_1,
@@ -78,7 +79,8 @@ mod tests {
     let user = User {
       user_id: Uuid::from_str("ae1481a5-2eb7-4c52-93c3-e95839578dce").unwrap(),
       fediverse_id: "user@127.0.0.1:8000".to_string(),
-      handle: Some("a".to_string()),
+      handle: "a".to_string(),
+      fediverse_uri: "d".to_string(),
       avatar_url: None,
       email: Some("b".to_string()),
       password_hash: Some("c".to_string()),
@@ -95,6 +97,12 @@ mod tests {
       url_5_title: None,
       intro_md: None,
       intro_html: None,
+      private_key: "d".to_string(),
+      public_key: "e".to_string(),
+      ext_apub_followers_uri: None,
+      ext_apub_following_uri: None,
+      ext_apub_inbox_uri: None,
+      ext_apub_outbox_uri: None,
     };
     let user_cmp = user.clone();
 

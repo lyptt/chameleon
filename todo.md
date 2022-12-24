@@ -1,0 +1,3 @@
+- ActivityStreams server to server federation
+- HTTP request signing
+- Exposing likes and boosts in feeds as other activities

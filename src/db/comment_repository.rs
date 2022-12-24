@@ -30,6 +30,7 @@ pub trait CommentRepo {
   async fn create_comment_like(&self, user_id: &Uuid, comment_id: &Uuid, post_id: &Uuid) -> Result<(), LogicErr>;
   async fn delete_comment_like(&self, user_id: &Uuid, comment_id: &Uuid, post_id: &Uuid) -> Result<(), LogicErr>;
   async fn fetch_comment_count(&self) -> i64;
+  async fn fetch_comment(&self, post_id: &Uuid, comment_id: &Uuid, own_user_id: &Option<Uuid>) -> Option<CommentPub>;
 }
 
 pub type CommentPool = Arc<dyn CommentRepo + Send + Sync>;
@@ -135,5 +136,21 @@ impl CommentRepo for DbCommentRepo {
       .fetch_one(&self.db)
       .await
       .unwrap_or(0)
+  }
+
+  async fn fetch_comment(&self, post_id: &Uuid, comment_id: &Uuid, own_user_id: &Option<Uuid>) -> Option<CommentPub> {
+    match sqlx::query_as(include_str!("./sql/fetch_post_comment.sql"))
+      .bind(own_user_id)
+      .bind(post_id)
+      .bind(comment_id)
+      .fetch_optional(&self.db)
+      .await
+    {
+      Ok(c) => c,
+      Err(err) => {
+        println!("{}", err);
+        None
+      }
+    }
   }
 }

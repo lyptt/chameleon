@@ -1,6 +1,6 @@
-SELECT DISTINCT e.event_type, p.*, u.handle AS user_handle, u.fediverse_id AS user_fediverse_id, 
+SELECT DISTINCT e.event_type, p.*, u.handle AS user_handle, u.fediverse_id AS user_fediverse_id, u.fediverse_uri AS user_fediverse_uri,
 u.avatar_url AS user_avatar_url, COUNT(DISTINCT l.like_id) AS likes, FALSE AS liked,
-COUNT(DISTINCT c.comment_id) AS comments, u2.handle AS event_user_handle, u2.fediverse_id AS event_user_fediverse_id, 
+COUNT(DISTINCT c.comment_id) AS comments, u2.handle AS event_user_handle, u2.fediverse_id AS event_user_fediverse_id, u2.fediverse_uri AS event_user_fediverse_uri, 
 u2.avatar_url AS event_user_avatar_url
 FROM events e
 INNER JOIN posts p

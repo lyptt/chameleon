@@ -246,10 +246,10 @@ pub async fn convert_new_post_images(
     .await
     .map_err(map_db_err)?;
 
-  let job = QueueJob {
-    job_id,
-    job_type: QueueJobType::CreatePostEvents,
-  };
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::CreatePostEvents)
+    .build();
 
   queue.send_job(job).await?;
 

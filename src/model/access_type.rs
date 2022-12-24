@@ -20,6 +20,12 @@ pub enum AccessType {
   PublicFederated,
 }
 
+impl Default for AccessType {
+  fn default() -> Self {
+    AccessType::Unknown
+  }
+}
+
 impl<'r> FromRow<'r, PgRow> for AccessType {
   fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
     let tt: String = row.try_get("template_type")?;

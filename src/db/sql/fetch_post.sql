@@ -1,4 +1,4 @@
-SELECT DISTINCT e.event_Type, p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.avatar_url as user_avatar_url, COUNT(DISTINCT l.like_id) AS likes, count(l2.like_id) >= 1 AS liked, count(distinct c.comment_id) as comments FROM events e
+SELECT DISTINCT e.event_Type, p.*, u.user_id, u.handle as user_handle, u.fediverse_id as user_fediverse_id, u.fediverse_uri AS user_fediverse_uri, u.avatar_url as user_avatar_url, u.handle as event_user_handle, u.fediverse_id as event_user_fediverse_id, u.fediverse_uri AS event_user_fediverse_uri, u.avatar_url as event_user_avatar_url, COUNT(DISTINCT l.like_id) AS likes, count(l2.like_id) >= 1 AS liked, count(distinct c.comment_id) as comments FROM events e
 INNER JOIN posts p
 ON p.post_id = e.post_id
 INNER JOIN users u

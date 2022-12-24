@@ -1,5 +1,5 @@
-use super::activity::Activity;
+use super::object::Object;
 
-pub trait ActivityConvertible<T> {
-  fn to_activity(&self, base_uri: &str, actor_uri: &str) -> Option<Activity<T>>;
+pub trait ActivityConvertible {
+  fn to_object(&self, actor: &str) -> Option<Object>;
 }

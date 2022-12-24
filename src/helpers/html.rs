@@ -28,7 +28,7 @@ pub fn handle_oauth_app_err(err: &'static str) -> HttpResponse {
   }
 }
 
-pub fn handle_oauth_app_body(app: &App, err: &'static str) -> HttpResponse {
+pub fn handle_oauth_app_body(app: &App, err: &str) -> HttpResponse {
   match HANDLEBARS.render(
     "oauth_authorize",
     &OAuthAuthorizeErrData {
