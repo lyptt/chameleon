@@ -1,6 +1,6 @@
 # Database Migrations
 
-Chameleon makes use of contiguous migration scripts for every schema change, meaning that in order to successfully migrate your database to the latest schema version, you should run the scripts in order from V1 to the highest version number.
+Orbit makes use of contiguous migration scripts for every schema change, meaning that in order to successfully migrate your database to the latest schema version, you should run the scripts in order from V1 to the highest version number.
 
 For an easy way to migrate your database, you can download [refinery](https://github.com/rust-db/refinery/releases/latest), and follow the instructions below to update your database.
 
@@ -37,7 +37,7 @@ set -gx DB_URL postgresql://ADMIN_USERNAME:ADMIN_PASSWORD@DATABASE_IP_ADDRESS_OR
 Run the following commands from a command prompt / terminal to migrate your DB to the latest version:
 
 ```bash
-cd /path/to/chameleon/repository
+cd /path/to/orbit/repository
 cd db
 refinery migrate -e DB_URL -p db
 ```

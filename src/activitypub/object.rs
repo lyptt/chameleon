@@ -146,17 +146,14 @@ pub struct Object {
   #[serde(rename = "publicKey", skip_serializing_if = "Option::is_none")]
   pub key: Option<KeyProps>,
 
-  // Chameleon ActivityPub extensions
+  // Orbit ActivityPub extensions
   #[serde(
-    rename(serialize = "backgroundColorFill", deserialize = "chameleon:backgroundColorFill"),
+    rename(serialize = "backgroundColorFill", deserialize = "orbit:backgroundColorFill"),
     skip_serializing_if = "Option::is_none"
   )]
   pub background_color_fill: Option<RdfString>,
   #[serde(
-    rename(
-      serialize = "backgroundColorFillMap",
-      deserialize = "chameleon:backgroundColorFillMap"
-    ),
+    rename(serialize = "backgroundColorFillMap", deserialize = "orbit:backgroundColorFillMap"),
     skip_serializing_if = "Option::is_none"
   )]
   pub background_color_fill_map: Option<HashMap<String, RdfString>>,

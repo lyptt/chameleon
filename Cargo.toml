@@ -1,5 +1,5 @@
 [package]
-name = "chameleon"
+name = "orbit"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0"
@@ -8,11 +8,11 @@ repository = "https://github.com/lyptt/chameleon"
 homepage = "https://github.com/lyptt/chameleon"
 
 [[bin]]
-name = "chameleon"
+name = "orbit"
 path = "src/main.rs"
 
 [[bin]]
-name = "chameleon-worker"
+name = "orbit-worker"
 path = "src/worker.rs"
 
 [dependencies]

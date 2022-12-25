@@ -1103,64 +1103,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chameleon"
-version = "0.1.0"
-dependencies = [
- "actix-cors",
- "actix-easy-multipart",
- "actix-web",
- "argon2",
- "async-std",
- "async-trait",
- "aws-config",
- "aws-sdk-s3",
- "aws-sdk-sqs",
- "aws-smithy-http",
- "aws-types",
- "backoff",
- "base64 0.20.0",
- "blurhash",
- "chrono",
- "config",
- "env_logger",
- "futures-util",
- "gravatar",
- "handlebars",
- "hex",
- "http",
- "http-signing",
- "image",
- "jsonwebtoken",
- "lapin",
- "lazy_static",
- "log",
- "markdown",
- "mediatype",
- "mime",
- "mockall",
- "num-traits",
- "once_cell",
- "rand",
- "regex",
- "reqwest",
- "rsa",
- "serde",
- "serde_json",
- "serde_qs",
- "sha2",
- "sqlx",
- "strum",
- "strum_macros",
- "temp-env",
- "tempfile",
- "tokio",
- "tokio-stream",
- "typed-builder",
- "url 2.3.1",
- "uuid",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2650,6 +2592,64 @@ name = "openssl-probe"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
+
+[[package]]
+name = "orbit"
+version = "0.1.0"
+dependencies = [
+ "actix-cors",
+ "actix-easy-multipart",
+ "actix-web",
+ "argon2",
+ "async-std",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-sdk-sqs",
+ "aws-smithy-http",
+ "aws-types",
+ "backoff",
+ "base64 0.20.0",
+ "blurhash",
+ "chrono",
+ "config",
+ "env_logger",
+ "futures-util",
+ "gravatar",
+ "handlebars",
+ "hex",
+ "http",
+ "http-signing",
+ "image",
+ "jsonwebtoken",
+ "lapin",
+ "lazy_static",
+ "log",
+ "markdown",
+ "mediatype",
+ "mime",
+ "mockall",
+ "num-traits",
+ "once_cell",
+ "rand",
+ "regex",
+ "reqwest",
+ "rsa",
+ "serde",
+ "serde_json",
+ "serde_qs",
+ "sha2",
+ "sqlx",
+ "strum",
+ "strum_macros",
+ "temp-env",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "typed-builder",
+ "url 2.3.1",
+ "uuid",
+]
 
 [[package]]
 name = "ordered-multimap"

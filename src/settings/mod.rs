@@ -111,7 +111,7 @@ impl Settings {
         level: AppLogLevel::Debug,
       },
       database: Database {
-        url: "postgresql://root:root@127.0.0.1:5432/chameleon".to_string(),
+        url: "postgresql://root:root@127.0.0.1:5432/orbit".to_string(),
         max_connections: 1,
         idle_timeout: 30,
         connection_timeout: 30,
@@ -153,7 +153,7 @@ impl Settings {
       .add_source(config::File::with_name("config/default"))
       .add_source(config::File::with_name(&format!("config/{}", run_mode)).required(false))
       .add_source(config::File::with_name("config/local").required(false))
-      .add_source(config::Environment::with_prefix("chameleon"))
+      .add_source(config::Environment::with_prefix("orbit"))
       .build();
 
     match settings {

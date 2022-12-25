@@ -11,7 +11,7 @@ CREATE TABLE apps (
   "client_secret" uuid NOT NULL,
   -- 'blessed' apps do not show the confirmation prompt when a user enters their credentials,
   -- they just sign you in directly.
-  -- You should only bless apps that should be officially associated to your chameleon instance,
+  -- You should only bless apps that should be officially associated to your orbit instance,
   -- or ones you directly trust.
   -- By default only apps registered by a user originating from this instance can be marked as
   -- blessed in the UI. To bypass this security restriction you can manually bless apps from

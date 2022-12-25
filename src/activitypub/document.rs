@@ -309,7 +309,7 @@ mod tests {
       "@context": [
         "https://www.w3.org/ns/activitystreams",
         {
-            "backgroundColorFill": "chameleon:backgroundColorFill"
+            "backgroundColorFill": "orbit:backgroundColorFill"
         }
       ],
       "backgroundColorFill": "#FF00FF"
@@ -325,7 +325,7 @@ mod tests {
     assert!(doc.aliases.is_some());
     let aliases = doc.aliases.unwrap();
     assert!(!aliases.is_empty());
-    assert_eq!(aliases["backgroundColorFill"], "chameleon:backgroundColorFill");
+    assert_eq!(aliases["backgroundColorFill"], "orbit:backgroundColorFill");
 
     assert!(doc.object.background_color_fill.is_some());
     assert_eq!(

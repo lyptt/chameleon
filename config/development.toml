@@ -9,7 +9,7 @@ api_root_fqdn = "http://127.0.0.1:8000"
 jwt_secret = "super-secret-key"
 
 [database]
-url = "postgresql://chameleon:chameleon@127.0.0.1:5432/chameleon"
+url = "postgresql://orbit:orbit@127.0.0.1:5432/orbit"
 max_connections = 5
 
 [cdn]

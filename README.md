@@ -1,45 +1,47 @@
-![Chameleon](./public/static/images/logo-dark.svg#gh-dark-mode-only)
-![Chameleon](./public/static/images/logo-light.svg#gh-light-mode-only)
+![Orbit](./public/static/images/logo-dark.svg#gh-dark-mode-only)
+![Orbit](./public/static/images/logo-light.svg#gh-light-mode-only)
 
-![Server Build Status](https://img.shields.io/github/actions/workflow/status/lyptt/chameleon/ci.yml?label=server%20build) ![Server Build Status](https://img.shields.io/github/actions/workflow/status/lyptt/chameleon/ci-web.yml?label=ui%20build) ![Open issues](https://img.shields.io/github/issues-raw/lyptt/chameleon?color=%2300cc00)
+![Server Build Status](https://img.shields.io/github/actions/workflow/status/lyptt/orbit/ci.yml?label=server%20build) ![Server Build Status](https://img.shields.io/github/actions/workflow/status/lyptt/orbit/ci-web.yml?label=ui%20build) ![Open issues](https://img.shields.io/github/issues-raw/lyptt/orbit?color=%2300cc00)
 
-Chameleon is a **free, open source social network server** where users can share photos with friends and followers, and discover a feed of content tailored to their interests. All Chameleon servers will be interoperable and part of the Fediverse, allowing for multiple servers to share each other's content as part of a federated network.
+Orbit is a **free, open source social network server** where users can post on public, federated forums, and discover a feed of content tailored to their interests. All Orbit servers are interoperable and part of the Fediverse, allowing for multiple servers to share each other's content as part of a federated network.
 
-Chameleon supports its own federation protocol, with ongoing work to integrate with ActivityPub, an open federation protocol powering many Fediverse applications.
+Orbit speaks ActivityPub, an open federation protocol powering many Fediverse applications.
 
 This project is in the very early development stages, and will evolve rapidly as time goes on. PRs and contributors are welcome to pitch in and create a truly open and decentralized alternative to popular photo sharing social networks.
 
-# Planned Features
+# Supported Features
 
 ## No vendor lock-in: Fully interoperable with any ActivityPub server
 
-Much like Mastodon and other Fediverse servers, Chameleon is planned to interoperate with any server that speaks ActivityPub.
+Much like Mastodon and other Fediverse servers, Orbit interoperates with any server that speaks ActivityPub.
 
 ## Real-time chronological timeline
 
-A core goal of Chameleon is to not deliver a curated timeline like popular locked down social networks. You will only ever see a chronological timeline, with the power to curate your timeline as you please.
+A core goal of Orbit is to not deliver a curated timeline like popular locked down social networks. You will only ever see a chronological timeline, with the power to curate your timeline as you please.
+
+# Planned Features
 
 ## Data portability built in
 
-Data portability is essential in the modern age of social networks. You will be able to download original high resolution versions of all of your photos, along with metadata in a simple, well-defined and backwards compatible format.
+Data portability is essential in the modern age of social networks. You will be able to download original high resolution versions of all of the multimedia attached to your posts, along with metadata and content in a simple, well-defined and backwards compatible format.
 
-Data transfer between Chameleon instances will be built-in, allowing you to move all of your data to another server with ease, or permanently delete your data at any time.
+Data transfer between Orbit instances will be built-in, allowing you to move all of your data to another server with ease, or permanently delete your data at any time.
 
 ## Safety and moderation tools
 
-Chameleon will include tools for system administrators to decide which Fediverse servers can interact with their Chameleon server, and users have comprehensive control over the privacy of their data, and will have control over what kind of posts they'll see in their feed.
+Orbit will include tools for system administrators to decide which Fediverse servers can interact with their Orbit server, and users have comprehensive control over the privacy of their data, and will have control over what kind of posts they'll see in their feed.
 
 ## Comprehensive REST API
 
-Chameleon provides its own API that's easy for developers to consume and build applications and automations around. This will stand alongside the built-in federation functionality.
+Orbit provides its own API that's easy for developers to consume and build applications and automations around. This will stand alongside the built-in federation functionality.
 
 # Deployment
 
 ## Tech stack:
 
 - Rust powers the API and server-side functionality, and is used for any web-based tasks and background jobs
-- React provides the default web UI (via NextJS + TypeScript), but server administrators are free to plug in their own UI and configure it to interoperate with the Chameleon server at their leisure
-- Chameleon does not mandate any one application to interact with a Chameleon instance, and no application is 'special', the default web UI uses exactly the same APIs and access controls as third party Chameleon-supported apps.
+- React provides the default web UI (via NextJS + TypeScript), but server administrators are free to plug in their own UI and configure it to interoperate with the Orbit server at their leisure
+- Orbit does not mandate any one application to interact with a Orbit instance, and no application is 'special', the default web UI uses exactly the same APIs and access controls as third party Orbit-supported apps.
 
 ## Requirements:
 
@@ -50,7 +52,7 @@ Chameleon provides its own API that's easy for developers to consume and build a
 
 # Contributing
 
-Chameleon is **free, open source software** licensed under **AGPLv3**.
+Orbit is **free, open source software** licensed under **AGPLv3**.
 
 Contributions are welcomed at any time, feel free to raise PRs or feature suggestions.
 

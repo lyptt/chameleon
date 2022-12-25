@@ -107,7 +107,7 @@ pub async fn api_oauth_authorize(apps: web::Data<AppPool>, query: web::Query<OAu
     OAuthAuthorizeResponseType::Code => {
       let app = match oauth_app_unwrap_result(
         apps.fetch_by_client_id(&query.client_id).await,
-        "This application is not configured correctly to authenticate with Chameleon",
+        "This application is not configured correctly to authenticate with Orbit",
       ) {
         Ok(app) => app,
         Err(res) => return res,
@@ -172,7 +172,7 @@ pub async fn api_oauth_authorize_post(
 ) -> impl Responder {
   let app = match oauth_app_unwrap_result(
     apps.fetch_by_client_id(&query.client_id).await,
-    "This application is not configured correctly to authenticate with Chameleon",
+    "This application is not configured correctly to authenticate with Orbit",
   ) {
     Ok(app) => app,
     Err(res) => return res,
@@ -246,7 +246,7 @@ pub async fn api_oauth_token(
 ) -> impl Responder {
   let app = match oauth_app_unwrap_result(
     apps.fetch_by_client_id(&req.client_id).await,
-    "This application is not configured correctly to authenticate with Chameleon",
+    "This application is not configured correctly to authenticate with Orbit",
   ) {
     Ok(app) => app,
     Err(res) => return res,
