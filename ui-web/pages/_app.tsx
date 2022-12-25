@@ -1,6 +1,5 @@
 import '@/styles/globals.scss'
-import '@/styles/theme/chameleon/styles.scss'
-import '@/styles/theme/walled-garden/styles.scss'
+import '@/styles/theme/orbit/styles.scss'
 
 import type { AppContext, AppProps } from 'next/app'
 import App from 'next/app'
@@ -10,17 +9,17 @@ import {
 } from '@/components/organisms/AuthContext'
 import MainLayout from '@/components/layouts/MainLayout'
 
-interface IChameleonAppProps extends AppProps {
+interface IOrbitAppProps extends AppProps {
   defaultAuthContext?: IAuthContext
   theme?: string
 }
 
-export default function ChameleonApp(props: IChameleonAppProps) {
+export default function OrbitApp(props: IOrbitAppProps) {
   const {
     Component,
     pageProps,
     defaultAuthContext,
-    theme = 'theme--chameleon',
+    theme = 'theme--orbit',
   } = props
   return (
     <MainLayout defaultAuthContext={defaultAuthContext} theme={theme}>
@@ -37,7 +36,7 @@ function getDocumentCookie() {
   return window.document.cookie
 }
 
-ChameleonApp.getInitialProps = async (context: AppContext) => {
+OrbitApp.getInitialProps = async (context: AppContext) => {
   const ctx = await App.getInitialProps(context)
 
   const authContext = buildAuthContext(

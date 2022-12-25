@@ -1,6 +1,6 @@
-import Document, { Head, Html, Main, NextScript } from 'next/document'
+import { Head, Html, Main, NextScript } from 'next/document'
 
-export default function ChameleonDocument() {
+export default function OrbitDocument() {
   return (
     <Html>
       <Head>
@@ -21,10 +21,11 @@ export default function ChameleonDocument() {
           sizes="16x16"
           href="/favicon-16x16.png"
         />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="manifest" href="/site.webmanifest" />
-        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#05ce7c" />
-        <meta name="msapplication-TileColor" content="#ffffff" />
+        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#724cb4" />
+        <meta name="apple-mobile-web-app-title" content="Orbit" />
+        <meta name="application-name" content="Orbit" />
+        <meta name="msapplication-TileColor" content="#724cb4" />
         <meta name="theme-color" content="#ffffff" />
       </Head>
       <body>

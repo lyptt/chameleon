@@ -1,0 +1,14 @@
+.#{$theme-class} {
+  .orbit-image__overlay {
+    opacity: 1;
+    transition: opacity 0.16s ease;
+  }
+
+  .orbit-image__overlay--loaded {
+    opacity: 0;
+  }
+
+  .orbit-image__overlay--faded {
+    display: none;
+  }
+}

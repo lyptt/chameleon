@@ -1,10 +1,10 @@
-$font-family: 'chameleonfont' !default;
-$font-weight-black: 700 !default;
-$font-weight-bold: 600 !default;
+$font-family: 'Ubuntu' !default;
+$font-weight-black: bold !default;
+$font-weight-bold: bold !default;
 $font-weight-medium: 500 !default;
-$font-weight-regular: 400 !default;
+$font-weight-regular: normal !default;
 $font-weight-light: 300 !default;
-$font-weight-thin: 200 !default;
+$font-weight-thin: 300 !default;
 $mq-breakpoints: (
   mobileMini: 300px,
   mobile: 400px,

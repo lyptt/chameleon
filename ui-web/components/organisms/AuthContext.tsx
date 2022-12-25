@@ -19,10 +19,10 @@ export interface IAuthContext {
 export function buildAuthContext(cookieString: string): IAuthContext {
   const values = cookie.parse(cookieString)
 
-  if ('chameleon-session' in values) {
+  if ('orbit-session' in values) {
     return {
       authenticated: true,
-      session: JSON.parse(values['chameleon-session']),
+      session: JSON.parse(values['orbit-session']),
     }
   }
 

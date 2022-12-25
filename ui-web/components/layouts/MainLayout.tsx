@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react'
 import cx from 'classnames'
-import Nav from '@/components/molecules/Nav'
 import AuthContext, {
   buildAuthContext,
   IAuthContext,
@@ -14,14 +13,9 @@ import AuthContext, {
 import DefaultActionsDelegator from '@/components/organisms/DefaultActionsDelegator'
 import { FeedProvider } from '@/components/organisms/FeedContext'
 import { ProfileProvider } from '@/components/organisms/ProfileContext'
-import MobileNav from '@/components/molecules/MobileNav'
 import { PostProvider } from '@/components/organisms/PostContext'
-import {
-  ThemeContext,
-  ThemeProvider,
-} from '@/components/organisms/ThemeContext'
+import { ThemeProvider } from '@/components/organisms/ThemeContext'
 import { useRouter } from 'next/router'
-import Toolbox from '@/components/molecules/Toolbox'
 import { UserProvider } from '@/components/organisms/UserContext'
 
 interface MainLayoutProps {
@@ -58,7 +52,7 @@ export default function MainLayout({
     }
 
     return cloneElement(child, {
-      className: cx('chameleon-main__content'),
+      className: cx('orbit-main__content'),
     } as any)
   })
 
@@ -70,39 +64,9 @@ export default function MainLayout({
             <PostProvider>
               <UserProvider>
                 <DefaultActionsDelegator />
-                <main className={cx('chameleon-main', theme)}>
-                  {isBuiltInRoute && (
-                    <>
-                      <div
-                        className="chameleon-main__spacer-left"
-                        aria-hidden="true"
-                      ></div>
-                      <div className="chameleon-main-side-nav" />
-                      {childrenWithClassname}
-                      <div className="chameleon-main-nav" />
-                      <div className="chameleon-main-mobile-nav" />
-                      <div
-                        className="chameleon-main__spacer-right"
-                        aria-hidden="true"
-                      ></div>
-                    </>
-                  )}
-                  {!isBuiltInRoute && (
-                    <>
-                      <div
-                        className="chameleon-main__spacer-left"
-                        aria-hidden="true"
-                      ></div>
-                      <Toolbox className="chameleon-main-side-nav" />
-                      {childrenWithClassname}
-                      <Nav className="chameleon-main-nav" />
-                      <MobileNav className="chameleon-main-mobile-nav" />
-                      <div
-                        className="chameleon-main__spacer-right"
-                        aria-hidden="true"
-                      ></div>
-                    </>
-                  )}
+                <main className={cx('orbit-main', theme)}>
+                  {isBuiltInRoute && <>{childrenWithClassname}</>}
+                  {!isBuiltInRoute && <>{childrenWithClassname}</>}
                 </main>
               </UserProvider>
             </PostProvider>

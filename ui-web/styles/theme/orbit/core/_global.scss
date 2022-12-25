@@ -1,0 +1,12 @@
+.#{$theme-class} {
+  &.orbit-main {
+    font-family: $font-family, sans-serif;
+    font-size: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  .orbit-link {
+    color: inherit;
+    text-decoration: none;
+  }
+}

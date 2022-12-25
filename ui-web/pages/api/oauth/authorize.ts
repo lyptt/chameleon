@@ -41,7 +41,7 @@ export default async function authorize(
     return res
       .setHeader(
         'Set-Cookie',
-        cookie.serialize('chameleon-session', JSON.stringify(data), {
+        cookie.serialize('orbit-session', JSON.stringify(data), {
           path: '/',
           expires: dayjs.unix(data.expires_at).toDate(),
           domain: new URL(Config.fqdn!).hostname,
