@@ -1,0 +1,13 @@
+.#{$theme-class} {
+  .orbit-nav {
+    @media (prefers-color-scheme: light) {
+      background: $background-color-2-light;
+      border-bottom: 0.5px solid $background-color-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $background-color-2-dark;
+      border-bottom: 0.5px solid $background-color-3-dark;
+    }
+  }
+}

@@ -1,0 +1,9 @@
+.#{$theme-class} {
+  &.orbit-main {
+    background-color: $background-color-light;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: $background-color-dark;
+    }
+  }
+}
