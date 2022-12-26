@@ -10,7 +10,6 @@ pub struct App {
   pub owner_name: String,
   pub owner_uri: String,
   pub redirect_uri: String,
-  pub blessed: bool,
   pub client_id: String,
   pub client_secret: String,
 }

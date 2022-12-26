@@ -9,15 +9,6 @@ CREATE TABLE apps (
   "redirect_uri" varchar(256) NOT NULL,
   "client_id" uuid NOT NULL,
   "client_secret" uuid NOT NULL,
-  -- 'blessed' apps do not show the confirmation prompt when a user enters their credentials,
-  -- they just sign you in directly.
-  -- You should only bless apps that should be officially associated to your orbit instance,
-  -- or ones you directly trust.
-  -- By default only apps registered by a user originating from this instance can be marked as
-  -- blessed in the UI. To bypass this security restriction you can manually bless apps from
-  -- foreign instances in the DB directly.
-  -- The whole idea behind blessing is to smooth out the authentication process for apps that
-  -- are percieved to behave well and are good citizens within the fediverse.
   "blessed" bool NOT NULL DEFAULT false,
   PRIMARY KEY ("app_id"),
   CONSTRAINT fk_app_user FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE

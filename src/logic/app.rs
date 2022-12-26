@@ -34,7 +34,6 @@ pub async fn create_app(apps: &AppPool, new_app: &NewApp) -> Result<App, LogicEr
     owner_name: new_app.owner_name.clone(),
     owner_uri: new_app.owner_uri.clone(),
     redirect_uri: new_app.redirect_uri.clone(),
-    blessed: false,
     client_id,
     client_secret,
   };

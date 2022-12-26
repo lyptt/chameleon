@@ -28,13 +28,13 @@ pub fn handle_oauth_app_err(err: &'static str) -> HttpResponse {
   }
 }
 
-pub fn handle_oauth_app_body(app: &App, err: &str) -> HttpResponse {
+pub fn handle_oauth_app_body(app: &App, blessed: bool, err: &str) -> HttpResponse {
   match HANDLEBARS.render(
     "oauth_authorize",
     &OAuthAuthorizeErrData {
       error: err.to_string(),
       username: None,
-      blessed: app.blessed,
+      blessed,
       app_name: Some(&app.name),
     },
   ) {

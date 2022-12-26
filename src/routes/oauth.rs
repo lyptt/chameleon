@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::{
   db::{app_repository::AppPool, session_repository::SessionPool, user_repository::UserPool},
   helpers::{
+    api::app_is_blessed,
     auth::require_auth,
     core::build_api_err,
     html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
@@ -102,7 +103,11 @@ pub struct OAuthTokenResponse {
   pub refresh_expires_at: i64,
 }
 
-pub async fn api_oauth_authorize(apps: web::Data<AppPool>, query: web::Query<OAuthAuthorizeQuery>) -> impl Responder {
+pub async fn api_oauth_authorize(
+  apps: web::Data<AppPool>,
+  query: web::Query<OAuthAuthorizeQuery>,
+  req: HttpRequest,
+) -> impl Responder {
   match query.response_type {
     OAuthAuthorizeResponseType::Code => {
       let app = match oauth_app_unwrap_result(
@@ -129,7 +134,7 @@ pub async fn api_oauth_authorize(apps: web::Data<AppPool>, query: web::Query<OAu
         "oauth_authorize",
         &OAuthAuthorizeData {
           username: None,
-          blessed: app.blessed,
+          blessed: app_is_blessed(&req),
           app_name: Some(&app.name),
           sign_up_url: &(match query.scope.as_ref() {
             Some(scope) => format!(
@@ -169,6 +174,7 @@ pub async fn api_oauth_authorize_post(
   users: web::Data<UserPool>,
   query: web::Query<OAuthAuthorizeQuery>,
   req: web::Form<OAuthAuthorizeRequest>,
+  web_req: HttpRequest,
 ) -> impl Responder {
   let app = match oauth_app_unwrap_result(
     apps.fetch_by_client_id(&query.client_id).await,
@@ -199,12 +205,14 @@ pub async fn api_oauth_authorize_post(
         LogicErr::UnauthorizedError => {
           return handle_oauth_app_body(
             &app,
+            app_is_blessed(&web_req),
             "The credentials you provided did not match our records, please check you've entered your username and password correctly.",
           )
         }
         _ => {
           return handle_oauth_app_body(
             &app,
+            app_is_blessed(&web_req),
             "Something went wrong, please try again later",
           )
         }
@@ -216,12 +224,14 @@ pub async fn api_oauth_authorize_post(
         LogicErr::InvalidOperation(err) => {
           return handle_oauth_app_body(
             &app,
+            app_is_blessed(&web_req),
             &err,
           )
         }
         _ => {
           return handle_oauth_app_body(
             &app,
+            app_is_blessed(&web_req),
             "Something went wrong, please try again later",
           )
         }

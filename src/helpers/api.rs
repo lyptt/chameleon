@@ -1,4 +1,4 @@
-use actix_web::HttpResponse;
+use actix_web::{HttpRequest, HttpResponse};
 use std::error::Error;
 
 use super::core::{build_api_err, build_api_not_found};
@@ -39,4 +39,8 @@ pub fn relative_to_absolute_uri(relative: &str) -> String {
     true => relative.to_string(),
     false => format!("{}{}", SETTINGS.server.api_fqdn, relative),
   }
+}
+
+pub fn app_is_blessed(req: &HttpRequest) -> bool {
+  req.uri().to_string().starts_with(&SETTINGS.server.fqdn)
 }
