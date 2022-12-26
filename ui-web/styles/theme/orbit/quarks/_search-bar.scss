@@ -1,0 +1,28 @@
+.#{$theme-class} {
+  .orbit-search-bar {
+    appearance: none;
+    border: none;
+    outline: none;
+    border-radius: 9999px;
+    font-size: $font-size-l;
+    font-weight: $font-weight-regular;
+    position: relative;
+    background-size: 18px 18px;
+    background-position: right center;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-light;
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+      color: $text-dark;
+    }
+
+    &::placeholder {
+      font-weight: $font-weight-thin;
+      font-style: italic;
+    }
+  }
+}

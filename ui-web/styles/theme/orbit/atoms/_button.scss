@@ -1,0 +1,62 @@
+.#{$theme-class} {
+  .orbit-button {
+    font-size: $font-size-s;
+    font-weight: $font-weight-medium;
+    outline: none;
+    border: none;
+    appearance: none;
+    cursor: pointer;
+    border-radius: 9999px;
+    text-decoration: none;
+
+    &.orbit-button--brand {
+      color: white;
+
+      @media (prefers-color-scheme: light) {
+        background: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $brand-dark;
+      }
+
+      &:active,
+      &:focus-visible {
+        @media (prefers-color-scheme: light) {
+          background: darken($brand-light, 10%);
+        }
+
+        @media (prefers-color-scheme: dark) {
+          background: darken($brand-dark, 10%);
+        }
+      }
+    }
+
+    &.orbit-button--outline {
+      background: none;
+
+      @media (prefers-color-scheme: light) {
+        color: $brand-light;
+        border: 2px solid $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: white;
+        border: 2px solid white;
+      }
+
+      &:active,
+      &:focus-visible {
+        @media (prefers-color-scheme: light) {
+          color: white;
+          background: $brand-light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          color: $brand-light;
+          background: white;
+        }
+      }
+    }
+  }
+}

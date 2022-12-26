@@ -66,7 +66,7 @@ export default function MainLayout({
               <UserProvider>
                 <DefaultActionsDelegator />
                 <main className={cx('orbit-main', theme)}>
-                  <NavBar />
+                  <NavBar isBuiltInRoute={isBuiltInRoute} />
                   {isBuiltInRoute && <>{childrenWithClassname}</>}
                   {!isBuiltInRoute && <>{childrenWithClassname}</>}
                 </main>

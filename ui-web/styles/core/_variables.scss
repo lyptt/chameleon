@@ -5,6 +5,13 @@ $font-weight-medium: 500 !default;
 $font-weight-regular: normal !default;
 $font-weight-light: 300 !default;
 $font-weight-thin: 300 !default;
+$font-size-xs: 0.625rem !default;
+$font-size-s: 0.75rem !default;
+$font-size-m: 0.875rem !default;
+$font-size-l: 1rem !default;
+$font-size-xl: 1.25rem !default;
+$font-size-xxl: 1.4rem !default;
+$font-size-xxxl: 2rem !default;
 $mq-breakpoints: (
   mobileMini: 300px,
   mobile: 400px,

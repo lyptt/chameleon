@@ -1,7 +1,46 @@
 .orbit-nav {
   height: 60px;
   position: sticky;
+  display: flex;
+  gap: 10px;
   top: 0;
   left: 0;
   right: 0;
+  padding-left: 20px;
+  padding-right: 20px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orbit-nav__logo {
+  display: flex;
+  flex-direction: column;
+}
+
+.orbit-nav__logo-top {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+  align-items: flex-end;
+}
+
+.orbit-nav__logo-image {
+  max-width: 36px;
+}
+
+.orbit-nav__logo-text {
+  font-size: $font-size-xxl;
+  line-height: $font-size-xxl;
+  user-select: none;
+}
+
+.orbit-nav__logo-subtitle {
+  font-size: $font-size-xs;
+  line-height: $font-size-xs;
+  user-select: none;
+}
+
+.orbit-nav__search-bar {
+  flex: 1;
+  max-width: 325px;
 }
