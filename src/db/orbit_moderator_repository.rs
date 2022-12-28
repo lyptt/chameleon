@@ -14,6 +14,8 @@ use mockall::automock;
 pub trait OrbitModeratorRepo {
   async fn count_users(&self, orbit_id: &Uuid) -> Result<i64, LogicErr>;
   async fn fetch_users(&self, orbit_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr>;
+  async fn user_is_moderator(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<bool, LogicErr>;
+  async fn user_is_owner(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<bool, LogicErr>;
   async fn create_orbit_moderator(&self, orbit_id: &Uuid, user_id: &Uuid, is_owner: bool) -> Result<Uuid, LogicErr>;
   async fn update_orbit_moderator(&self, orbit_id: &Uuid, user_id: &Uuid, is_owner: bool) -> Result<(), LogicErr>;
   async fn delete_orbit_moderator(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<(), LogicErr>;
@@ -51,6 +53,32 @@ impl OrbitModeratorRepo for DbOrbitModeratorRepo {
       .map_err(map_db_err)?;
 
     Ok(rows.into_iter().flat_map(User::from_row).collect())
+  }
+
+  async fn user_is_moderator(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<bool, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(
+        "SELECT COUNT(*) > 0 FROM orbit_moderators WHERE orbit_id = $1 AND user_id = $2",
+        &[&orbit_id, &user_id],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.get(0))
+  }
+
+  async fn user_is_owner(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<bool, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(
+        "SELECT COUNT(*) > 0 FROM orbit_moderators WHERE orbit_id = $1 AND user_id = $2 AND is_owner = TRUE",
+        &[&orbit_id, &user_id],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.get(0))
   }
 
   async fn create_orbit_moderator(&self, orbit_id: &Uuid, user_id: &Uuid, is_owner: bool) -> Result<Uuid, LogicErr> {

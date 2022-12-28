@@ -1,0 +1,478 @@
+use actix_easy_multipart::{tempfile::Tempfile, MultipartForm};
+use actix_web::{web, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::{
+  cdn::cdn_store::Cdn,
+  db::{
+    orbit_moderator_repository::OrbitModeratorPool, orbit_repository::OrbitPool, session_repository::SessionPool,
+    user_orbit_repository::UserOrbitPool,
+  },
+  helpers::{
+    auth::require_auth,
+    core::{build_api_err, build_api_not_found},
+    math::div_up,
+  },
+  model::{
+    response::{ListResponse, ObjectResponse},
+    user_account_pub::UserAccountPub,
+  },
+  net::jwt::JwtContext,
+};
+
+#[derive(Deserialize)]
+pub struct NewOrbitRequest {
+  pub name: String,
+  pub description_md: String,
+  pub description_html: String,
+  pub avatar_uri: Option<String>,
+  pub banner_uri: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct NewOrbitResponse {
+  pub id: Uuid,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OrbitsQuery {
+  pub page: Option<i64>,
+  pub page_size: Option<i64>,
+}
+
+#[derive(Deserialize)]
+pub struct NewOrbitModeratorRequest {
+  pub user_id: Uuid,
+  pub is_owner: Option<bool>,
+}
+
+#[derive(MultipartForm)]
+pub struct OrbitAssetsUpload {
+  #[multipart(rename = "images[]")]
+  images: Vec<Tempfile>,
+}
+
+pub async fn api_get_user_orbits(
+  orbits: web::Data<OrbitPool>,
+  query: web::Query<OrbitsQuery>,
+  sessions: web::Data<SessionPool>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match orbits.count_user_orbits(&session.uid).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let orbits = match orbits
+    .fetch_user_orbits(&session.uid, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: orbits,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
+pub async fn api_get_orbits(orbits: web::Data<OrbitPool>, query: web::Query<OrbitsQuery>) -> impl Responder {
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match orbits.count_orbits().await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let orbits = match orbits.fetch_orbits(page_size, page * page_size).await {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: orbits,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
+pub async fn api_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: web::Path<Uuid>) -> impl Responder {
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => orbit,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let orbit = match orbit {
+    Some(orbit) => orbit,
+    None => return build_api_not_found(orbit_id.to_string()),
+  };
+
+  HttpResponse::Ok().json(ObjectResponse { data: orbit })
+}
+
+pub async fn api_create_orbit(
+  sessions: web::Data<SessionPool>,
+  orbits: web::Data<OrbitPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  req: web::Json<NewOrbitRequest>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  let orbit_id = match orbits
+    .create_orbit(
+      &req.name,
+      &req.description_md,
+      &req.description_html,
+      &req.avatar_uri,
+      &req.banner_uri,
+      false,
+    )
+    .await
+  {
+    Ok(orbit_id) => orbit_id,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbit_moderators
+    .create_orbit_moderator(&orbit_id, &session.uid, true)
+    .await
+  {
+    Ok(_) => {}
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(NewOrbitResponse { id: orbit_id })
+}
+
+pub async fn api_update_orbit(
+  sessions: web::Data<SessionPool>,
+  orbits: web::Data<OrbitPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  req: web::Json<NewOrbitRequest>,
+  orbit_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match orbit_moderators.user_is_moderator(&orbit_id, &session.uid).await {
+    Ok(is_moderator) => {
+      if !is_moderator {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbits
+    .update_orbit(
+      &orbit_id,
+      &req.name,
+      &req.description_md,
+      &req.description_html,
+      &req.avatar_uri,
+      &req.banner_uri,
+      false,
+    )
+    .await
+  {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_update_orbit_assets(
+  sessions: web::Data<SessionPool>,
+  orbits: web::Data<OrbitPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  cdn: web::Data<Cdn>,
+  form: MultipartForm<OrbitAssetsUpload>,
+  orbit_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  if form.images.len() != 2 {
+    return build_api_err(400, "Invalid image count".to_string(), None);
+  }
+
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match orbit_moderators.user_is_moderator(&orbit_id, &session.uid).await {
+    Ok(is_moderator) => {
+      if !is_moderator {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => match orbit {
+      Some(orbit) => orbit,
+      None => return build_api_not_found(orbit_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let avatar_uri = match {
+    let file_name = format!("media/{}/or/{}", orbit_id, Uuid::new_v4());
+
+    let path = match cdn.upload_tmp_file(&form.images[0], &file_name).await {
+      Ok(path) => path,
+      Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+    };
+
+    Some(format!("/{}", path))
+  } {
+    Some(uri) => uri,
+    None => return build_api_err(500, "Image upload failed".to_string(), None),
+  };
+
+  let banner_uri = match {
+    let file_name = format!("media/{}/or/{}", orbit_id, Uuid::new_v4());
+
+    let path = match cdn.upload_tmp_file(&form.images[1], &file_name).await {
+      Ok(path) => path,
+      Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+    };
+
+    Some(format!("/{}", path))
+  } {
+    Some(uri) => uri,
+    None => return build_api_err(500, "Image upload failed".to_string(), None),
+  };
+
+  match orbits
+    .update_orbit(
+      &orbit_id,
+      &orbit.name,
+      &orbit.description_md,
+      &orbit.description_html,
+      &Some(avatar_uri),
+      &Some(banner_uri),
+      false,
+    )
+    .await
+  {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_delete_orbit(
+  sessions: web::Data<SessionPool>,
+  orbits: web::Data<OrbitPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  req: web::Json<NewOrbitRequest>,
+  orbit_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match orbit_moderators.user_is_owner(&orbit_id, &session.uid).await {
+    Ok(is_owner) => {
+      if !is_owner {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbits
+    .update_orbit(
+      &orbit_id,
+      &req.name,
+      &req.description_md,
+      &req.description_html,
+      &req.avatar_uri,
+      &req.banner_uri,
+      false,
+    )
+    .await
+  {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_join_orbit(
+  sessions: web::Data<SessionPool>,
+  user_orbits: web::Data<UserOrbitPool>,
+  orbit_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match user_orbits.create_user_orbit(&orbit_id, &session.uid).await {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_leave_orbit(
+  sessions: web::Data<SessionPool>,
+  user_orbits: web::Data<UserOrbitPool>,
+  orbit_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match user_orbits.delete_user_orbit(&orbit_id, &session.uid).await {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_get_orbit_moderators(
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  orbit_id: web::Path<Uuid>,
+  query: web::Query<OrbitsQuery>,
+) -> impl Responder {
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match orbit_moderators.count_users(&orbit_id).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let orbits = match orbit_moderators
+    .fetch_users(&orbit_id, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: orbits.into_iter().map(UserAccountPub::from).collect(),
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
+pub async fn api_create_orbit_moderator(
+  sessions: web::Data<SessionPool>,
+  orbits: web::Data<OrbitPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  orbit_id: web::Path<Uuid>,
+  req: web::Json<NewOrbitModeratorRequest>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match orbits.orbit_is_external(&orbit_id).await {
+    Ok(is_external) => {
+      if is_external {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbit_moderators.user_is_owner(&orbit_id, &session.uid).await {
+    Ok(is_owner) => {
+      if !is_owner {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbit_moderators
+    .create_orbit_moderator(&orbit_id, &req.user_id, req.is_owner.unwrap_or(false))
+    .await
+  {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_delete_orbit_moderator(
+  sessions: web::Data<SessionPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  orbit_id: web::Path<Uuid>,
+  req: web::Json<NewOrbitModeratorRequest>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match orbit_moderators.user_is_owner(&orbit_id, &session.uid).await {
+    Ok(is_owner) => {
+      if !is_owner {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbit_moderators.delete_orbit_moderator(&orbit_id, &req.user_id).await {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_update_orbit_moderator(
+  sessions: web::Data<SessionPool>,
+  orbit_moderators: web::Data<OrbitModeratorPool>,
+  orbit_id: web::Path<Uuid>,
+  req: web::Json<NewOrbitModeratorRequest>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let session = match require_auth(&jwt, &sessions).await {
+    Ok(session) => session,
+    Err(res) => return res,
+  };
+
+  match orbit_moderators.user_is_owner(&orbit_id, &session.uid).await {
+    Ok(is_owner) => {
+      if !is_owner {
+        return build_api_not_found(session.uid.to_string());
+      }
+    }
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match orbit_moderators
+    .update_orbit_moderator(&orbit_id, &req.user_id, req.is_owner.unwrap_or(false))
+    .await
+  {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}

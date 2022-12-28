@@ -12,20 +12,32 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait OrbitRepo {
-  async fn count_orbits(&self, orbit_id: &Uuid) -> Result<i64, LogicErr>;
+  async fn count_orbits(&self) -> Result<i64, LogicErr>;
   async fn fetch_orbits(&self, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn fetch_orbit(&self, orbit_id: &Uuid) -> Result<Option<Orbit>, LogicErr>;
+  async fn count_user_orbits(&self, user_id: &Uuid) -> Result<i64, LogicErr>;
+  async fn fetch_user_orbits(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn create_orbit(
     &self,
-    name: String,
-    description_md: String,
-    description_html: String,
-    avatar_uri: Option<String>,
-    banner_uri: Option<String>,
-    uri: String,
+    name: &str,
+    description_md: &str,
+    description_html: &str,
+    avatar_uri: &Option<String>,
+    banner_uri: &Option<String>,
     is_external: bool,
   ) -> Result<Uuid, LogicErr>;
-  async fn update_orbit(&self, orbit: &Orbit) -> Result<(), LogicErr>;
+  async fn update_orbit(
+    &self,
+    orbit_id: &Uuid,
+    name: &str,
+    description_md: &str,
+    description_html: &str,
+    avatar_uri: &Option<String>,
+    banner_uri: &Option<String>,
+    is_external: bool,
+  ) -> Result<(), LogicErr>;
+  async fn orbit_is_external(&self, orbit_id: &Uuid) -> Result<bool, LogicErr>;
+  async fn update_orbit_from(&self, orbit: &Orbit) -> Result<(), LogicErr>;
   async fn delete_orbit(&self, orbit_id: &Uuid) -> Result<(), LogicErr>;
 }
 
@@ -37,10 +49,10 @@ pub struct DbOrbitRepo {
 
 #[async_trait]
 impl OrbitRepo for DbOrbitRepo {
-  async fn count_orbits(&self, orbit_id: &Uuid) -> Result<i64, LogicErr> {
+  async fn count_orbits(&self) -> Result<i64, LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db
-      .query_one("SELECT COUNT(*) FROM orbits WHERE is_external = FALSE", &[&orbit_id])
+      .query_one("SELECT COUNT(*) FROM orbits WHERE is_external = FALSE", &[])
       .await
       .map_err(map_db_err)?;
 
@@ -51,8 +63,34 @@ impl OrbitRepo for DbOrbitRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     let rows = db
       .query(
-        "SELECT * FROM orbits LIMIT $1 OFFSET $2 WHERE is_external = FALSE",
+        "SELECT * FROM orbits WHERE is_external = FALSE LIMIT $1 OFFSET $2",
         &[&limit, &skip],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(rows.into_iter().flat_map(Orbit::from_row).collect())
+  }
+
+  async fn count_user_orbits(&self, user_id: &Uuid) -> Result<i64, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(
+        "SELECT COUNT(o.*) FROM orbits o INNER JOIN user_orbits u ON u.orbit_id = o.orbit_id WHERE u.user_id = $1",
+        &[&user_id],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.get(0))
+  }
+
+  async fn fetch_user_orbits(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        "SELECT o.* FROM orbits o INNER JOIN user_orbits u ON u.orbit_id = o.orbit_id WHERE u.user_id = $1 LIMIT $2 OFFSET $3",
+        &[&user_id, &limit, &skip],
       )
       .await
       .map_err(map_db_err)?;
@@ -72,15 +110,15 @@ impl OrbitRepo for DbOrbitRepo {
 
   async fn create_orbit(
     &self,
-    name: String,
-    description_md: String,
-    description_html: String,
-    avatar_uri: Option<String>,
-    banner_uri: Option<String>,
-    uri: String,
+    name: &str,
+    description_md: &str,
+    description_html: &str,
+    avatar_uri: &Option<String>,
+    banner_uri: &Option<String>,
     is_external: bool,
   ) -> Result<Uuid, LogicErr> {
     let orbit_id = Uuid::new_v4();
+    let uri = format!("/orbits/{}", orbit_id);
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db
@@ -95,7 +133,38 @@ impl OrbitRepo for DbOrbitRepo {
     Ok(row.get(0))
   }
 
-  async fn update_orbit(&self, orbit: &Orbit) -> Result<(), LogicErr> {
+  async fn update_orbit(
+    &self,
+    orbit_id: &Uuid,
+    name: &str,
+    description_md: &str,
+    description_html: &str,
+    avatar_uri: &Option<String>,
+    banner_uri: &Option<String>,
+    is_external: bool,
+  ) -> Result<(), LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      "UPDATE orbits SET name = $2, description_md = $3, description_html = $4, avatar_uri = $5, banner_uri = $6, is_external = $7 WHERE orbit_id = $1",
+      &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &is_external],
+    )
+    .await
+    .map_err(map_db_err)?;
+
+    Ok(())
+  }
+
+  async fn orbit_is_external(&self, orbit_id: &Uuid) -> Result<bool, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one("SELECT is_external FROM orbits WHERE orbit_id = $1", &[&orbit_id])
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.get(0))
+  }
+
+  async fn update_orbit_from(&self, orbit: &Orbit) -> Result<(), LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(
       "UPDATE orbits SET name = $2, description_md = $3, description_html = $4, avatar_uri = $5, banner_uri = $6, uri = $7, is_external = $8 WHERE orbit_id = $1",

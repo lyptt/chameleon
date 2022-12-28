@@ -7,6 +7,7 @@ pub mod job;
 pub mod like;
 pub mod nodeinfo;
 pub mod oauth;
+pub mod orbit;
 pub mod post;
 pub mod public;
 pub mod status;
