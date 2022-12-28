@@ -1,16 +1,16 @@
 env = "Development"
 
 [server]
-url = "127.0.0.1"
-fqdn = "http://127.0.0.1:3000"
-cdn_fqdn = "http://127.0.0.1:3000"
-api_fqdn = "http://127.0.0.1:8000/api"
-api_root_fqdn = "http://127.0.0.1:8000"
+url = "localhost"
+fqdn = "http://localhost:3000"
+cdn_fqdn = "http://localhost:3000"
+api_fqdn = "http://localhost:8000/api"
+api_root_fqdn = "http://localhost:8000"
 jwt_secret = "super-secret-key"
 
 [database]
-url = "postgresql://orbit:orbit@127.0.0.1:5432/orbit"
-host = "127.0.0.1"
+url = "postgresql://orbit:orbit@localhost:5432/orbit"
+host = "localhost"
 port = 5432
 database = "orbit"
 username = "orbit"

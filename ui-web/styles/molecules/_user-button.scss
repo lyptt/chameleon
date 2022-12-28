@@ -1,0 +1,18 @@
+.orbit-user-button--authenticated {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.orbit-user-button__avatar {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.orbit-user-button__details {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}

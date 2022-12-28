@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::{
   db::{app_repository::AppPool, session_repository::SessionPool, user_repository::UserPool},
   helpers::{
-    api::app_is_blessed,
+    api::{app_is_blessed, validate_referer_redirect_uris},
     auth::require_auth,
     core::build_api_err,
     html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
@@ -125,6 +125,12 @@ pub async fn api_oauth_authorize(
       }
 
       if app.redirect_uri != query.redirect_uri {
+        return handle_oauth_app_err(
+          "The provided parameters do not match the parameters set for the registered appliction",
+        );
+      }
+
+      if !validate_referer_redirect_uris(&req, &app.redirect_uri) {
         return handle_oauth_app_err(
           "The provided parameters do not match the parameters set for the registered appliction",
         );

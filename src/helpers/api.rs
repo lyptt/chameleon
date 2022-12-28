@@ -44,5 +44,29 @@ pub fn relative_to_absolute_uri(relative: &str) -> String {
 }
 
 pub fn app_is_blessed(req: &HttpRequest) -> bool {
-  req.uri().to_string().starts_with(&SETTINGS.server.fqdn)
+  let referrer = req.headers().get("referer").and_then(|v| match v.to_str() {
+    Ok(v) => Some(v.to_string()),
+    Err(_) => None,
+  });
+
+  if let Some(referrer) = referrer {
+    referrer.starts_with(&SETTINGS.server.fqdn)
+  } else {
+    false
+  }
+}
+
+pub fn validate_referer_redirect_uris(req: &HttpRequest, redirect_uri: &str) -> bool {
+  let referrer = req.headers().get("referer").and_then(|v| match v.to_str() {
+    Ok(v) => Some(v.to_string()),
+    Err(_) => None,
+  });
+
+  if let Some(referrer) = referrer {
+    redirect_uri.starts_with(&referrer)
+  } else {
+    // If the requester does not pass a 'Referer' header, we don't need to validate as they're not trying to abuse the
+    // app blessing system.
+    true
+  }
 }

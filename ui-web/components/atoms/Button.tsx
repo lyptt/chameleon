@@ -10,7 +10,27 @@ export interface ButtonProps
   variant?: 'default' | 'outline'
 }
 
-export default function Button({ className, variant, ...rest }: ButtonProps) {
+export default function Button({
+  className,
+  variant,
+  href,
+  ...rest
+}: ButtonProps) {
+  if (!!href) {
+    return (
+      <a
+        href={href}
+        className={cx(
+          'orbit-button',
+          { 'orbit-button--brand': !variant || variant === 'default' },
+          { 'orbit-button--outline': variant === 'outline' },
+          className
+        )}
+        {...(rest as any)}
+      />
+    )
+  }
+
   return (
     <button
       className={cx(
