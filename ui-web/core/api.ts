@@ -93,6 +93,7 @@ export interface IPostAttachment {
 export interface IPost {
   post_id: string
   user_id: string
+  orbit_id?: string
   user_handle: string
   user_fediverse_id: string
   user_avatar_url?: string
@@ -106,6 +107,9 @@ export interface IPost {
   liked?: boolean
   comments: number
   attachments: IPostAttachment[]
+  orbit_name?: string
+  orbit_uri?: string
+  orbit_avatar_uri?: string
 }
 
 export interface INewPost {
