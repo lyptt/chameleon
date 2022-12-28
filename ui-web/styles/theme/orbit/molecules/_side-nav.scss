@@ -28,6 +28,7 @@
   .orbit-side-nav__list-item {
     list-style-type: none;
     user-select: none;
+    font-size: $font-size-m;
 
     &:before {
       content: '\200B';

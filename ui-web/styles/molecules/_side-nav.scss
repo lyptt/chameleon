@@ -11,7 +11,7 @@
 }
 
 .orbit-side-nav__header {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .orbit-side-nav__list {
@@ -20,12 +20,14 @@
   gap: 10px;
   padding: 0;
   margin: 0;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .orbit-side-nav__list-item {
   padding: 0;
   margin: 0;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 .orbit-side-nav__list-item > * {
