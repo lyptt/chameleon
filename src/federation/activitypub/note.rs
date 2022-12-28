@@ -122,6 +122,8 @@ pub async fn federate_create_note(
   let post = Post {
     post_id,
     user_id: actor.user_id,
+    // TODO: Figure out which orbit something came from
+    orbit_id: None,
     uri,
     is_external: true,
     content_md,

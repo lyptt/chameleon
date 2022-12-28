@@ -12,6 +12,7 @@ use uuid::Uuid;
 pub struct Post {
   pub post_id: Uuid,
   pub user_id: Uuid,
+  pub orbit_id: Option<Uuid>,
   pub uri: String,
   pub is_external: bool,
   pub content_md: String,
@@ -28,6 +29,7 @@ impl FromRow for Post {
     Some(Post {
       post_id: row.get("post_id"),
       user_id: row.get("user_id"),
+      orbit_id: row.get("orbit_id"),
       uri: row.get("uri"),
       is_external: row.get("is_external"),
       content_md: row.get("content_md"),

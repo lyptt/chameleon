@@ -229,6 +229,10 @@ mod tests {
       liked: Some(false),
       comments: 1,
       attachments: vec![],
+      orbit_id: None,
+      orbit_name: None,
+      orbit_uri: None,
+      orbit_avatar_uri: None,
     };
 
     let mut post_repo = MockPostRepo::new();

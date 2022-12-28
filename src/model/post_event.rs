@@ -28,6 +28,7 @@ pub struct PostEvent {
   pub event_type: EventType,
   // Post columns
   pub post_id: Uuid,
+  pub orbit_id: Option<Uuid>,
   pub uri: String,
   pub content_md: String,
   pub content_html: String,
@@ -50,6 +51,9 @@ pub struct PostEvent {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub liked: Option<bool>,
   pub comments: i64,
+  pub orbit_name: Option<String>,
+  pub orbit_uri: Option<String>,
+  pub orbit_avatar_uri: Option<String>,
   pub attachments: Vec<PostAttachment>,
 }
 
@@ -76,6 +80,10 @@ impl FromRow for PostEvent {
       likes: row.get("likes"),
       liked: row.get("liked"),
       comments: row.get("comments"),
+      orbit_id: row.get("orbit_id"),
+      orbit_name: row.get("orbit_name"),
+      orbit_uri: row.get("orbit_uri"),
+      orbit_avatar_uri: row.get("orbit_avatar_uri"),
       attachments: vec![],
     })
   }
