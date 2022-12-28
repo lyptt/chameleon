@@ -17,12 +17,16 @@ mod routes;
 mod settings;
 mod work_queue;
 
+use std::time::Duration;
+
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use aws::clients::AWSClient;
 use cdn::cdn_store::Cdn;
 use db::repository::Repository;
+use deadpool::Runtime;
+use deadpool_postgres::{ManagerConfig, RecyclingMethod};
 use env_logger::WriteStyle;
 use helpers::types::ACTIVITYPUB_ACCEPT_GUARD;
 use log::LevelFilter;
@@ -55,8 +59,7 @@ use routes::user::{
 };
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
-use sqlx::postgres::PgPoolOptions;
-use std::time::Duration;
+use tokio_postgres::NoTls;
 use work_queue::queue::Queue;
 
 #[actix_web::main]
@@ -76,13 +79,22 @@ async fn main() -> std::io::Result<()> {
     .write_style(WriteStyle::Always)
     .init();
 
-  let pool = PgPoolOptions::new()
-    .max_connections(SETTINGS.database.max_connections)
-    .idle_timeout(Duration::from_secs(SETTINGS.database.idle_timeout.into()))
-    .acquire_timeout(Duration::from_secs(SETTINGS.database.connection_timeout.into()))
-    .connect(&SETTINGS.database.url)
-    .await
-    .unwrap();
+  let pool = {
+    let mut cfg = deadpool_postgres::Config::new();
+    cfg.host = Some(SETTINGS.database.host.to_owned());
+    cfg.port = Some(SETTINGS.database.port);
+    cfg.dbname = Some(SETTINGS.database.database.to_owned());
+    cfg.user = Some(SETTINGS.database.username.to_owned());
+    cfg.password = Some(SETTINGS.database.password.to_owned());
+    cfg.manager = Some(ManagerConfig {
+      recycling_method: RecyclingMethod::Verified,
+    });
+    cfg.keepalives_idle = Some(Duration::from_secs((SETTINGS.database.idle_timeout * 60).into()));
+    cfg.connect_timeout = Some(Duration::from_secs(SETTINGS.database.connection_timeout.into()));
+    let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
+    pool.resize(SETTINGS.database.max_connections);
+    pool
+  };
 
   let app_pool = Repository::new_app_pool(&pool);
   let comment_pool = Repository::new_comment_pool(&pool);
@@ -91,6 +103,7 @@ async fn main() -> std::io::Result<()> {
   let job_pool = Repository::new_job_pool(&pool);
   let like_pool = Repository::new_like_pool(&pool);
   let post_pool = Repository::new_post_pool(&pool);
+  let post_attachment_pool = Repository::new_post_attachment_pool(&pool);
   let session_pool = Repository::new_session_pool(&pool);
   let user_pool = Repository::new_user_pool(&pool);
   let user_stats_pool = Repository::new_user_stats_pool(&pool);
@@ -115,6 +128,7 @@ async fn main() -> std::io::Result<()> {
       .app_data(web::Data::new(job_pool.clone()))
       .app_data(web::Data::new(like_pool.clone()))
       .app_data(web::Data::new(post_pool.clone()))
+      .app_data(web::Data::new(post_attachment_pool.clone()))
       .app_data(web::Data::new(session_pool.clone()))
       .app_data(web::Data::new(user_pool.clone()))
       .app_data(web::Data::new(user_stats_pool.clone()))

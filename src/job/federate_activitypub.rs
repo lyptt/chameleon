@@ -43,6 +43,7 @@ pub async fn federate_activitypub(
     &repositories.posts,
     &repositories.likes,
     &repositories.jobs,
+    &repositories.post_attachments,
     queue,
   )
   .await

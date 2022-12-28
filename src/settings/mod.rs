@@ -49,8 +49,12 @@ pub struct Server {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Database {
-  pub url: String,
-  pub max_connections: u32,
+  pub host: String,
+  pub port: u16,
+  pub database: String,
+  pub username: String,
+  pub password: String,
+  pub max_connections: usize,
   pub idle_timeout: u32,
   pub connection_timeout: u32,
 }
@@ -111,7 +115,11 @@ impl Settings {
         level: AppLogLevel::Debug,
       },
       database: Database {
-        url: "postgresql://root:root@127.0.0.1:5432/orbit".to_string(),
+        host: "127.0.0.1".to_string(),
+        port: 5432,
+        database: "orbit".to_string(),
+        username: "root".to_string(),
+        password: "root".to_string(),
         max_connections: 1,
         idle_timeout: 30,
         connection_timeout: 30,

@@ -21,8 +21,8 @@ use crate::{
     reference::Reference,
   },
   db::{
-    follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, post_repository::PostPool,
-    user_repository::UserPool,
+    follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool,
+    post_attachment_repository::PostAttachmentPool, post_repository::PostPool, user_repository::UserPool,
   },
   helpers::core::unwrap_or_fail,
   logic::LogicErr,
@@ -42,6 +42,7 @@ pub async fn federate(
   posts: &PostPool,
   likes: &LikePool,
   jobs: &JobPool,
+  post_attachments: &PostAttachmentPool,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
   let kind = match unwrap_or_fail(doc.object.kind.as_ref().map(|v| ActivityType::from_str(v))) {
@@ -88,7 +89,17 @@ pub async fn federate(
           None => return Err(LogicErr::InvalidData),
         };
 
-        federate_create_note(object, &actor_user, activity_visibility, follows, posts, jobs, queue).await
+        federate_create_note(
+          object,
+          &actor_user,
+          activity_visibility,
+          follows,
+          posts,
+          jobs,
+          post_attachments,
+          queue,
+        )
+        .await
       }
       ActivityType::Update => {
         let activity_visibility = match activity_visibility {

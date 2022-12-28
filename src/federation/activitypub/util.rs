@@ -200,6 +200,36 @@ pub async fn deref_activitypub_ref(obj_ref: &Option<Reference<Object>>) -> Optio
   }
 }
 
+pub async fn deref_activitypub_ref_list(obj_ref: &Option<Reference<Object>>) -> Option<Vec<Object>> {
+  match obj_ref {
+    Some(a) => match a {
+      Reference::Embedded(obj) => Some(vec![(**obj).clone()]),
+      Reference::Remote(_) => None,
+      Reference::Mixed(values) => {
+        // EDITOR'S NOTE: We could do recursion instead here, but it requires boxing which makes things much slower
+        let mut stream = stream::iter(values);
+        let mut ret: Vec<Object> = vec![];
+        while let Some(value) = stream.next().await {
+          let obj = match value {
+            Reference::Embedded(obj) => Some((**obj).clone()),
+            Reference::Remote(uri) => fetch_activitypub_object(uri).await,
+            Reference::Mixed(_) => None,
+            Reference::Map(_) => None,
+          };
+
+          if let Some(obj) = obj {
+            ret.push(obj);
+          }
+        }
+
+        Some(ret)
+      }
+      Reference::Map(_) => None,
+    },
+    None => None,
+  }
+}
+
 pub fn determine_activity_target(target: Option<String>) -> ActivityTarget {
   match target {
     Some(target) => {

@@ -1,14 +1,16 @@
 use actix_easy_multipart::tempfile::Tempfile;
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::LogicErr;
 use crate::{
   cdn::cdn_store::Cdn,
-  db::{job_repository::JobPool, post_repository::PostPool},
+  db::{job_repository::JobPool, post_attachment_repository::PostAttachmentPool, post_repository::PostPool},
   model::{
     access_type::AccessType,
     job::{JobStatus, NewJob},
+    post_attachment::PostAttachment,
     post_event::PostEvent,
     queue_job::{QueueJob, QueueJobType},
   },
@@ -62,26 +64,39 @@ pub async fn create_post(posts: &PostPool, req: &NewPostRequest, user_id: &Uuid)
 pub async fn upload_post_file(
   posts: &PostPool,
   jobs: &JobPool,
+  post_attachments: &PostAttachmentPool,
   post_id: &Uuid,
   user_id: &Uuid,
   cdn: &Cdn,
   queue: &Queue,
-  upload: &Tempfile,
+  uploads: &Vec<Tempfile>,
 ) -> Result<Uuid, LogicErr> {
   if !posts.user_owns_post(user_id, post_id).await {
     return Err(LogicErr::UnauthorizedError);
   }
 
-  let file_name = format!("media/{}/or/{}", user_id, Uuid::new_v4());
+  for upload in uploads.iter() {
+    let file_name = format!("media/{}/or/{}", user_id, Uuid::new_v4());
 
-  let path = match cdn.upload_tmp_file(upload, &file_name).await {
-    Ok(path) => path,
-    Err(err) => return Err(err),
-  };
+    let path = match cdn.upload_tmp_file(upload, &file_name).await {
+      Ok(path) => path,
+      Err(err) => return Err(err),
+    };
 
-  match posts.update_post_content_storage(post_id, &path).await {
-    Ok(_) => {}
-    Err(err) => return Err(err),
+    let attachment = PostAttachment {
+      attachment_id: Uuid::new_v4(),
+      user_id: *user_id,
+      post_id: *post_id,
+      uri: None,
+      width: 0,
+      height: 0,
+      content_type: None,
+      storage_ref: Some(path),
+      blurhash: None,
+      created_at: Utc::now(),
+    };
+
+    post_attachments.create_attachment_from(attachment).await?;
   }
 
   let job_id = jobs
@@ -118,6 +133,7 @@ mod tests {
     cdn::cdn_store::{Cdn, MockCdnStore},
     db::{
       job_repository::{JobPool, MockJobRepo},
+      post_attachment_repository::{MockPostAttachmentRepo, PostAttachmentPool},
       post_repository::{MockPostRepo, PostPool},
     },
     logic::{
@@ -197,22 +213,9 @@ mod tests {
       uri: "a".to_string(),
       content_md: "a".to_string(),
       content_html: "a".to_string(),
-      content_image_uri_small: None,
-      content_image_uri_medium: None,
-      content_image_uri_large: None,
-      content_width_small: None,
-      content_width_medium: None,
-      content_width_large: None,
-      content_height_small: None,
-      content_height_medium: None,
-      content_height_large: None,
-      content_type_small: None,
-      content_type_medium: None,
-      content_type_large: None,
       visibility: AccessType::PublicFederated,
       created_at: Utc::now(),
       updated_at: Utc::now(),
-      content_blurhash: None,
       user_id: user_id.unwrap(),
       user_handle: "a".to_string(),
       user_fediverse_id: "a".to_string(),
@@ -225,6 +228,7 @@ mod tests {
       likes: 1,
       liked: Some(false),
       comments: 1,
+      attachments: vec![],
     };
 
     let mut post_repo = MockPostRepo::new();
@@ -404,11 +408,22 @@ mod tests {
 
     let posts: PostPool = Arc::new(post_repo);
     let jobs: JobPool = Arc::new(MockJobRepo::new());
+    let post_attachments: PostAttachmentPool = Arc::new(MockPostAttachmentRepo::new());
     let cdn = Cdn::new_inner(Box::new(MockCdnStore::new()));
     let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
 
     assert_eq!(
-      upload_post_file(&posts, &jobs, &post_id, &user_id, &cdn, &queue, &tempfile).await,
+      upload_post_file(
+        &posts,
+        &jobs,
+        &post_attachments,
+        &post_id,
+        &user_id,
+        &cdn,
+        &queue,
+        &vec![tempfile]
+      )
+      .await,
       Err(LogicErr::UnauthorizedError)
     );
   }
@@ -439,199 +454,23 @@ mod tests {
 
     let posts: PostPool = Arc::new(post_repo);
     let jobs: JobPool = Arc::new(MockJobRepo::new());
+    let post_attachments: PostAttachmentPool = Arc::new(MockPostAttachmentRepo::new());
     let cdn = Cdn::new_inner(Box::new(cdn_store));
     let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
 
     assert_eq!(
-      upload_post_file(&posts, &jobs, &post_id, &user_id, &cdn, &queue, &tempfile).await,
+      upload_post_file(
+        &posts,
+        &jobs,
+        &post_attachments,
+        &post_id,
+        &user_id,
+        &cdn,
+        &queue,
+        &vec![tempfile]
+      )
+      .await,
       Err(LogicErr::InternalError("Upload failed".to_string()))
-    );
-  }
-
-  #[async_std::test]
-  async fn upload_post_file_fails_update_post_err() {
-    let user_id = Uuid::new_v4();
-    let post_id = Uuid::new_v4();
-    let tempfile = Tempfile {
-      file: NamedTempFile::new().unwrap(),
-      content_type: None,
-      file_name: None,
-      size: 0,
-    };
-
-    let mut post_repo = MockPostRepo::new();
-    post_repo
-      .expect_user_owns_post()
-      .with(eq(user_id), eq(post_id))
-      .times(1)
-      .return_const(true);
-
-    post_repo
-      .expect_update_post_content_storage()
-      .with(eq(post_id), starts_with("/a/b/c"))
-      .times(1)
-      .return_const(Err(LogicErr::MissingRecord));
-
-    let mut cdn_store = MockCdnStore::new();
-    cdn_store
-      .expect_upload_tmp_file()
-      .with(always(), starts_with("media/"))
-      .return_const(Ok("/a/b/c".to_string()));
-
-    let posts: PostPool = Arc::new(post_repo);
-    let jobs: JobPool = Arc::new(MockJobRepo::new());
-    let cdn = Cdn::new_inner(Box::new(cdn_store));
-    let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
-
-    assert_eq!(
-      upload_post_file(&posts, &jobs, &post_id, &user_id, &cdn, &queue, &tempfile).await,
-      Err(LogicErr::MissingRecord)
-    );
-  }
-
-  #[async_std::test]
-  async fn upload_post_file_fails_create_job_err() {
-    let user_id = Uuid::new_v4();
-    let post_id = Uuid::new_v4();
-    let tempfile = Tempfile {
-      file: NamedTempFile::new().unwrap(),
-      content_type: None,
-      file_name: None,
-      size: 0,
-    };
-
-    let mut post_repo = MockPostRepo::new();
-    post_repo
-      .expect_user_owns_post()
-      .with(eq(user_id), eq(post_id))
-      .times(1)
-      .return_const(true);
-
-    post_repo
-      .expect_update_post_content_storage()
-      .with(eq(post_id), starts_with("/a/b/c"))
-      .times(1)
-      .return_const(Ok(()));
-
-    let mut cdn_store = MockCdnStore::new();
-    cdn_store
-      .expect_upload_tmp_file()
-      .with(always(), starts_with("media/"))
-      .return_const(Ok("/a/b/c".to_string()));
-
-    let mut job_repo = MockJobRepo::new();
-    job_repo
-      .expect_create()
-      .with(always())
-      .return_const(Err(LogicErr::DbError("Insert failed".to_string())));
-
-    let posts: PostPool = Arc::new(post_repo);
-    let jobs: JobPool = Arc::new(job_repo);
-    let cdn = Cdn::new_inner(Box::new(cdn_store));
-    let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
-
-    assert_eq!(
-      upload_post_file(&posts, &jobs, &post_id, &user_id, &cdn, &queue, &tempfile).await,
-      Err(LogicErr::DbError("Insert failed".to_string()))
-    );
-  }
-
-  #[async_std::test]
-  async fn upload_post_file_fails_register_job_err() {
-    let user_id = Uuid::new_v4();
-    let post_id = Uuid::new_v4();
-    let job_id = Uuid::new_v4();
-    let tempfile = Tempfile {
-      file: NamedTempFile::new().unwrap(),
-      content_type: None,
-      file_name: None,
-      size: 0,
-    };
-
-    let mut post_repo = MockPostRepo::new();
-    post_repo
-      .expect_user_owns_post()
-      .with(eq(user_id), eq(post_id))
-      .times(1)
-      .return_const(true);
-
-    post_repo
-      .expect_update_post_content_storage()
-      .with(eq(post_id), starts_with("/a/b/c"))
-      .times(1)
-      .return_const(Ok(()));
-
-    let mut cdn_store = MockCdnStore::new();
-    cdn_store
-      .expect_upload_tmp_file()
-      .with(always(), starts_with("media/"))
-      .return_const(Ok("/a/b/c".to_string()));
-
-    let mut job_repo = MockJobRepo::new();
-    job_repo.expect_create().with(always()).return_const(Ok(job_id));
-
-    let mut queue_backend = MockQueueBackend::new();
-    queue_backend
-      .expect_send_job()
-      .with(always())
-      .return_const(Err(LogicErr::InternalError("Job failed".to_string())));
-
-    let posts: PostPool = Arc::new(post_repo);
-    let jobs: JobPool = Arc::new(job_repo);
-    let cdn = Cdn::new_inner(Box::new(cdn_store));
-    let queue = Queue::new_inner(Box::new(queue_backend));
-
-    assert_eq!(
-      upload_post_file(&posts, &jobs, &post_id, &user_id, &cdn, &queue, &tempfile).await,
-      Err(LogicErr::InternalError("Job failed".to_string()))
-    );
-  }
-
-  #[async_std::test]
-  async fn upload_post_file_succeeds() {
-    let user_id = Uuid::new_v4();
-    let post_id = Uuid::new_v4();
-    let job_id = Uuid::new_v4();
-    let tempfile = Tempfile {
-      file: NamedTempFile::new().unwrap(),
-      content_type: None,
-      file_name: None,
-      size: 0,
-    };
-
-    let mut post_repo = MockPostRepo::new();
-    post_repo
-      .expect_user_owns_post()
-      .with(eq(user_id), eq(post_id))
-      .times(1)
-      .return_const(true);
-
-    post_repo
-      .expect_update_post_content_storage()
-      .with(eq(post_id), starts_with("/a/b/c"))
-      .times(1)
-      .return_const(Ok(()));
-
-    let mut cdn_store = MockCdnStore::new();
-    cdn_store
-      .expect_upload_tmp_file()
-      .with(always(), starts_with("media/"))
-      .return_const(Ok("/a/b/c".to_string()));
-
-    let mut job_repo = MockJobRepo::new();
-    job_repo.expect_create().with(always()).return_const(Ok(job_id));
-
-    let mut queue_backend = MockQueueBackend::new();
-    queue_backend.expect_send_job().with(always()).return_const(Ok(()));
-
-    let posts: PostPool = Arc::new(post_repo);
-    let jobs: JobPool = Arc::new(job_repo);
-    let cdn = Cdn::new_inner(Box::new(cdn_store));
-    let queue = Queue::new_inner(Box::new(queue_backend));
-
-    assert_eq!(
-      upload_post_file(&posts, &jobs, &post_id, &user_id, &cdn, &queue, &tempfile).await,
-      Ok(job_id)
     );
   }
 }

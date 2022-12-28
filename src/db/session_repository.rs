@@ -1,14 +1,15 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{Pool, Postgres};
+use deadpool_postgres::Pool;
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[cfg(test)]
 use mockall::automock;
 
-use crate::{helpers::api::map_db_err, logic::LogicErr};
+use crate::helpers::api::map_db_err;
+use crate::logic::LogicErr;
+
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait SessionRepo {
@@ -29,26 +30,30 @@ pub trait SessionRepo {
 pub type SessionPool = Arc<dyn SessionRepo + Send + Sync>;
 
 pub struct DbSessionRepo {
-  pub db: Pool<Postgres>,
+  pub db: Pool,
 }
 
 #[async_trait]
 impl SessionRepo for DbSessionRepo {
   async fn query_session_exists_for_refresh_token(&self, refresh_token: &str) -> bool {
-    let count: i64 =
-      match sqlx::query_scalar("SELECT COUNT(*) from sessions WHERE refresh_token = $1 AND refresh_expires_at > NOW()")
-        .bind(refresh_token)
-        .fetch_one(&self.db)
-        .await
-      {
-        Ok(count) => count,
-        Err(err) => {
-          println!("{}", err);
-          return false;
-        }
-      };
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return false,
+    };
 
-    count > 0
+    let row = match db
+      .query_one(
+        "SELECT COUNT(*) > 0 from sessions WHERE refresh_token = $1 AND refresh_expires_at > NOW()",
+        &[&refresh_token],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return false,
+    };
+
+    row.get(0)
   }
 
   async fn insert_session(
@@ -60,42 +65,55 @@ impl SessionRepo for DbSessionRepo {
     access_expires_at: &DateTime<Utc>,
     refresh_expires_at: &DateTime<Utc>,
   ) -> Result<(), LogicErr> {
-    sqlx::query("INSERT INTO sessions (session_id, user_id, app_id, refresh_token, access_expires_at, refresh_expires_at) VALUES ($1, $2, $3, $4, $5, $6)")
-      .bind(session_id)
-      .bind(user_id)
-      .bind(app_id)
-      .bind(refresh_token)
-      .bind(access_expires_at)
-      .bind(refresh_expires_at)
-      .execute(&self.db)
-      .await.map_err(map_db_err)?;
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      r#"INSERT INTO sessions (session_id, user_id, app_id, refresh_token, access_expires_at, refresh_expires_at)
+      VALUES ($1, $2, $3, $4, $5, $6)"#,
+      &[
+        &session_id,
+        &user_id,
+        &app_id,
+        &refresh_token,
+        &access_expires_at,
+        &refresh_expires_at,
+      ],
+    )
+    .await
+    .map_err(map_db_err)?;
 
     Ok(())
   }
 
   async fn delete_session(&self, user_id: &Uuid, app_id: &Uuid, refresh_token: &str) -> Result<(), LogicErr> {
-    sqlx::query("DELETE FROM sessions WHERE refresh_token = $1 AND app_id = $2 AND user_id = $3")
-      .bind(refresh_token)
-      .bind(app_id)
-      .bind(user_id)
-      .execute(&self.db)
-      .await
-      .map_err(map_db_err)?;
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      "DELETE FROM sessions WHERE refresh_token = $1 AND app_id = $2 AND user_id = $3",
+      &[&refresh_token, &app_id, &user_id],
+    )
+    .await
+    .map_err(map_db_err)?;
 
     Ok(())
   }
 
   async fn query_session_exists(&self, session_id: &Uuid) -> bool {
-    let count: i64 =
-      match sqlx::query_scalar("SELECT COUNT(*) from sessions WHERE session_id = $1 AND access_expires_at > NOW()")
-        .bind(session_id)
-        .fetch_one(&self.db)
-        .await
-      {
-        Ok(count) => count,
-        Err(_) => return false,
-      };
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return false,
+    };
 
-    count > 0
+    let row = match db
+      .query_one(
+        "SELECT COUNT(*) > 0 from sessions WHERE session_id = $1 AND access_expires_at > NOW()",
+        &[&session_id],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return false,
+    };
+
+    row.get(0)
   }
 }

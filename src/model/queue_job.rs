@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use strum::{Display, EnumString};
 use typed_builder::TypedBuilder;
 use uuid::Uuid;
@@ -16,6 +15,12 @@ pub enum QueueJobType {
   CreateBoostEvent,
   DeleteBoostEvents,
   FederateActivityPub,
+}
+
+impl Default for QueueJobType {
+  fn default() -> Self {
+    QueueJobType::Unknown
+  }
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug, Display, EnumString)]

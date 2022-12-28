@@ -1,9 +1,10 @@
-use sqlx::{Pool, Postgres};
+use deadpool_postgres::Pool;
 
 use super::{
   app_repository::AppPool, comment_repository::CommentPool, event_repository::EventPool, follow_repository::FollowPool,
-  job_repository::JobPool, like_repository::LikePool, post_repository::PostPool, repository::Repository,
-  session_repository::SessionPool, user_repository::UserPool, user_stats_repository::UserStatsPool,
+  job_repository::JobPool, like_repository::LikePool, post_attachment_repository::PostAttachmentPool,
+  post_repository::PostPool, repository::Repository, session_repository::SessionPool, user_repository::UserPool,
+  user_stats_repository::UserStatsPool,
 };
 
 #[derive(Clone)]
@@ -15,13 +16,14 @@ pub struct Repositories {
   pub jobs: JobPool,
   pub likes: LikePool,
   pub posts: PostPool,
+  pub post_attachments: PostAttachmentPool,
   pub sessions: SessionPool,
   pub users: UserPool,
   pub user_stats: UserStatsPool,
 }
 
 impl Repositories {
-  pub fn new(db: &Pool<Postgres>) -> Self {
+  pub fn new(db: &Pool) -> Self {
     Repositories {
       apps: Repository::new_app_pool(db),
       comments: Repository::new_comment_pool(db),
@@ -30,6 +32,7 @@ impl Repositories {
       jobs: Repository::new_job_pool(db),
       likes: Repository::new_like_pool(db),
       posts: Repository::new_post_pool(db),
+      post_attachments: Repository::new_post_attachment_pool(db),
       sessions: Repository::new_session_pool(db),
       users: Repository::new_user_pool(db),
       user_stats: Repository::new_user_stats_pool(db),

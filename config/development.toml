@@ -10,6 +10,11 @@ jwt_secret = "super-secret-key"
 
 [database]
 url = "postgresql://orbit:orbit@127.0.0.1:5432/orbit"
+host = "127.0.0.1"
+port = 5432
+database = "orbit"
+username = "orbit"
+password = "orbit"
 max_connections = 5
 
 [cdn]

@@ -70,9 +70,8 @@ impl From<User> for UserAccountPub {
 #[cfg(test)]
 mod tests {
   use crate::model::{user::User, user_account_pub::UserAccountPub};
-
-  use sqlx::types::Uuid;
   use std::str::FromStr;
+  use uuid::Uuid;
 
   #[test]
   fn test_from_user() {

@@ -1,19 +1,19 @@
 use std::collections::HashMap;
-
-use sqlx::FromRow;
+use tokio_postgres::Row;
 use uuid::Uuid;
 
 use crate::{
   activitypub::{
     activity_convertible::ActivityConvertible, actor::ActorProps, key::KeyProps, object::Object, reference::Reference,
   },
+  db::FromRow,
   helpers::api::relative_to_absolute_uri,
   settings::SETTINGS,
 };
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
 
-#[derive(Debug, Clone, FromRow, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
   pub user_id: Uuid,
   pub fediverse_id: String,
@@ -55,6 +55,39 @@ impl User {
       ]
       .into(),
     }
+  }
+}
+
+impl FromRow for User {
+  fn from_row(row: Row) -> Option<Self> {
+    Some(User {
+      user_id: row.get("user_id"),
+      fediverse_id: row.get("fediverse_id"),
+      handle: row.get("handle"),
+      fediverse_uri: row.get("fediverse_uri"),
+      avatar_url: row.get("avatar_url"),
+      email: row.get("email"),
+      password_hash: row.get("password_hash"),
+      is_external: row.get("is_external"),
+      url_1: row.get("url_1"),
+      url_2: row.get("url_2"),
+      url_3: row.get("url_3"),
+      url_4: row.get("url_4"),
+      url_5: row.get("url_5"),
+      url_1_title: row.get("url_1_title"),
+      url_2_title: row.get("url_2_title"),
+      url_3_title: row.get("url_3_title"),
+      url_4_title: row.get("url_4_title"),
+      url_5_title: row.get("url_5_title"),
+      intro_md: row.get("intro_md"),
+      intro_html: row.get("intro_html"),
+      private_key: row.get("private_key"),
+      public_key: row.get("public_key"),
+      ext_apub_followers_uri: row.get("ext_apub_followers_uri"),
+      ext_apub_following_uri: row.get("ext_apub_following_uri"),
+      ext_apub_inbox_uri: row.get("ext_apub_inbox_uri"),
+      ext_apub_outbox_uri: row.get("ext_apub_outbox_uri"),
+    })
   }
 }
 

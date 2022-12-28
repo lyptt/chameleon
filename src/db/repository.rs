@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use sqlx::{Pool, Postgres};
+use deadpool_postgres::Pool;
 
 use super::{
   app_repository::{AppPool, DbAppRepo},
@@ -9,6 +9,7 @@ use super::{
   follow_repository::{DbFollowRepo, FollowPool},
   job_repository::{DbJobRepo, JobPool},
   like_repository::{DbLikeRepo, LikePool},
+  post_attachment_repository::{DbPostAttachmentRepo, PostAttachmentPool},
   post_repository::{DbPostRepo, PostPool},
   session_repository::{DbSessionRepo, SessionPool},
   user_repository::{DbUserRepo, UserPool},
@@ -18,43 +19,47 @@ use super::{
 pub struct Repository {}
 
 impl Repository {
-  pub fn new_app_pool(db: &Pool<Postgres>) -> AppPool {
+  pub fn new_app_pool(db: &Pool) -> AppPool {
     Arc::new(DbAppRepo { db: db.clone() })
   }
 
-  pub fn new_comment_pool(db: &Pool<Postgres>) -> CommentPool {
+  pub fn new_comment_pool(db: &Pool) -> CommentPool {
     Arc::new(DbCommentRepo { db: db.clone() })
   }
 
-  pub fn new_event_pool(db: &Pool<Postgres>) -> EventPool {
+  pub fn new_event_pool(db: &Pool) -> EventPool {
     Arc::new(DbEventRepo { db: db.clone() })
   }
 
-  pub fn new_follow_pool(db: &Pool<Postgres>) -> FollowPool {
+  pub fn new_follow_pool(db: &Pool) -> FollowPool {
     Arc::new(DbFollowRepo { db: db.clone() })
   }
 
-  pub fn new_job_pool(db: &Pool<Postgres>) -> JobPool {
+  pub fn new_job_pool(db: &Pool) -> JobPool {
     Arc::new(DbJobRepo { db: db.clone() })
   }
 
-  pub fn new_like_pool(db: &Pool<Postgres>) -> LikePool {
+  pub fn new_like_pool(db: &Pool) -> LikePool {
     Arc::new(DbLikeRepo { db: db.clone() })
   }
 
-  pub fn new_post_pool(db: &Pool<Postgres>) -> PostPool {
+  pub fn new_post_pool(db: &Pool) -> PostPool {
     Arc::new(DbPostRepo { db: db.clone() })
   }
 
-  pub fn new_session_pool(db: &Pool<Postgres>) -> SessionPool {
+  pub fn new_post_attachment_pool(db: &Pool) -> PostAttachmentPool {
+    Arc::new(DbPostAttachmentRepo { db: db.clone() })
+  }
+
+  pub fn new_session_pool(db: &Pool) -> SessionPool {
     Arc::new(DbSessionRepo { db: db.clone() })
   }
 
-  pub fn new_user_pool(db: &Pool<Postgres>) -> UserPool {
+  pub fn new_user_pool(db: &Pool) -> UserPool {
     Arc::new(DbUserRepo { db: db.clone() })
   }
 
-  pub fn new_user_stats_pool(db: &Pool<Postgres>) -> UserStatsPool {
+  pub fn new_user_stats_pool(db: &Pool) -> UserStatsPool {
     Arc::new(DbUserStatsRepo { db: db.clone() })
   }
 }

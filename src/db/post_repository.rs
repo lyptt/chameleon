@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::{
   helpers::api::map_db_err,
   logic::LogicErr,
@@ -7,11 +5,14 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use sqlx::{Pool, Postgres};
+use deadpool_postgres::Pool;
+use std::{str::FromStr, sync::Arc};
 use uuid::Uuid;
 
 #[cfg(test)]
 use mockall::automock;
+
+use super::{FromRow, FromRows};
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait PostRepo {
@@ -51,7 +52,6 @@ pub trait PostRepo {
     visibility: &AccessType,
   ) -> Result<Uuid, LogicErr>;
   async fn create_post_from(&self, post: Post) -> Result<(), LogicErr>;
-  async fn update_post_content_storage(&self, post_id: &Uuid, content_image_storage_ref: &str) -> Result<(), LogicErr>;
   async fn user_owns_post(&self, user_id: &Uuid, post_id: &Uuid) -> bool;
   async fn find_optional_by_id(&self, post_id: &Uuid) -> Option<Post>;
   async fn find_optional_by_uri(&self, post_uri: &str) -> Option<Post>;
@@ -83,53 +83,55 @@ pub trait PostRepo {
 pub type PostPool = Arc<dyn PostRepo + Send + Sync>;
 
 pub struct DbPostRepo {
-  pub db: Pool<Postgres>,
+  pub db: Pool,
 }
 
 #[async_trait]
 impl PostRepo for DbPostRepo {
   async fn fetch_user_own_feed(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_user_own_feed.sql"))
-      .bind(user_id)
-      .bind(limit)
-      .bind(skip)
-      .fetch_all(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        include_str!("./sql/fetch_user_own_feed.sql"),
+        &[&user_id, &limit, &skip],
+      )
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    PostEvent::from_rows(rows)
   }
 
   async fn count_user_own_feed(&self, user_id: &Uuid) -> Result<i64, LogicErr> {
-    let count = sqlx::query_scalar(include_str!("./sql/count_user_own_feed.sql"))
-      .bind(user_id)
-      .fetch_one(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(include_str!("./sql/count_user_own_feed.sql"), &[&user_id])
       .await
       .map_err(map_db_err)?;
 
-    Ok(count)
+    Ok(row.get(0))
   }
 
   async fn fetch_user_federated_feed(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_user_federated_feed.sql"))
-      .bind(user_id)
-      .bind(limit)
-      .bind(skip)
-      .fetch_all(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        include_str!("./sql/fetch_user_federated_feed.sql"),
+        &[&user_id, &limit, &skip],
+      )
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    PostEvent::from_rows(rows)
   }
 
   async fn count_user_federated_feed(&self, user_id: &Uuid) -> Result<i64, LogicErr> {
-    let count = sqlx::query_scalar(include_str!("./sql/count_user_federated_feed.sql"))
-      .bind(user_id)
-      .fetch_one(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(include_str!("./sql/count_user_federated_feed.sql"), &[&user_id])
       .await
       .map_err(map_db_err)?;
 
-    Ok(count)
+    Ok(row.get(0))
   }
 
   async fn fetch_user_public_feed(
@@ -139,77 +141,95 @@ impl PostRepo for DbPostRepo {
     limit: i64,
     skip: i64,
   ) -> Result<Vec<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_user_public_feed.sql"))
-      .bind(target_user_id)
-      .bind(own_user_id)
-      .bind(limit)
-      .bind(skip)
-      .fetch_all(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        include_str!("./sql/fetch_user_public_feed.sql"),
+        &[&target_user_id, &own_user_id, &limit, &skip],
+      )
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    PostEvent::from_rows(rows)
   }
 
   async fn count_user_public_feed(&self, target_user_id: &Uuid, own_user_id: &Option<Uuid>) -> Result<i64, LogicErr> {
-    let count = sqlx::query_scalar(include_str!("./sql/count_user_public_feed.sql"))
-      .bind(target_user_id)
-      .bind(own_user_id)
-      .fetch_one(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(
+        include_str!("./sql/count_user_public_feed.sql"),
+        &[&target_user_id, &own_user_id],
+      )
       .await
       .map_err(map_db_err)?;
 
-    Ok(count)
+    Ok(row.get(0))
   }
 
   async fn fetch_global_federated_feed(&self, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_global_federated_feed.sql"))
-      .bind(limit)
-      .bind(skip)
-      .fetch_all(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(include_str!("./sql/fetch_global_federated_feed.sql"), &[&limit, &skip])
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    PostEvent::from_rows(rows)
   }
 
   async fn count_global_federated_feed(&self) -> Result<i64, LogicErr> {
-    let count = sqlx::query_scalar(include_str!("./sql/count_global_federated_feed.sql"))
-      .fetch_one(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(include_str!("./sql/count_global_federated_feed.sql"), &[])
       .await
       .map_err(map_db_err)?;
 
-    Ok(count)
+    Ok(row.get(0))
   }
 
   async fn fetch_by_id(&self, id: &Uuid) -> Result<Post, LogicErr> {
-    sqlx::query_as("SELECT * FROM posts WHERE post_id = $1")
-      .bind(id)
-      .fetch_one(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+
+    let row = db
+      .query_one("SELECT * FROM posts WHERE post_id = $1", &[&id])
       .await
-      .map_err(map_db_err)
+      .map_err(map_db_err)?;
+
+    match Post::from_row(row) {
+      Some(post) => Ok(post),
+      None => Err(LogicErr::MissingRecord),
+    }
   }
 
   async fn fetch_post(&self, post_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_post.sql"))
-      .bind(post_id)
-      .bind(user_id)
-      .fetch_optional(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+
+    let rows = db
+      .query(include_str!("./sql/fetch_post.sql"), &[&post_id, &user_id])
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    let mut posts = PostEvent::from_rows(rows)?;
+
+    match posts.len() {
+      1 => Ok(Some(posts.remove(0))),
+      _ => Ok(None),
+    }
   }
 
   async fn fetch_post_from_uri(&self, post_uri: &str, user_id: &Option<Uuid>) -> Result<Option<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_post_from_uri.sql"))
-      .bind(post_uri)
-      .bind(user_id)
-      .fetch_optional(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+
+    let rows = db
+      .query(include_str!("./sql/fetch_post_from_uri.sql"), &[&post_uri, &user_id])
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    let mut posts = PostEvent::from_rows(rows)?;
+
+    match posts.len() {
+      1 => Ok(Some(posts.remove(0))),
+      _ => Ok(None),
+    }
   }
 
   async fn create_post(
@@ -222,174 +242,195 @@ impl PostRepo for DbPostRepo {
     let post_id = Uuid::new_v4();
     let uri = post_id.to_string();
 
-    let id = sqlx::query_scalar(
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db.query_one(
       "INSERT INTO posts (post_id, user_id, content_md, content_html, visibility, uri) VALUES ($1, $2, $3, $4, $5, $6) RETURNING post_id",
+      &[&post_id, &user_id, &content_md, &content_html, &visibility.to_string(), &uri],
     )
-    .bind(post_id)
-    .bind(user_id)
-    .bind(content_md)
-    .bind(content_html)
-    .bind(visibility.to_string())
-    .bind(uri)
-    .fetch_one(&self.db)
-    .await.map_err(map_db_err)?;
+    .await
+    .map_err(map_db_err)?;
 
-    Ok(id)
+    Ok(row.get(0))
   }
 
   async fn create_post_from(&self, post: Post) -> Result<(), LogicErr> {
-    sqlx::query(
-      "INSERT INTO posts (post_id, user_id, uri, is_external, content_md, content_html, content_image_uri_small, content_image_uri_medium, 
-        content_image_uri_large, content_width_small, content_width_medium, content_width_large, content_height_small, content_height_medium, 
-        content_height_large, content_type_small, content_type_medium, content_type_large, content_image_storage_ref, content_blurhash, 
-        visibility, created_at, updated_at, deletion_scheduled_at) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)",
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      "INSERT INTO posts (post_id, user_id, uri, is_external, content_md, content_html, visibility, created_at, updated_at, deletion_scheduled_at) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+      &[
+        &post.post_id,
+        &post.user_id,
+        &post.uri,
+        &post.is_external,
+        &post.content_md,
+        &post.content_html,
+        &post.visibility.to_string(),
+        &post.created_at,
+        &post.updated_at,
+        &post.deletion_scheduled_at,
+      ],
     )
-    .bind(post.post_id)
-    .bind(post.user_id)
-    .bind(post.uri)
-    .bind(post.is_external)
-    .bind(post.content_md)
-    .bind(post.content_html)
-    .bind(post.content_image_uri_small)
-    .bind(post.content_image_uri_medium)
-    .bind(post.content_image_uri_large)
-    .bind(post.content_width_small)
-    .bind(post.content_width_medium)
-    .bind(post.content_width_large)
-    .bind(post.content_height_small)
-    .bind(post.content_height_medium)
-    .bind(post.content_height_large)
-    .bind(post.content_type_small)
-    .bind(post.content_type_medium)
-    .bind(post.content_type_large)
-    .bind(post.content_image_storage_ref)
-    .bind(post.content_blurhash)
-    .bind(post.visibility.to_string())
-    .bind(post.created_at)
-    .bind(post.updated_at)
-    .bind(post.deletion_scheduled_at)
-    .execute(&self.db)
-    .await.map_err(map_db_err)?;
-
-    Ok(())
-  }
-
-  async fn update_post_content_storage(&self, post_id: &Uuid, content_image_storage_ref: &str) -> Result<(), LogicErr> {
-    sqlx::query("UPDATE posts SET content_image_storage_ref = $1 WHERE post_id = $2")
-      .bind(content_image_storage_ref)
-      .bind(post_id)
-      .execute(&self.db)
-      .await
-      .map_err(map_db_err)?;
+    .await
+    .map_err(map_db_err)?;
 
     Ok(())
   }
 
   async fn user_owns_post(&self, user_id: &Uuid, post_id: &Uuid) -> bool {
-    let result: Result<i64, LogicErr> =
-      sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE user_id = $1 AND post_id = $2")
-        .bind(user_id)
-        .bind(post_id)
-        .fetch_one(&self.db)
-        .await
-        .map_err(map_db_err);
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return false,
+    };
 
-    match result {
-      Ok(count) => count > 0,
-      Err(_) => false,
-    }
+    let row = match db
+      .query_one(
+        "SELECT COUNT(*) > 0 FROM posts WHERE user_id = $1 AND post_id = $2",
+        &[&user_id, &post_id],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return false,
+    };
+
+    row.get(0)
   }
 
   async fn find_optional_by_id(&self, post_id: &Uuid) -> Option<Post> {
-    let result = sqlx::query_as("SELECT * FROM posts WHERE post_id = $1")
-      .bind(post_id)
-      .fetch_optional(&self.db)
-      .await;
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
 
-    match result {
-      Ok(post) => post,
-      Err(_) => None,
-    }
+    let row = match db
+      .query_opt("SELECT * FROM posts WHERE post_id = $1", &[&post_id])
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    row.and_then(Post::from_row)
   }
 
   async fn find_optional_by_uri(&self, uri: &str) -> Option<Post> {
-    let result = sqlx::query_as("SELECT * FROM posts WHERE uri = $1")
-      .bind(uri)
-      .fetch_optional(&self.db)
-      .await;
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
 
-    match result {
-      Ok(post) => post,
-      Err(_) => None,
-    }
+    let row = match db
+      .query_opt("SELECT * FROM posts WHERE uri = $1", &[&uri])
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    row.and_then(Post::from_row)
   }
 
   async fn update_post_content(&self, post: &Post) -> Result<(), LogicErr> {
-    sqlx::query("UPDATE posts SET content_type_large = $1, content_type_medium = $2, content_type_small = $3, content_width_large = $4, 
-    content_height_large = $5, content_width_medium = $6, content_height_medium = $7, content_width_small = $8,
-     content_height_small = $9, content_image_uri_large = $10, content_image_uri_medium = $11, content_image_uri_small = $12, content_blurhash = $13 
-     WHERE post_id = $14")
-      .bind(&post.content_type_large)
-      .bind(&post.content_type_medium)
-      .bind(&post.content_type_small)
-      .bind(post.content_width_large)
-      .bind(post.content_height_large)
-      .bind(post.content_width_medium)
-      .bind(post.content_height_medium)
-      .bind(post.content_width_small)
-      .bind(post.content_height_small)
-      .bind(&post.content_image_uri_large)
-      .bind(&post.content_image_uri_medium)
-      .bind(&post.content_image_uri_small)
-      .bind(&post.content_blurhash)
-      .bind(post.post_id)
-      .execute(&self.db)
-      .await.map_err(map_db_err)?;
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      "UPDATE posts SET content_html = $2, content_md = $3, visibility = $4, created_at = $5, updated_at = $6 WHERE post_id = $1",
+      &[
+        &post.post_id,
+        &post.content_html,
+        &post.content_md,
+        &post.visibility.to_string(),
+        &post.created_at,
+        &post.updated_at,
+      ],
+    )
+    .await
+    .map_err(map_db_err)?;
 
     Ok(())
   }
 
   async fn fetch_visibility_by_id(&self, post_id: &Uuid) -> Option<AccessType> {
-    match sqlx::query_scalar("SELECT visibility FROM posts WHERE post_id = $1")
-      .bind(post_id)
-      .fetch_optional(&self.db)
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
+
+    let row = match db
+      .query_opt("SELECT visibility FROM posts WHERE post_id = $1", &[&post_id])
       .await
+      .map_err(map_db_err)
     {
-      Ok(user) => user,
-      Err(_) => None,
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    match row {
+      Some(row) => match AccessType::from_str(row.get(0)) {
+        Ok(at) => Some(at),
+        Err(_) => None,
+      },
+      None => None,
     }
   }
 
   async fn fetch_owner_by_id(&self, post_id: &Uuid) -> Option<Uuid> {
-    match sqlx::query_scalar("SELECT user_id FROM posts WHERE post_id = $1")
-      .bind(post_id)
-      .fetch_optional(&self.db)
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
+
+    let row = match db
+      .query_one("SELECT user_id FROM posts WHERE post_id = $1", &[&post_id])
       .await
+      .map_err(map_db_err)
     {
-      Ok(user) => user,
-      Err(_) => None,
-    }
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    Some(row.get(0))
   }
 
   async fn fetch_owner_handle_by_id(&self, post_id: &Uuid) -> Option<String> {
-    match sqlx::query_scalar(
-      "SELECT u.handle FROM posts p INNER JOIN users u ON u.user_id = p.user_id WHERE p.post_id = $1",
-    )
-    .bind(post_id)
-    .fetch_optional(&self.db)
-    .await
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
+
+    let row = match db
+      .query_one(
+        "SELECT u.handle FROM posts p INNER JOIN users u ON u.user_id = p.user_id WHERE p.post_id = $1",
+        &[&post_id],
+      )
+      .await
+      .map_err(map_db_err)
     {
-      Ok(user) => user,
-      Err(_) => None,
-    }
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    Some(row.get(0))
   }
 
   async fn fetch_post_count(&self) -> i64 {
-    sqlx::query_scalar("SELECT COUNT(*) FROM posts")
-      .fetch_one(&self.db)
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return 0,
+    };
+    let row = match db
+      .query_one("SELECT COUNT(*) FROM posts", &[])
       .await
-      .unwrap_or(0)
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return 0,
+    };
+
+    row.get(0)
   }
 
   async fn fetch_user_public_likes_feed(
@@ -399,16 +440,16 @@ impl PostRepo for DbPostRepo {
     limit: i64,
     skip: i64,
   ) -> Result<Vec<PostEvent>, LogicErr> {
-    let post = sqlx::query_as(include_str!("./sql/fetch_user_public_likes_feed.sql"))
-      .bind(target_user_id)
-      .bind(own_user_id)
-      .bind(limit)
-      .bind(skip)
-      .fetch_all(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        include_str!("./sql/fetch_user_public_likes_feed.sql"),
+        &[&target_user_id, &own_user_id, &limit, &skip],
+      )
       .await
       .map_err(map_db_err)?;
 
-    Ok(post)
+    PostEvent::from_rows(rows)
   }
 
   async fn count_user_public_likes_feed(
@@ -416,32 +457,33 @@ impl PostRepo for DbPostRepo {
     target_user_id: &Uuid,
     own_user_id: &Option<Uuid>,
   ) -> Result<i64, LogicErr> {
-    let count = sqlx::query_scalar(include_str!("./sql/count_user_public_likes_feed.sql"))
-      .bind(target_user_id)
-      .bind(own_user_id)
-      .fetch_one(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(
+        include_str!("./sql/count_user_public_likes_feed.sql"),
+        &[&target_user_id, &own_user_id],
+      )
       .await
       .map_err(map_db_err)?;
 
-    Ok(count)
+    Ok(row.get(0))
   }
 
   async fn delete_post(&self, post_id: &Uuid, user_id: &Uuid) -> Result<(), LogicErr> {
-    sqlx::query("DELETE FROM posts WHERE post_id = $1 AND user_id = $2")
-      .bind(post_id)
-      .bind(user_id)
-      .execute(&self.db)
-      .await
-      .map_err(map_db_err)?;
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      "DELETE FROM posts WHERE post_id = $1 AND user_id = $2",
+      &[&post_id, &user_id],
+    )
+    .await
+    .map_err(map_db_err)?;
 
     Ok(())
   }
 
   async fn delete_post_from_uri(&self, uri: &str, user_id: &Uuid) -> Result<(), LogicErr> {
-    sqlx::query("DELETE FROM posts WHERE uri = $1 AND user_id = $2")
-      .bind(uri)
-      .bind(user_id)
-      .execute(&self.db)
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute("DELETE FROM posts WHERE uri = $1 AND user_id = $2", &[&uri, &user_id])
       .await
       .map_err(map_db_err)?;
 

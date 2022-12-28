@@ -27,10 +27,12 @@ pub fn result_into<A, B: serde::Serialize + std::convert::From<A>>(
 }
 
 pub fn map_ext_err<A: Error>(err: A) -> LogicErr {
+  log::error!("{:?}", err);
   LogicErr::InternalError(err.to_string())
 }
 
 pub fn map_db_err<A: Error>(err: A) -> LogicErr {
+  log::error!("{:?}", err);
   LogicErr::DbError(err.to_string())
 }
 

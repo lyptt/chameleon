@@ -8,6 +8,7 @@ pub mod follow;
 pub mod job;
 pub mod like;
 pub mod post;
+pub mod post_attachment;
 pub mod post_create_request;
 pub mod post_event;
 pub mod queue_job;

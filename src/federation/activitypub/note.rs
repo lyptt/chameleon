@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref, send_activitypub_object, FederateResult};
+use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref_list, send_activitypub_object, FederateResult};
 use crate::{
   activitypub::{
     activity::ActivityProps,
@@ -11,13 +11,17 @@ use crate::{
     rdf_string::RdfString,
     reference::Reference,
   },
-  db::{follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, post_repository::PostPool},
+  db::{
+    follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool,
+    post_attachment_repository::PostAttachmentPool, post_repository::PostPool,
+  },
   helpers::api::map_db_err,
   logic::LogicErr,
   model::{
     access_type::AccessType,
     job::{JobStatus, NewJob},
     post::Post,
+    post_attachment::PostAttachment,
     queue_job::{QueueJob, QueueJobType},
     user::User,
   },
@@ -32,6 +36,7 @@ pub async fn federate_create_note(
   follows: &FollowPool,
   posts: &PostPool,
   jobs: &JobPool,
+  post_attachments: &PostAttachmentPool,
   queue: &Queue,
 ) -> Result<FederateResult, LogicErr> {
   let followers = follows.fetch_user_followers(&actor.user_id).await.unwrap_or_default();
@@ -46,19 +51,22 @@ pub async fn federate_create_note(
   };
 
   // TODO: Figure out some presentation method for text posts
-  let attachment_obj = match deref_activitypub_ref(&activity_object.attachment).await {
-    Some(obj) => {
-      let obj_type = match ObjectType::from_str_opt(&obj.kind) {
-        Some(t) => t,
-        None => return Err(LogicErr::InvalidData),
-      };
+  let attachments: Vec<Object> = match deref_activitypub_ref_list(&activity_object.attachment).await {
+    Some(obj) => obj
+      .into_iter()
+      .filter(|obj| {
+        let obj_type = match ObjectType::from_str_opt(&obj.kind) {
+          Some(t) => t,
+          None => return false,
+        };
 
-      if obj_type != ObjectType::Image && obj_type != ObjectType::Document {
-        return Err(LogicErr::Unimplemented);
-      }
+        if obj_type != ObjectType::Image && obj_type != ObjectType::Document {
+          return false;
+        }
 
-      obj
-    }
+        true
+      })
+      .collect(),
     None => return Err(LogicErr::Unimplemented),
   };
 
@@ -109,16 +117,6 @@ pub async fn federate_create_note(
     None => return Err(LogicErr::InvalidData),
   };
 
-  let image_content_type = match attachment_obj.media_type {
-    Some(val) => val,
-    None => return Err(LogicErr::InvalidData),
-  };
-
-  let image_uri = match activitypub_ref_to_uri_opt(&attachment_obj.url) {
-    Some(val) => val,
-    None => return Err(LogicErr::InvalidData),
-  };
-
   let post_id = Uuid::new_v4();
 
   let post = Post {
@@ -128,20 +126,6 @@ pub async fn federate_create_note(
     is_external: true,
     content_md,
     content_html,
-    content_image_uri_small: None,
-    content_image_uri_medium: None,
-    content_image_uri_large: Some(image_uri),
-    content_width_small: None,
-    content_width_medium: None,
-    content_width_large: Some(4096),
-    content_height_small: None,
-    content_height_medium: None,
-    content_height_large: Some(4096),
-    content_type_small: None,
-    content_type_medium: None,
-    content_type_large: Some(image_content_type),
-    content_image_storage_ref: None,
-    content_blurhash: None,
     visibility: access,
     created_at,
     updated_at: created_at,
@@ -149,6 +133,46 @@ pub async fn federate_create_note(
   };
 
   posts.create_post_from(post).await?;
+
+  for attachment_obj in attachments {
+    let image_content_type = match attachment_obj.media_type {
+      Some(val) => val,
+      None => continue,
+    };
+
+    let image_width: i32 = match attachment_obj.width {
+      Some(val) => val.try_into().unwrap_or_default(),
+      None => continue,
+    };
+
+    let image_height: i32 = match attachment_obj.height {
+      Some(val) => val.try_into().unwrap_or_default(),
+      None => continue,
+    };
+
+    let image_uri = match activitypub_ref_to_uri_opt(&attachment_obj.url) {
+      Some(val) => val,
+      None => continue,
+    };
+
+    let attachment = PostAttachment {
+      attachment_id: Uuid::new_v4(),
+      user_id: actor.user_id,
+      post_id,
+      uri: Some(image_uri),
+      width: image_width,
+      height: image_height,
+      content_type: Some(image_content_type),
+      storage_ref: None,
+      blurhash: None,
+      created_at,
+    };
+
+    match post_attachments.create_attachment_from(attachment).await {
+      Ok(_) => {}
+      Err(err) => log::error!("Failed to create attachment for post {}: {:?}", post_id, err),
+    }
+  }
 
   let job_id = jobs
     .create(NewJob {
@@ -190,23 +214,6 @@ pub async fn federate_update_note(
     return Err(LogicErr::UnauthorizedError);
   }
 
-  // TODO: Figure out some presentation method for text posts
-  let attachment_obj = match deref_activitypub_ref(&activity_object.attachment).await {
-    Some(obj) => {
-      let obj_type = match ObjectType::from_str_opt(&obj.kind) {
-        Some(t) => t,
-        None => return Err(LogicErr::InvalidData),
-      };
-
-      if obj_type != ObjectType::Image {
-        return Err(LogicErr::Unimplemented);
-      }
-
-      obj
-    }
-    None => return Err(LogicErr::Unimplemented),
-  };
-
   let content_html: Option<RdfString> = match activity_object.content_map {
     Some(content) => {
       // TODO: Once we support multiple content languages for a post we should
@@ -254,18 +261,6 @@ pub async fn federate_update_note(
     None => return Err(LogicErr::InvalidData),
   };
 
-  let image_content_type = match attachment_obj.media_type {
-    Some(val) => val,
-    None => return Err(LogicErr::InvalidData),
-  };
-
-  let image_uri = match activitypub_ref_to_uri_opt(&attachment_obj.url) {
-    Some(val) => val,
-    None => return Err(LogicErr::InvalidData),
-  };
-
-  post.content_image_uri_large = Some(image_uri);
-  post.content_type_large = Some(image_content_type);
   post.content_html = content_html;
   post.content_md = content_md;
   post.visibility = access;

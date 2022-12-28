@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use tokio_postgres::Row;
 use uuid::Uuid;
 
 use crate::{
@@ -10,12 +12,13 @@ use crate::{
     rdf_string::RdfString,
     reference::Reference,
   },
+  db::FromRow,
   settings::SETTINGS,
 };
 
 use super::access_type::AccessType;
 
-#[derive(Deserialize, Serialize, FromRow)]
+#[derive(Deserialize, Serialize)]
 /// Represents a user's comment on a post
 pub struct CommentPub {
   pub comment_id: Uuid,
@@ -34,6 +37,26 @@ pub struct CommentPub {
   pub liked: Option<bool>,
   #[serde(skip)]
   pub visibility: AccessType,
+}
+
+impl FromRow for CommentPub {
+  fn from_row(row: Row) -> Option<Self> {
+    Some(CommentPub {
+      comment_id: row.get("comment_id"),
+      user_id: row.get("user_id"),
+      post_id: row.get("post_id"),
+      content_md: row.get("content_md"),
+      content_html: row.get("content_html"),
+      created_at: row.get("created_at"),
+      updated_at: row.get("updated_at"),
+      user_handle: row.get("user_handle"),
+      user_fediverse_id: row.get("user_fediverse_id"),
+      user_avatar_url: row.get("user_avatar_url"),
+      likes: row.get("likes"),
+      liked: row.get("liked"),
+      visibility: AccessType::from_str(row.get("visibility")).unwrap_or_default(),
+    })
+  }
 }
 
 impl ActivityConvertible for CommentPub {

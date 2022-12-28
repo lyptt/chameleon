@@ -6,8 +6,8 @@ use uuid::Uuid;
 use crate::{
   cdn::cdn_store::Cdn,
   db::{
-    follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
-    user_repository::UserPool,
+    follow_repository::FollowPool, job_repository::JobPool, post_attachment_repository::PostAttachmentPool,
+    post_repository::PostPool, session_repository::SessionPool, user_repository::UserPool,
   },
   helpers::{
     auth::{query_auth, require_auth},
@@ -297,6 +297,7 @@ pub async fn api_upload_post_image(
   sessions: web::Data<SessionPool>,
   posts: web::Data<PostPool>,
   jobs: web::Data<JobPool>,
+  post_attachments: web::Data<PostAttachmentPool>,
 ) -> impl Responder {
   if form.images.is_empty() {
     return HttpResponse::BadRequest().finish();
@@ -307,7 +308,18 @@ pub async fn api_upload_post_image(
     Err(res) => return res,
   };
 
-  match upload_post_file(&posts, &jobs, &post_id, &props.uid, &cdn, &queue, &form.images[0]).await {
+  match upload_post_file(
+    &posts,
+    &jobs,
+    &post_attachments,
+    &post_id,
+    &props.uid,
+    &cdn,
+    &queue,
+    &form.images,
+  )
+  .await
+  {
     Ok(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
     Err(err) => build_api_err(500, err.to_string(), None),
   }

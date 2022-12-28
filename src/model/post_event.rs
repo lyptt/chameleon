@@ -1,6 +1,10 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use std::{
+  collections::{hash_map::Entry::Vacant, HashMap},
+  str::FromStr,
+};
+use tokio_postgres::Row;
 use uuid::Uuid;
 
 use crate::{
@@ -11,12 +15,14 @@ use crate::{
     rdf_string::RdfString,
     reference::Reference,
   },
+  db::{FromRow, FromRowJoin, FromRows},
+  logic::LogicErr,
   settings::SETTINGS,
 };
 
-use super::{access_type::AccessType, event_type::EventType};
+use super::{access_type::AccessType, event_type::EventType, post_attachment::PostAttachment};
 
-#[derive(Deserialize, Serialize, FromRow, Debug, PartialEq, Eq, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct PostEvent {
   // Event columns
   pub event_type: EventType,
@@ -25,35 +31,9 @@ pub struct PostEvent {
   pub uri: String,
   pub content_md: String,
   pub content_html: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_image_uri_small: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_image_uri_medium: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_image_uri_large: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_width_small: Option<i32>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_width_medium: Option<i32>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_width_large: Option<i32>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_height_small: Option<i32>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_height_medium: Option<i32>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_height_large: Option<i32>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_type_small: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_type_medium: Option<String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_type_large: Option<String>,
   pub visibility: AccessType,
   pub created_at: DateTime<Utc>,
   pub updated_at: DateTime<Utc>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub content_blurhash: Option<String>,
   // Foreign columns
   pub user_id: Uuid,
   pub user_handle: String,
@@ -70,6 +50,75 @@ pub struct PostEvent {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub liked: Option<bool>,
   pub comments: i64,
+  pub attachments: Vec<PostAttachment>,
+}
+
+impl FromRow for PostEvent {
+  fn from_row(row: Row) -> Option<Self> {
+    Some(PostEvent {
+      event_type: EventType::from_str(row.get("event_type")).unwrap_or_default(),
+      post_id: row.get("post_id"),
+      uri: row.get("uri"),
+      content_md: row.get("content_md"),
+      content_html: row.get("content_html"),
+      visibility: AccessType::from_str(row.get("visibility")).unwrap_or_default(),
+      created_at: row.get("created_at"),
+      updated_at: row.get("updated_at"),
+      user_id: row.get("user_id"),
+      user_handle: row.get("user_handle"),
+      user_fediverse_id: row.get("user_fediverse_id"),
+      user_fediverse_uri: row.get("user_fediverse_uri"),
+      user_avatar_url: row.get("user_avatar_url"),
+      event_user_handle: row.get("event_user_handle"),
+      event_user_fediverse_id: row.get("event_user_fediverse_id"),
+      event_user_fediverse_uri: row.get("event_user_fediverse_uri"),
+      event_user_avatar_url: row.get("event_user_avatar_url"),
+      likes: row.get("likes"),
+      liked: row.get("liked"),
+      comments: row.get("comments"),
+      attachments: vec![],
+    })
+  }
+}
+
+impl FromRows for PostEvent {
+  fn from_rows(rows: Vec<Row>) -> Result<Vec<Self>, LogicErr> {
+    let mut ret: Vec<PostEvent> = vec![];
+    let mut lookup = HashMap::<Uuid, usize>::new();
+
+    for row in rows.into_iter() {
+      let post_id: Uuid = row.get("post_id");
+      if let Vacant(e) = lookup.entry(post_id) {
+        let attachment = match row.get::<&str, Option<Uuid>>("attachment_id") {
+          Some(_) => PostAttachment::from_row_join(&row),
+          None => None,
+        };
+
+        let mut post = match PostEvent::from_row(row) {
+          Some(post) => post,
+          None => continue,
+        };
+
+        if let Some(attachment) = attachment {
+          post.attachments.push(attachment);
+        }
+
+        e.insert(ret.len());
+        ret.push(post);
+      } else {
+        let post = match ret.get_mut(lookup[&post_id]) {
+          Some(post) => post,
+          None => continue,
+        };
+
+        if let Some(attachment) = PostAttachment::from_row_join(&row) {
+          post.attachments.push(attachment);
+        }
+      }
+    }
+
+    Ok(ret)
+  }
 }
 
 impl ActivityConvertible for PostEvent {
@@ -114,30 +163,34 @@ impl ActivityConvertible for PostEvent {
       ))
       .build();
 
-    let mut attachment_refs = vec![];
-
-    if let Some(uri) = &self.content_image_uri_large {
-      if let Some(width) = self.content_width_large {
-        if let Some(height) = self.content_height_large {
-          if let Some(content_type) = &self.content_type_large {
+    let attachment_refs = self
+      .attachments
+      .iter()
+      .flat_map(|a| {
+        if let Some(uri) = &a.uri {
+          if let Some(content_type) = &a.content_type {
             let abs_uri = match uri.starts_with("http") {
               true => uri.clone(),
               false => format!("{}/{}", SETTINGS.server.cdn_fqdn, uri),
             };
 
-            attachment_refs.push(Reference::Embedded(Box::new(
+            Some(Reference::Embedded(Box::new(
               Object::builder()
                 .kind(Some("Image".to_string()))
                 .media_type(Some(content_type.clone()))
-                .width(Some(width.try_into().unwrap_or_default()))
-                .height(Some(height.try_into().unwrap_or_default()))
+                .width(Some(a.width.try_into().unwrap_or_default()))
+                .height(Some(a.height.try_into().unwrap_or_default()))
                 .url(Some(Reference::Remote(abs_uri)))
                 .build(),
             )))
+          } else {
+            None
           }
+        } else {
+          None
         }
-      }
-    }
+      })
+      .collect();
 
     Some(
       Object::builder()
