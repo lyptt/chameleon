@@ -49,8 +49,8 @@ use routes::like::{api_create_like, api_delete_like};
 use routes::nodeinfo::{api_get_nodeinfo, api_get_nodeinfo_2_1};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::post::{
-  api_boost_post, api_create_post, api_get_global_feed, api_get_post, api_get_user_liked_posts, api_get_user_own_feed,
-  api_get_user_post, api_get_user_posts, api_unboost_post, api_upload_post_image,
+  api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_post, api_get_user_liked_posts,
+  api_get_user_own_feed, api_get_user_post, api_get_user_posts, api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::status::api_get_server_status;
@@ -107,6 +107,9 @@ async fn main() -> std::io::Result<()> {
   let session_pool = Repository::new_session_pool(&pool);
   let user_pool = Repository::new_user_pool(&pool);
   let user_stats_pool = Repository::new_user_stats_pool(&pool);
+  let orbits = Repository::new_orbit_pool(&pool);
+  let orbit_moderators = Repository::new_orbit_moderator_pool(&pool);
+  let user_orbits = Repository::new_user_orbit_pool(&pool);
 
   HttpServer::new(move || {
     let cors = Cors::default()
@@ -132,6 +135,9 @@ async fn main() -> std::io::Result<()> {
       .app_data(web::Data::new(session_pool.clone()))
       .app_data(web::Data::new(user_pool.clone()))
       .app_data(web::Data::new(user_stats_pool.clone()))
+      .app_data(web::Data::new(orbits.clone()))
+      .app_data(web::Data::new(orbit_moderators.clone()))
+      .app_data(web::Data::new(user_orbits.clone()))
       .app_data(web::Data::new(Cdn::new()))
       .app_data(web::Data::new(Queue::new()))
       .service(
@@ -216,6 +222,11 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/feed/federated")
           .name("federated_feed")
           .route(web::get().to(api_get_global_feed)),
+      )
+      .service(
+        web::resource("/api/orbits/{orbit_id}/feed")
+          .name("orbit_feed")
+          .route(web::get().to(api_get_orbit_feed)),
       )
       .service(
         web::resource("/api/feed/{post_id}")

@@ -189,6 +189,34 @@ pub async fn api_get_global_feed(posts: web::Data<PostPool>, query: web::Query<P
   })
 }
 
+pub async fn api_get_orbit_feed(
+  posts: web::Data<PostPool>,
+  orbit_id: web::Path<Uuid>,
+  query: web::Query<PostsQuery>,
+) -> impl Responder {
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_global_federated_orbit_feed(&orbit_id).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_global_federated_orbit_feed(&orbit_id, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
 pub async fn api_get_user_posts(
   sessions: web::Data<SessionPool>,
   posts: web::Data<PostPool>,

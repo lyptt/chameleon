@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::{
   db::{
     event_repository::EventPool, follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool,
+    user_orbit_repository::UserOrbitPool,
   },
   helpers::api::{map_db_err, map_ext_err},
   logic::LogicErr,
@@ -21,6 +22,7 @@ pub async fn create_post_events(
   posts: &PostPool,
   events: &EventPool,
   follows: &FollowPool,
+  user_orbits: &UserOrbitPool,
   job_id: Uuid,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
@@ -39,15 +41,12 @@ pub async fn create_post_events(
     None => return Err(LogicErr::InternalError("User ID not found for job".to_string())),
   };
 
-  let visibility = match posts.fetch_visibility_by_id(&post_id).await {
-    Some(v) => v,
-    None => return Err(LogicErr::InternalError("Visibility not found for post".to_string())),
-  };
+  let post = posts.fetch_by_id(&post_id).await?;
 
   let own_event = NewEvent {
     source_user_id: user_id,
     target_user_id: None,
-    visibility: visibility.clone(),
+    visibility: post.visibility.clone(),
     post_id: Some(post_id),
     like_id: None,
     comment_id: None,
@@ -77,6 +76,29 @@ pub async fn create_post_events(
       .build();
 
     queue.send_job(job).await?;
+  }
+
+  if let Some(orbit_id) = post.orbit_id {
+    let users = user_orbits.fetch_orbit_user_ids(&orbit_id).await?;
+
+    for user in users {
+      let job_id = jobs
+        .create(NewJob {
+          created_by_id: Some(user_id),
+          status: JobStatus::NotStarted,
+          record_id: Some(post_id),
+          associated_record_id: Some(user),
+        })
+        .await
+        .map_err(map_db_err)?;
+
+      let job = QueueJob::builder()
+        .job_id(job_id)
+        .job_type(QueueJobType::CreatePostEvent)
+        .build();
+
+      queue.send_job(job).await?;
+    }
   }
 
   Ok(())

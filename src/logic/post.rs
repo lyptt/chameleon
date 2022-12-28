@@ -21,6 +21,7 @@ use crate::{
 pub struct NewPostRequest {
   pub content_md: String,
   pub visibility: AccessType,
+  pub orbit_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize)]
@@ -57,7 +58,7 @@ pub async fn create_post(posts: &PostPool, req: &NewPostRequest, user_id: &Uuid)
   let content_html = markdown::to_html(&req.content_md);
 
   posts
-    .create_post(user_id, &req.content_md, &content_html, &req.visibility)
+    .create_post(user_id, &req.content_md, &content_html, &req.visibility, &req.orbit_id)
     .await
 }
 
@@ -349,6 +350,7 @@ mod tests {
     let new_post = NewPostRequest {
       content_md: "hello\n**world**!".to_string(),
       visibility: AccessType::PublicFederated,
+      orbit_id: None,
     };
     let content_md_eq = new_post.content_md.clone();
     let visibility_eq = new_post.visibility.clone();
@@ -356,7 +358,13 @@ mod tests {
     let mut post_repo = MockPostRepo::new();
     post_repo
       .expect_create_post()
-      .with(eq(user_id), contains(content_md_eq), always(), eq(visibility_eq))
+      .with(
+        eq(user_id),
+        contains(content_md_eq),
+        always(),
+        eq(visibility_eq),
+        eq(None),
+      )
       .times(1)
       .return_const(Err(LogicErr::DbError("Boop".to_string())));
 
@@ -376,6 +384,7 @@ mod tests {
     let new_post = NewPostRequest {
       content_md: "hello\n**world**!".to_string(),
       visibility: AccessType::PublicFederated,
+      orbit_id: None,
     };
     let content_md_eq = new_post.content_md.clone();
     let visibility_eq = new_post.visibility.clone();
@@ -383,7 +392,13 @@ mod tests {
     let mut post_repo = MockPostRepo::new();
     post_repo
       .expect_create_post()
-      .with(eq(user_id), contains(content_md_eq), always(), eq(visibility_eq))
+      .with(
+        eq(user_id),
+        contains(content_md_eq),
+        always(),
+        eq(visibility_eq),
+        eq(None),
+      )
       .times(1)
       .return_const(Ok(post_id));
 

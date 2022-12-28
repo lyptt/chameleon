@@ -8,6 +8,7 @@ CREATE TABLE orbits (
   avatar_url varchar(2048),
   banner_url varchar(2048),
   uri varchar(2048) NOT NULL,
+  is_external bool NOT NULL DEFAULT true,
   PRIMARY KEY (orbit_id)
 );
 

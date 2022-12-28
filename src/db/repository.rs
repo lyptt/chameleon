@@ -9,9 +9,12 @@ use super::{
   follow_repository::{DbFollowRepo, FollowPool},
   job_repository::{DbJobRepo, JobPool},
   like_repository::{DbLikeRepo, LikePool},
+  orbit_moderator_repository::{DbOrbitModeratorRepo, OrbitModeratorPool},
+  orbit_repository::{DbOrbitRepo, OrbitPool},
   post_attachment_repository::{DbPostAttachmentRepo, PostAttachmentPool},
   post_repository::{DbPostRepo, PostPool},
   session_repository::{DbSessionRepo, SessionPool},
+  user_orbit_repository::{DbUserOrbitRepo, UserOrbitPool},
   user_repository::{DbUserRepo, UserPool},
   user_stats_repository::{DbUserStatsRepo, UserStatsPool},
 };
@@ -61,5 +64,17 @@ impl Repository {
 
   pub fn new_user_stats_pool(db: &Pool) -> UserStatsPool {
     Arc::new(DbUserStatsRepo { db: db.clone() })
+  }
+
+  pub fn new_orbit_pool(db: &Pool) -> OrbitPool {
+    Arc::new(DbOrbitRepo { db: db.clone() })
+  }
+
+  pub fn new_orbit_moderator_pool(db: &Pool) -> OrbitModeratorPool {
+    Arc::new(DbOrbitModeratorRepo { db: db.clone() })
+  }
+
+  pub fn new_user_orbit_pool(db: &Pool) -> UserOrbitPool {
+    Arc::new(DbUserOrbitRepo { db: db.clone() })
   }
 }
