@@ -1,0 +1,46 @@
+.orbit-side-nav {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  width: 222px;
+  padding: 10px;
+
+  @include mq($until: desktop) {
+    display: none;
+  }
+}
+
+.orbit-side-nav__header {
+  margin-bottom: 24px;
+}
+
+.orbit-side-nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  margin-bottom: 24px;
+}
+
+.orbit-side-nav__list-item {
+  padding: 0;
+  margin: 0;
+}
+
+.orbit-side-nav__list-item > * {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+}
+
+.orbit-side-nav__list-item-icon {
+  width: 16px;
+  height: 16px;
+
+  &.orbit-side-nav__list-item-icon--external {
+    width: 20px;
+    height: 20px;
+  }
+}

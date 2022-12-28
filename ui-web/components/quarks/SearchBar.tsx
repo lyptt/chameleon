@@ -9,7 +9,7 @@ export default function SearchBar({
     <input
       className={cx('orbit-search-bar', className)}
       {...props}
-      placeholder="Just Type"
+      placeholder="Search"
     />
   )
 }

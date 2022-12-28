@@ -4,6 +4,7 @@ import { HTMLAttributes } from 'react'
 import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { usePost } from '@/components/organisms/PostContext'
+import SideNav from '@/components/molecules/SideNav'
 
 export default function HomePage({
   className,
@@ -31,6 +32,7 @@ export default function HomePage({
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <SideNav />
     </section>
   )
 }

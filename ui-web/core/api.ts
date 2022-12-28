@@ -149,6 +149,19 @@ export interface IComment {
   liked?: boolean
 }
 
+export interface IOrbit {
+  orbit_id: string
+  created_at: string
+  updated_at: string
+  name: string
+  description_md: string
+  description_html: string
+  avatar_uri?: string
+  banner_uri?: string
+  uri: string
+  is_external: boolean
+}
+
 export async function fetchProfile(authToken: string): Promise<IProfile> {
   const response = await fetch(`${Config.apiUri}/profile`, {
     ...buildDefaultHeaders(authToken),
@@ -245,6 +258,29 @@ export async function fetchUserFeed(
 ): Promise<IListResponse<IPost>> {
   const response = await fetch(
     `${Config.apiUri}/users/${handle}/feed?page=${page}&page_size=${pageSize}`,
+    {
+      ...(authToken
+        ? buildDefaultHeaders(authToken)
+        : buildUnauthenticatedHeaders()),
+      method: 'GET',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchUserOrbits(
+  handle: string,
+  authToken: string | undefined,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<IOrbit>> {
+  const response = await fetch(
+    `${Config.apiUri}/users/${handle}/orbits?page=${page}&page_size=${pageSize}`,
     {
       ...(authToken
         ? buildDefaultHeaders(authToken)

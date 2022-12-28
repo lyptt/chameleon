@@ -11,13 +11,15 @@ import {
 } from '@/components/organisms/FeedContext'
 import { useRouter } from 'next/router'
 import { postActionDismissPost, usePost } from './PostContext'
+import { orbitActionLoadUserOrbits, useOrbits } from './OrbitContext'
 
 export default function DefaultActionsDelegator() {
   const { session } = useAuth()
   const { state: profileState, dispatch: profileDispatch } = useProfile()
   const { state: feedState, dispatch: feedDispatch } = useFeed()
   const { state: postState, dispatch: postDispatch } = usePost()
-  const { route, query } = useRouter()
+  const { state: orbitsState, dispatch: orbitsDispatch } = useOrbits()
+  const { route } = useRouter()
 
   useEffect(() => {
     if (
@@ -47,6 +49,22 @@ export default function DefaultActionsDelegator() {
 
     feedActionLoadFeed(0, session?.access_token, feedDispatch)
   }, [session, feedState, feedDispatch])
+
+  useEffect(() => {
+    if (!profileState.profile?.handle || !session || orbitsState.orbits) {
+      return
+    }
+
+    if (orbitsState.loading || orbitsState.loadingFailed) {
+      return
+    }
+
+    orbitActionLoadUserOrbits(
+      profileState.profile.handle,
+      session.access_token,
+      orbitsDispatch
+    )
+  }, [session, profileState, orbitsState, orbitsDispatch])
 
   useEffect(() => {
     if (route !== '/users/[userId]/[postId]' && !!postState.post) {

@@ -1,0 +1,63 @@
+.#{$theme-class} {
+  .orbit-side-nav {
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border-right: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-2-dark;
+      border-right: 0.5px solid $fill-3-dark;
+    }
+  }
+
+  .orbit-side-nav__header {
+    font-size: $font-size-s;
+    text-transform: uppercase;
+    user-select: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
+  }
+
+  .orbit-side-nav__list-item {
+    list-style-type: none;
+    user-select: none;
+
+    &:before {
+      content: '\200B';
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+    }
+  }
+
+  .orbit-side-nav__list-item > * {
+    text-decoration: none;
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-side-nav__list-item-icon.orbit-side-nav__list-item-icon--external {
+    border-radius: 9999px;
+    color: transparent;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+    }
+  }
+}

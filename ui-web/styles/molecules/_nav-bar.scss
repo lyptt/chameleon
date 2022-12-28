@@ -41,6 +41,13 @@
 }
 
 .orbit-nav__search-bar {
-  flex: 1;
-  max-width: 325px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 325px;
+
+  @include mq($until: desktop) {
+    display: none;
+  }
 }

@@ -7,10 +7,10 @@ use crate::{
   cdn::cdn_store::Cdn,
   db::{
     orbit_moderator_repository::OrbitModeratorPool, orbit_repository::OrbitPool, session_repository::SessionPool,
-    user_orbit_repository::UserOrbitPool,
+    user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
   helpers::{
-    auth::require_auth,
+    auth::{assert_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
   },
@@ -56,25 +56,29 @@ pub struct OrbitAssetsUpload {
 pub async fn api_get_user_orbits(
   orbits: web::Data<OrbitPool>,
   query: web::Query<OrbitsQuery>,
+  handle: web::Path<String>,
   sessions: web::Data<SessionPool>,
+  users: web::Data<UserPool>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
-  let session = match require_auth(&jwt, &sessions).await {
-    Ok(session) => session,
+  match assert_auth(&jwt, &sessions).await {
+    Ok(_) => {}
     Err(res) => return res,
+  };
+
+  let user_id = match users.fetch_id_by_handle(&handle).await {
+    Some(user_id) => user_id,
+    None => return build_api_not_found(handle.to_string()),
   };
 
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
-  let posts_count = match orbits.count_user_orbits(&session.uid).await {
+  let posts_count = match orbits.count_user_orbits(&user_id).await {
     Ok(count) => count,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  let orbits = match orbits
-    .fetch_user_orbits(&session.uid, page_size, page * page_size)
-    .await
-  {
+  let orbits = match orbits.fetch_user_orbits(&user_id, page_size, page * page_size).await {
     Ok(posts) => posts,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
