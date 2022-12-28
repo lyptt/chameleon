@@ -126,6 +126,8 @@ pub async fn federate_create_note(
     orbit_id: None,
     uri,
     is_external: true,
+    // TODO: Figure out where we get the title from
+    title: None,
     content_md,
     content_html,
     visibility: access,

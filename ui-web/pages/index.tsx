@@ -5,6 +5,7 @@ import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import { usePost } from '@/components/organisms/PostContext'
 import SideNav from '@/components/molecules/SideNav'
+import PostCard from '@/components/atoms/PostCard'
 
 export default function HomePage({
   className,
@@ -33,6 +34,17 @@ export default function HomePage({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <SideNav />
+      <div className="orbit-page-home__feed">
+        {!loading &&
+          !loadingFailed &&
+          feed.map((post) => (
+            <PostCard
+              className="orbit-page-home__feed-post"
+              key={post.post_id}
+              post={post}
+            />
+          ))}
+      </div>
     </section>
   )
 }

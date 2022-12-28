@@ -1,0 +1,56 @@
+.orbit-post-card {
+  display: flex;
+  overflow-y: hidden;
+  flex-direction: column;
+}
+
+.orbit-post-card__info-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin: 6px;
+  font-size: $font-size-s;
+  align-items: center;
+}
+
+.orbit-post-card__info-bar-icon {
+  width: 16px;
+  height: 16px;
+  background-size: cover;
+}
+
+.orbit-post-card__info-bar-origin {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.orbit-post-card__title,
+.orbit-post-card__content {
+  margin-left: 26px;
+  margin-right: 26px;
+}
+
+.orbit-post-card__content--user-post {
+  margin-top: 10px;
+}
+
+.orbit-post-card__title {
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.orbit-post-card__content h1,
+.orbit-post-card__content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.orbit-post-card__content p,
+.orbit-post-card__content h3,
+.orbit-post-card__content h4,
+.orbit-post-card__content h5,
+.orbit-post-card__content h6 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}

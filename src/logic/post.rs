@@ -70,7 +70,7 @@ pub async fn upload_post_file(
   user_id: &Uuid,
   cdn: &Cdn,
   queue: &Queue,
-  uploads: &Vec<Tempfile>,
+  uploads: &[Tempfile],
 ) -> Result<Uuid, LogicErr> {
   if !posts.user_owns_post(user_id, post_id).await {
     return Err(LogicErr::UnauthorizedError);
@@ -212,6 +212,7 @@ mod tests {
       event_type: EventType::Post,
       post_id,
       uri: "a".to_string(),
+      title: None,
       content_md: "a".to_string(),
       content_html: "a".to_string(),
       visibility: AccessType::PublicFederated,
@@ -440,7 +441,7 @@ mod tests {
         &user_id,
         &cdn,
         &queue,
-        &vec![tempfile]
+        &[tempfile]
       )
       .await,
       Err(LogicErr::UnauthorizedError)
@@ -486,7 +487,7 @@ mod tests {
         &user_id,
         &cdn,
         &queue,
-        &vec![tempfile]
+        &[tempfile]
       )
       .await,
       Err(LogicErr::InternalError("Upload failed".to_string()))

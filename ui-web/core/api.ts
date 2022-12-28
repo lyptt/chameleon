@@ -98,6 +98,7 @@ export interface IPost {
   user_fediverse_id: string
   user_avatar_url?: string
   uri: string
+  title?: string
   content_md: string
   content_html: string
   visibility: AccessType

@@ -4,6 +4,8 @@ import { HTMLAttributes } from 'react'
 import { IoEarthOutline, IoHomeOutline, IoPersonOutline } from 'react-icons/io5'
 import { useOrbits } from '../organisms/OrbitContext'
 
+const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`
+
 export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
   const { state } = useOrbits()
   const { orbits } = state
@@ -49,7 +51,7 @@ export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
                 <a>
                   <img
                     className="orbit-side-nav__list-item-icon orbit-side-nav__list-item-icon--external"
-                    src={orbit.avatar_uri}
+                    src={orbit.avatar_uri || transparentPixelUri}
                     alt={orbit.name}
                   />
                   {orbit.name}

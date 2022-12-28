@@ -1,0 +1,112 @@
+.#{$theme-class} {
+  .orbit-post-card {
+    border-radius: 8px;
+    user-select: none;
+    position: relative;
+    text-decoration: none;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-2-dark;
+      border: 0.5px solid $fill-3-dark;
+    }
+
+    &::after {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      content: '';
+
+      @media (prefers-color-scheme: light) {
+        background: linear-gradient(
+          to bottom,
+          transparentize($fill-2-light, 1) 0%,
+          transparentize($fill-2-light, 0.3) 30%,
+          transparentize($fill-2-light, 0) 100%
+        );
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: linear-gradient(
+          to bottom,
+          transparentize($fill-2-dark, 1) 0%,
+          transparentize($fill-2-dark, 0.3) 30%,
+          transparentize($fill-2-dark, 0) 100%
+        );
+      }
+    }
+  }
+
+  .orbit-post-card__info-bar-icon {
+    color: transparent;
+    border-radius: 9999px;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+    }
+  }
+
+  .orbit-post-card__info-bar-origin,
+  orbit-post-card__info-bar-origin > * {
+    text-decoration: none;
+    font-weight: $font-weight-medium;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-post-card__info-bar-author,
+  .orbit-post-card__info-bar-author > * {
+    text-decoration: none;
+    font-weight: $font-weight-light;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
+  }
+
+  .orbit-post-card__title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-medium;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-post-card__content {
+    font-size: $font-size-l;
+    font-weight: $font-weight-regular;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+}

@@ -5,7 +5,7 @@ import { useAuth } from '@/components/organisms/AuthContext'
 import Button from '@/components/atoms/Button'
 import { useProfile } from '@/components/organisms/ProfileContext'
 
-const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
+const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`
 
 export default function UserButton({
   className,
