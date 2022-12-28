@@ -78,6 +78,18 @@ export enum AccessType {
   PublicFederated = 'public_federated',
 }
 
+export interface IPostAttachment {
+  attachment_id: string
+  user_id: string
+  post_id: string
+  uri?: string
+  width: number
+  height: number
+  content_type?: string
+  blurhash?: string
+  created_at: number
+}
+
 export interface IPost {
   post_id: string
   user_id: string
@@ -87,25 +99,13 @@ export interface IPost {
   uri: string
   content_md: string
   content_html: string
-  content_image_uri_small?: string
-  content_image_uri_medium?: string
-  content_image_uri_large?: string
-  content_width_small?: number
-  content_width_medium?: number
-  content_width_large?: number
-  content_height_small?: number
-  content_height_medium?: number
-  content_height_large?: number
-  content_type_small?: string
-  content_type_medium?: string
-  content_type_large?: string
-  content_blurhash?: string
   visibility: AccessType
   created_at: number
   updated_at: number
   likes: number
   liked?: boolean
   comments: number
+  attachments: IPostAttachment[]
 }
 
 export interface INewPost {
