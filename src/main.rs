@@ -28,19 +28,20 @@ use db::repository::Repository;
 use deadpool::Runtime;
 use deadpool_postgres::{ManagerConfig, RecyclingMethod};
 use env_logger::WriteStyle;
-use helpers::types::ACTIVITYPUB_ACCEPT_GUARD;
+use helpers::types::{ACTIVITYPUB_ACCEPT_GUARD, HTML_GUARD};
 use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
 use routes::activitypub::{
-  api_activitypub_federate_shared_inbox, api_activitypub_federate_user_inbox,
-  api_activitypub_get_federated_user_liked_posts, api_activitypub_get_federated_user_posts, api_activitypub_get_post,
-  api_activitypub_get_user_followers, api_activitypub_get_user_following, api_activitypub_get_user_profile,
+  api_activitypub_federate_shared_inbox, api_activitypub_federate_user_inbox, api_activitypub_get_comment,
+  api_activitypub_get_comments, api_activitypub_get_federated_user_liked_posts,
+  api_activitypub_get_federated_user_posts, api_activitypub_get_post, api_activitypub_get_user_followers,
+  api_activitypub_get_user_following, api_activitypub_get_user_profile,
 };
 use routes::apps::api_create_app;
 use routes::comment::{
-  api_activitypub_get_comment, api_activitypub_get_comments, api_create_comment, api_create_comment_like,
-  api_delete_comment, api_delete_comment_like, api_get_comment, api_get_comments,
+  api_create_comment, api_create_comment_like, api_delete_comment, api_delete_comment_like, api_get_comment,
+  api_get_comments,
 };
 use routes::follow::{api_create_follow, api_delete_follow};
 use routes::host_meta::api_get_host_meta;
@@ -58,6 +59,11 @@ use routes::post::{
   api_get_user_own_feed, api_get_user_post, api_get_user_posts, api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
+use routes::redirect::{
+  api_redirect_to_federated_user_liked_posts, api_redirect_to_federated_user_posts, api_redirect_to_post,
+  api_redirect_to_post_comment, api_redirect_to_post_comments, api_redirect_to_user, api_redirect_to_user_followers,
+  api_redirect_to_user_following,
+};
 use routes::status::api_get_server_status;
 use routes::user::{
   api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_profile, api_get_user_stats,
@@ -153,6 +159,7 @@ async fn main() -> std::io::Result<()> {
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_user_profile),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user))
           .route(web::get().to(api_get_user_profile)),
       )
       .service(
@@ -163,6 +170,7 @@ async fn main() -> std::io::Result<()> {
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_federated_user_posts),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_federated_user_posts))
           .route(web::get().to(api_get_user_posts)),
       )
       .service(
@@ -172,6 +180,11 @@ async fn main() -> std::io::Result<()> {
             web::get()
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_federated_user_liked_posts),
+          )
+          .route(
+            web::get()
+              .guard(HTML_GUARD)
+              .to(api_redirect_to_federated_user_liked_posts),
           )
           .route(web::get().to(api_get_user_liked_posts)),
       )
@@ -189,6 +202,7 @@ async fn main() -> std::io::Result<()> {
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_user_followers),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user_followers))
           .route(web::get().to(api_get_user_followers)),
       )
       .service(
@@ -199,6 +213,7 @@ async fn main() -> std::io::Result<()> {
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_user_following),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user_following))
           .route(web::get().to(api_get_user_following)),
       )
       .service(
@@ -242,6 +257,7 @@ async fn main() -> std::io::Result<()> {
         web::resource("/api/feed/{post_id}")
           .name("post")
           .route(web::get().guard(ACTIVITYPUB_ACCEPT_GUARD).to(api_activitypub_get_post))
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_post))
           .route(web::get().to(api_get_post))
           .route(web::post().to(api_upload_post_image)),
       )
@@ -264,6 +280,7 @@ async fn main() -> std::io::Result<()> {
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_comments),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_post_comments))
           .route(web::get().to(api_get_comments))
           .route(web::post().to(api_create_comment)),
       )
@@ -287,6 +304,7 @@ async fn main() -> std::io::Result<()> {
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_comment),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_post_comment))
           .route(web::get().to(api_get_comment))
           .route(web::delete().to(api_delete_comment)),
       )

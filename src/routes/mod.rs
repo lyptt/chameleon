@@ -10,6 +10,7 @@ pub mod oauth;
 pub mod orbit;
 pub mod post;
 pub mod public;
+pub mod redirect;
 pub mod status;
 pub mod user;
 pub mod webfinger;

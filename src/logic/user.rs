@@ -6,17 +6,22 @@ use rsa::{
   rand_core::OsRng,
   RsaPrivateKey, RsaPublicKey,
 };
+use uuid::Uuid;
 
 use crate::{db::user_repository::UserPool, model::user::User, net::jwt::JwtFactory, settings::SETTINGS};
 
 use super::LogicErr;
 
+pub async fn get_user_by_id(id: &Uuid, users: &UserPool) -> Result<User, LogicErr> {
+  users.fetch_by_id(id).await
+}
+
 pub async fn get_user_by_handle(handle: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
   users.fetch_by_handle(handle).await
 }
 
-pub async fn get_user_by_fediverse_id(fediverse_id: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
-  users.fetch_by_fediverse_id(fediverse_id).await
+pub async fn get_user_by_webfinger(webfinger: &str, users: &UserPool) -> Result<Option<User>, LogicErr> {
+  users.fetch_by_fediverse_id(&webfinger.replace("acct:", "@")).await
 }
 
 pub async fn authorize_user(username: &str, password: &str, users: &UserPool) -> Result<String, LogicErr> {
@@ -55,7 +60,7 @@ pub async fn register_user(
   }
   .to_string();
 
-  let fediverse_id = format!("acct:{}@{}", username, SETTINGS.server.fqdn);
+  let fediverse_id = format!("@{}@{}", username, SETTINGS.server.fqdn);
   let fediverse_uri = format!("/users/{username}");
 
   let avatar_url = Some(
@@ -114,7 +119,7 @@ mod tests {
   use crate::{
     db::user_repository::{MockUserRepo, UserPool},
     logic::{
-      user::{authorize_user, get_user_by_fediverse_id, get_user_by_handle},
+      user::{authorize_user, get_user_by_handle, get_user_by_webfinger},
       LogicErr,
     },
   };
@@ -159,7 +164,7 @@ mod tests {
     let users: UserPool = Arc::new(user_repo);
 
     assert_eq!(
-      get_user_by_fediverse_id("handle", &users).await,
+      get_user_by_webfinger("handle", &users).await,
       Err(LogicErr::MissingRecord)
     );
   }
@@ -175,7 +180,7 @@ mod tests {
 
     let users: UserPool = Arc::new(user_repo);
 
-    assert_eq!(get_user_by_fediverse_id("handle", &users).await, Ok(None));
+    assert_eq!(get_user_by_webfinger("handle", &users).await, Ok(None));
   }
 
   #[async_std::test]

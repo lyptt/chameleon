@@ -12,15 +12,19 @@ use crate::{
     },
   },
   db::{
-    follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool, session_repository::SessionPool,
-    user_repository::UserPool,
+    comment_repository::CommentPool, follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool,
+    session_repository::SessionPool, user_repository::UserPool,
   },
   helpers::{
     auth::query_auth,
-    core::{build_api_err, build_api_not_found},
+    core::{build_api_err, build_api_not_found, map_api_err},
     types::ACTIVITY_JSON_CONTENT_TYPE,
   },
-  logic::{post::get_post, user::get_user_by_handle},
+  logic::{
+    comment::{activitypub_get_comment, activitypub_get_comments},
+    post::get_post,
+    user::get_user_by_handle,
+  },
   model::{
     access_type::AccessType,
     job::{JobStatus, NewJob},
@@ -31,7 +35,7 @@ use crate::{
   work_queue::queue::Queue,
 };
 
-use super::{post::PostsQuery, user::FollowersQuery};
+use super::{comment::CommentsQuery, post::PostsQuery, user::FollowersQuery};
 
 pub async fn api_activitypub_get_post(
   sessions: web::Data<SessionPool>,
@@ -246,6 +250,43 @@ pub async fn api_activitypub_get_user_profile(users: web::Data<UserPool>, handle
       None => HttpResponse::NotFound().finish(),
     },
     Err(_) => HttpResponse::NotFound().finish(),
+  }
+}
+
+pub async fn api_activitypub_get_comment(
+  sessions: web::Data<SessionPool>,
+  comments: web::Data<CommentPool>,
+  posts: web::Data<PostPool>,
+  ids: web::Path<(Uuid, Uuid)>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let own_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  match activitypub_get_comment(&comments, &posts, &ids.0, &ids.1, &own_user_id).await {
+    Ok(response) => HttpResponse::Ok().json(response),
+    Err(err) => map_api_err(err),
+  }
+}
+
+pub async fn api_activitypub_get_comments(
+  sessions: web::Data<SessionPool>,
+  comments: web::Data<CommentPool>,
+  posts: web::Data<PostPool>,
+  query: web::Query<CommentsQuery>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let own_user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  match activitypub_get_comments(&posts, &comments, &post_id, &own_user_id, &query.page, &query.page_size).await {
+    Ok(response) => HttpResponse::Ok().json(response),
+    Err(err) => map_api_err(err),
   }
 }
 

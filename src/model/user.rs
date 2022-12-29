@@ -47,7 +47,7 @@ impl User {
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
       aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.handle)]),
-      subject: self.fediverse_id.clone(),
+      subject: self.fediverse_id.replacen('@', "acct:", 1),
       links: [
         WebfingerRecordLink::build_self_link(&self.handle),
         WebfingerRecordLink::build_profile_page_link(&self.handle),

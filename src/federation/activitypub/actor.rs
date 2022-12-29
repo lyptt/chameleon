@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use http::Uri;
 use uuid::Uuid;
 
 use crate::{
@@ -83,7 +86,15 @@ pub async fn federate_actor(actor_ref: &Option<Reference<Object>>, users: &UserP
   };
 
   let fediverse_uri = match actor_obj.id {
-    Some(id) => id,
+    Some(id) => match Uri::from_str(&id) {
+      Ok(uri) => uri,
+      Err(_) => return Err(LogicErr::InvalidData),
+    },
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let fediverse_uri_host = match fediverse_uri.host() {
+    Some(v) => v,
     None => return Err(LogicErr::InvalidData),
   };
 
@@ -94,9 +105,9 @@ pub async fn federate_actor(actor_ref: &Option<Reference<Object>>, users: &UserP
 
   let user = User {
     user_id: Uuid::new_v4(),
-    fediverse_id: format!("acctext:{}", handle),
+    fediverse_id: format!("@{}@{}", handle, fediverse_uri_host),
     handle,
-    fediverse_uri,
+    fediverse_uri: fediverse_uri.to_string(),
     avatar_url,
     email: None,
     password_hash: None,

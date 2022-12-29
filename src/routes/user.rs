@@ -8,7 +8,7 @@ use crate::{
     core::{build_api_err, build_api_not_found},
     math::div_up,
   },
-  logic::user::{get_user_by_fediverse_id, get_user_by_handle},
+  logic::user::{get_user_by_handle, get_user_by_id},
   model::{
     response::{ListResponse, ObjectResponse},
     user_account_pub::UserAccountPub,
@@ -32,11 +32,8 @@ pub async fn api_get_profile(
     Err(res) => return res,
   };
 
-  match get_user_by_fediverse_id(&props.sub, &users).await {
-    Ok(user) => match user {
-      Some(user) => HttpResponse::Ok().json(UserAccountPub::from(user)),
-      None => HttpResponse::NotFound().finish(),
-    },
+  match get_user_by_id(&props.uid, &users).await {
+    Ok(user) => HttpResponse::Ok().json(UserAccountPub::from(user)),
     Err(_) => HttpResponse::NotFound().finish(),
   }
 }

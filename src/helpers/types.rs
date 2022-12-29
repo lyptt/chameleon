@@ -46,7 +46,32 @@ impl Guard for ActivityPubHeaderGuard {
   }
 }
 
+pub struct HtmlHeaderGuard;
+
+impl HtmlHeaderGuard {
+  pub(self) fn check_headers(&self, headers: &HeaderMap) -> bool {
+    let accept = match headers.get("accept") {
+      Some(accept) => accept,
+      None => return false,
+    };
+
+    let accept_value = match accept.to_str() {
+      Ok(val) => val,
+      Err(_) => return false,
+    };
+
+    accept_value.contains("text/html")
+  }
+}
+
+impl Guard for HtmlHeaderGuard {
+  fn check(&self, ctx: &GuardContext<'_>) -> bool {
+    self.check_headers(&ctx.head().headers)
+  }
+}
+
 pub const ACTIVITYPUB_ACCEPT_GUARD: ActivityPubHeaderGuard = ActivityPubHeaderGuard {};
+pub const HTML_GUARD: HtmlHeaderGuard = HtmlHeaderGuard {};
 
 #[derive(Serialize, Debug)]
 pub struct ApiError {
