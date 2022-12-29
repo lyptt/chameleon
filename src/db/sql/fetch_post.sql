@@ -3,7 +3,7 @@ u.fediverse_uri AS user_fediverse_uri, u.avatar_url as user_avatar_url, u.handle
 u.fediverse_id as event_user_fediverse_id, u.fediverse_uri AS event_user_fediverse_uri, 
 u.avatar_url as event_user_avatar_url, COUNT(DISTINCT l.like_id) AS likes, count(l2.like_id) >= 1 AS liked, 
 count(distinct c.comment_id) as comments, 
-ob.name as orbit_name, ob.uri as orbit_uri, ob.avatar_uri as orbit_avatar_uri,
+ob.name as orbit_name, ob.shortcode as orbit_shortcode, ob.uri as orbit_uri, ob.avatar_uri as orbit_avatar_uri,
 pa.attachment_id, pa.user_id as attachment_user_id, 
 pa.post_id as attachment_post_id, pa.uri as attachment_uri, pa.width as attachment_width, 
 pa.height as attachment_height, pa.content_type as attachment_content_type, pa.storage_ref as attachment_storage_ref, 

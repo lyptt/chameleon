@@ -5,8 +5,18 @@ import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import SideNav from '@/components/molecules/SideNav'
 import PostCard from '@/components/atoms/PostCard'
-import WelcomeCard from '@/components/atoms/WelcomeCard'
 import { debounce } from 'lodash'
+import { useRouter } from 'next/router'
+import {
+  orbitActionLoadOrbit,
+  useOrbits,
+} from '@/components/organisms/OrbitContext'
+import Masthead from '@/components/atoms/Masthead'
+import InfoCard from '@/components/atoms/InfoCard'
+import dayjs from 'dayjs'
+import dayjsUtc from 'dayjs/plugin/utc'
+
+dayjs.extend(dayjsUtc)
 
 function determineScrollPercentage() {
   const documentHeight = Math.max(
@@ -30,14 +40,31 @@ function determineScrollPercentage() {
   return scrollTop / trackLength
 }
 
-export default function HomePage({
+export default function OrbitPage({
   className,
 }: HTMLAttributes<HTMLDivElement>) {
+  const router = useRouter()
   const { session } = useAuth()
+  const { state: orbitState, dispatch: orbitDispatch } = useOrbits()
   const { state, dispatch } = useFeed()
-  const { loading, loadingFailed, feed, page, noMorePages } = state
+  const { orbit } = orbitState
+  const {
+    loading,
+    loadingFailed,
+    feed,
+    page,
+    noMorePages,
+    orbit: feedOrbit,
+  } = state
+  const orbitShortcode = (router.query.orbitShortcode || '') as string
 
   const [listInView, setListInView] = useState(false)
+
+  useEffect(() => {
+    if (!orbit || orbit.shortcode !== orbitShortcode) {
+      orbitActionLoadOrbit(orbitShortcode, session?.access_token, orbitDispatch)
+    }
+  }, [orbitShortcode, session, orbitDispatch, dispatch])
 
   // Triggered on each scroll event, but debounced to 500ms as to not affect performance
   const checkScrollPosition = useCallback(
@@ -65,6 +92,8 @@ export default function HomePage({
 
   useEffect(() => {
     if (
+      !orbit ||
+      orbit.shortcode !== orbitShortcode ||
       loading ||
       loadingFailed ||
       !feed.length ||
@@ -77,12 +106,21 @@ export default function HomePage({
     // HACK: We're not getting an accurate indication that we're at the bottom from the IntersectionObserver. It's triggering
     //       at strange times, so we also need to check scroll position manually.
     if (determineScrollPercentage() >= 0.75) {
-      feedActionLoadFeed(page + 1, session?.access_token, undefined, dispatch)
+      feedActionLoadFeed(page + 1, session?.access_token, orbit, dispatch)
     }
-  }, [loading, feed, session, noMorePages, page, listInView])
+  }, [
+    loading,
+    feed,
+    session,
+    noMorePages,
+    page,
+    listInView,
+    orbit,
+    orbitShortcode,
+  ])
 
   return (
-    <section className={cx('orbit-page-home', className)}>
+    <section className={cx('orbit-page-orbit', className)}>
       <Head>
         <title>Orbit</title>
         <meta
@@ -92,20 +130,37 @@ export default function HomePage({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <SideNav />
-      <div className="orbit-page-home__feed">
-        {!loading &&
-          !loadingFailed &&
-          feed.map((post) => (
-            <PostCard
-              className="orbit-page-home__feed-post"
-              key={post.post_id}
-              post={post}
-            />
-          ))}
-      </div>
-      <aside className="orbit-page-home__sidebar">
-        <WelcomeCard />
-      </aside>
+      {orbit && orbit.shortcode === orbitShortcode && feedOrbit === orbit && (
+        <>
+          <div className="orbit-page-orbit__feed">
+            <Masthead orbit={orbit} />
+            {!loading &&
+              !loadingFailed &&
+              feed.map((post) => (
+                <PostCard
+                  className="orbit-page-orbit__feed-post"
+                  key={post.post_id}
+                  post={post}
+                />
+              ))}
+          </div>
+          <aside className="orbit-page-orbit__sidebar">
+            <InfoCard
+              title="About this community"
+              innerHTML={orbit.description_html}
+              actions={[
+                {
+                  title: 'Post Something',
+                  href: `/orbits/${orbitShortcode}/new-post`,
+                  button: 'default',
+                },
+              ]}
+            >
+              Created {dayjs.utc(orbit.created_at).format('MMM DD, YYYY')}
+            </InfoCard>
+          </aside>
+        </>
+      )}
     </section>
   )
 }

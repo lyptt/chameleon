@@ -1,10 +1,13 @@
-import { fetchUserOrbits, IOrbit } from '@/core/api'
+import { fetchUserOrbit, fetchUserOrbits, IOrbit } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 
 enum OrbitActionType {
   REFRESH_USER_ORBITS_LOADING = 'REFRESH_USER_ORBITS_LOADING',
   REFRESH_USER_ORBITS_ERROR = 'REFRESH_USER_ORBITS_ERROR',
   REFRESH_USER_ORBITS_LOADED = 'REFRESH_USER_ORBITS_LOADED',
+  REFRESH_USER_ORBIT_LOADING = 'REFRESH_USER_ORBIT_LOADING',
+  REFRESH_USER_ORBIT_ERROR = 'REFRESH_USER_ORBIT_ERROR',
+  REFRESH_USER_ORBIT_LOADED = 'REFRESH_USER_ORBIT_LOADED',
 }
 
 interface OrbitAction {
@@ -36,15 +39,44 @@ export async function orbitActionLoadUserOrbits(
   }
 }
 
+export async function orbitActionLoadOrbit(
+  shortcode: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  dispatch({
+    type: OrbitActionType.REFRESH_USER_ORBIT_LOADING,
+  })
+
+  try {
+    const orbits = await fetchUserOrbit(shortcode, authToken)
+    dispatch({
+      type: OrbitActionType.REFRESH_USER_ORBIT_LOADED,
+      data: orbits.data,
+    })
+  } catch (error) {
+    dispatch({
+      type: OrbitActionType.REFRESH_USER_ORBIT_ERROR,
+      error,
+    })
+  }
+}
+
 export interface IOrbitState {
   orbits?: IOrbit[]
   loading: boolean
   loadingFailed: boolean
+  loadingOrbit: boolean
+  loadingOrbitFailed: boolean
+  orbit?: IOrbit
 }
 
 const initialState: IOrbitState = {
   loading: false,
   loadingFailed: false,
+  loadingOrbit: false,
+  loadingOrbitFailed: false,
+  orbit: undefined,
 }
 
 export const OrbitContext = createContext(
@@ -71,6 +103,25 @@ const reducer = (state: IOrbitState, action: OrbitAction): IOrbitState => {
         loading: false,
         loadingFailed: false,
         orbits: action.data,
+      }
+    case OrbitActionType.REFRESH_USER_ORBIT_LOADING:
+      return {
+        ...state,
+        loadingOrbit: true,
+        loadingOrbitFailed: false,
+      }
+    case OrbitActionType.REFRESH_USER_ORBIT_ERROR:
+      return {
+        ...state,
+        loadingOrbit: false,
+        loadingOrbitFailed: true,
+      }
+    case OrbitActionType.REFRESH_USER_ORBIT_LOADED:
+      return {
+        ...state,
+        loadingOrbit: false,
+        loadingOrbitFailed: false,
+        orbit: action.data,
       }
     default:
       return state

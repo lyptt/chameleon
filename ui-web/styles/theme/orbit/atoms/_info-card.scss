@@ -1,0 +1,63 @@
+.#{$theme-class} {
+  .orbit-info-card {
+    border-radius: 8px;
+    user-select: none;
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-2-dark;
+      border: 0.5px solid $fill-3-dark;
+    }
+  }
+
+  .orbit-info-card__header {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-light;
+      border-bottom: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+      border-bottom: 0.5px solid $fill-3-dark;
+    }
+  }
+
+  .orbit-info-card__content,
+  .orbit-info-card__additional-content {
+    font-size: $font-size-m;
+  }
+
+  .orbit-info-card__additional-content {
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
+  }
+
+  .orbit-info-card__separator {
+    @media (prefers-color-scheme: light) {
+      background: $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-3-dark;
+    }
+  }
+}

@@ -2,6 +2,7 @@ CREATE TABLE orbits (
   orbit_id UUID NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  shortcode varchar(64) NOT NULL,
   name varchar(256) NOT NULL,
   description_md text NOT NULL,
   description_html text NOT NULL,

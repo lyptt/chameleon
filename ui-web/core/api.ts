@@ -108,6 +108,7 @@ export interface IPost {
   liked?: boolean
   comments: number
   attachments: IPostAttachment[]
+  orbit_shortcode?: string
   orbit_name?: string
   orbit_uri?: string
   orbit_avatar_uri?: string
@@ -154,6 +155,7 @@ export interface IOrbit {
   orbit_id: string
   created_at: string
   updated_at: string
+  shortcode: string
   name: string
   description_md: string
   description_html: string
@@ -274,6 +276,29 @@ export async function fetchUserFeed(
   return await response.json()
 }
 
+export async function fetchOrbitFeed(
+  shortcode: string,
+  authToken: string | undefined,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<IPost>> {
+  const response = await fetch(
+    `${Config.apiUri}/orbits/${shortcode}/feed?page=${page}&page_size=${pageSize}`,
+    {
+      ...(authToken
+        ? buildDefaultHeaders(authToken)
+        : buildUnauthenticatedHeaders()),
+      method: 'GET',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
 export async function fetchUserOrbits(
   handle: string,
   authToken: string | undefined,
@@ -289,6 +314,24 @@ export async function fetchUserOrbits(
       method: 'GET',
     }
   )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchUserOrbit(
+  shortcode: string,
+  authToken: string | undefined
+): Promise<IListResponse<IOrbit>> {
+  const response = await fetch(`${Config.apiUri}/orbits/${shortcode}`, {
+    ...(authToken
+      ? buildDefaultHeaders(authToken)
+      : buildUnauthenticatedHeaders()),
+    method: 'GET',
+  })
 
   if (response.status !== 200) {
     throw new Error('Request failed')

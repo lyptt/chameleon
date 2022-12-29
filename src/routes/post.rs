@@ -6,8 +6,9 @@ use uuid::Uuid;
 use crate::{
   cdn::cdn_store::Cdn,
   db::{
-    follow_repository::FollowPool, job_repository::JobPool, post_attachment_repository::PostAttachmentPool,
-    post_repository::PostPool, session_repository::SessionPool, user_repository::UserPool,
+    follow_repository::FollowPool, job_repository::JobPool, orbit_repository::OrbitPool,
+    post_attachment_repository::PostAttachmentPool, post_repository::PostPool, session_repository::SessionPool,
+    user_repository::UserPool,
   },
   helpers::{
     auth::{query_auth, require_auth},
@@ -191,9 +192,15 @@ pub async fn api_get_global_feed(posts: web::Data<PostPool>, query: web::Query<P
 
 pub async fn api_get_orbit_feed(
   posts: web::Data<PostPool>,
-  orbit_id: web::Path<Uuid>,
+  orbits: web::Data<OrbitPool>,
+  orbit_shortcode: web::Path<String>,
   query: web::Query<PostsQuery>,
 ) -> impl Responder {
+  let orbit_id = match orbits.fetch_orbit_id_from_shortcode(&orbit_shortcode).await {
+    Some(id) => id,
+    None => return build_api_not_found(orbit_shortcode.to_string()),
+  };
+
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);
   let posts_count = match posts.count_global_federated_orbit_feed(&orbit_id).await {

@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 import { useAuth } from '@/components/organisms/AuthContext'
 import {
   feedActionLoadFeed,
+  feedActionReset,
   FeedType,
   useFeed,
 } from '@/components/organisms/FeedContext'
@@ -35,10 +36,44 @@ export default function DefaultActionsDelegator() {
   }, [session, profileState, profileDispatch])
 
   useEffect(() => {
+    if (
+      !feedState.initialLoadComplete ||
+      feedState.loading ||
+      feedState.loadingFailed
+    ) {
+      return
+    }
+
+    if (
+      route === '/' &&
+      feedState.type !== FeedType.PublicFederated &&
+      feedState.type !== FeedType.Own
+    ) {
+      feedActionReset(feedDispatch)
+    }
+
+    if (
+      route === '/orbits/[orbitShortcode]' &&
+      feedState.type !== FeedType.Orbit
+    ) {
+      feedActionReset(feedDispatch)
+    }
+  }, [feedState, feedDispatch, route])
+
+  useEffect(() => {
+    if (route !== '/') {
+      return
+    }
+
     if (feedState.initialLoadComplete) {
       if (feedState.type === FeedType.PublicFederated && !session) {
         return
       } else if (feedState.type === FeedType.Own && session) {
+        return
+      } else if (
+        feedState.type !== FeedType.PublicFederated &&
+        feedState.type !== FeedType.Own
+      ) {
         return
       }
     }
@@ -47,8 +82,29 @@ export default function DefaultActionsDelegator() {
       return
     }
 
-    feedActionLoadFeed(0, session?.access_token, feedDispatch)
-  }, [session, feedState, feedDispatch])
+    feedActionLoadFeed(0, session?.access_token, undefined, feedDispatch)
+  }, [session, feedState, feedDispatch, route])
+
+  useEffect(() => {
+    if (route !== '/orbits/[orbitShortcode]' || !orbitsState.orbit) {
+      return
+    }
+
+    if (feedState.initialLoadComplete) {
+      return
+    }
+
+    if (feedState.loading || feedState.loadingFailed) {
+      return
+    }
+
+    feedActionLoadFeed(
+      0,
+      session?.access_token,
+      orbitsState.orbit,
+      feedDispatch
+    )
+  }, [session, feedState, feedDispatch, orbitsState, route])
 
   useEffect(() => {
     if (!profileState.profile?.handle || !session || orbitsState.orbits) {

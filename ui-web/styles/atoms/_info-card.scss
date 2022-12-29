@@ -1,0 +1,36 @@
+.orbit-info-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.orbit-info-card__header,
+.orbit-info-card__content,
+.orbit-info-card__additional-content {
+  padding: 16px;
+}
+
+.orbit-info-card__additional-content {
+  padding-top: 0;
+}
+
+.orbit-info-card__content > *:last-of-type {
+  margin-bottom: 0;
+}
+
+.orbit-info-card__separator {
+  display: block;
+  margin-top: 0;
+  margin-left: 16px;
+  margin-right: 16px;
+  margin-bottom: 16.5px;
+  width: calc(100% - 32px);
+  height: 0.5px;
+}
+
+.orbit-info-card__actions {
+  display: flex;
+  flex-direction: column;
+  margin-left: 16px;
+  margin-right: 16px;
+  margin-bottom: 16px;
+}

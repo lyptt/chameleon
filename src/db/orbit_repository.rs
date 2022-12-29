@@ -12,6 +12,7 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait OrbitRepo {
+  async fn fetch_orbit_id_from_shortcode(&self, shortcode: &str) -> Option<Uuid>;
   async fn count_orbits(&self) -> Result<i64, LogicErr>;
   async fn fetch_orbits(&self, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn fetch_orbit(&self, orbit_id: &Uuid) -> Result<Option<Orbit>, LogicErr>;
@@ -49,6 +50,26 @@ pub struct DbOrbitRepo {
 
 #[async_trait]
 impl OrbitRepo for DbOrbitRepo {
+  async fn fetch_orbit_id_from_shortcode(&self, shortcode: &str) -> Option<Uuid> {
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
+    let row = match db
+      .query_opt(
+        "SELECT orbit_id FROM orbits WHERE shortcode = $1 AND is_external = FALSE",
+        &[&shortcode],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    row.and_then(|r| r.get(0))
+  }
+
   async fn count_orbits(&self) -> Result<i64, LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db

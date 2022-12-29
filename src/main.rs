@@ -50,8 +50,8 @@ use routes::nodeinfo::{api_get_nodeinfo, api_get_nodeinfo_2_1};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::orbit::{
   api_create_orbit, api_create_orbit_moderator, api_delete_orbit, api_delete_orbit_moderator, api_get_orbit,
-  api_get_orbit_moderators, api_get_orbits, api_get_user_orbits, api_join_orbit, api_leave_orbit, api_update_orbit,
-  api_update_orbit_assets, api_update_orbit_moderator,
+  api_get_orbit_moderators, api_get_orbit_named, api_get_orbits, api_get_user_orbits, api_join_orbit, api_leave_orbit,
+  api_update_orbit, api_update_orbit_assets, api_update_orbit_moderator,
 };
 use routes::post::{
   api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_post, api_get_user_liked_posts,
@@ -234,7 +234,7 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_get_global_feed)),
       )
       .service(
-        web::resource("/api/orbits/{orbit_id}/feed")
+        web::resource("/api/orbits/{orbit_shortcode}/feed")
           .name("orbit_feed")
           .route(web::get().to(api_get_orbit_feed)),
       )
@@ -312,29 +312,34 @@ async fn main() -> std::io::Result<()> {
           .route(web::post().to(api_create_orbit)),
       )
       .service(
-        web::resource("/api/orbits/{orbit_id}")
+        web::resource("/api/orbits/{orbit_name}")
+          .name("orbit_named")
+          .route(web::get().to(api_get_orbit_named)),
+      )
+      .service(
+        web::resource("/api/orbit/{orbit_id}")
           .name("orbit")
           .route(web::get().to(api_get_orbit))
           .route(web::patch().to(api_update_orbit))
           .route(web::delete().to(api_delete_orbit)),
       )
       .service(
-        web::resource("/api/orbits/{orbit_id}/assets")
+        web::resource("/api/orbit/{orbit_id}/assets")
           .name("orbit_assets")
           .route(web::post().to(api_update_orbit_assets)),
       )
       .service(
-        web::resource("/api/orbits/{orbit_id}/join")
+        web::resource("/api/orbit/{orbit_id}/join")
           .name("orbit_join")
           .route(web::post().to(api_join_orbit)),
       )
       .service(
-        web::resource("/api/orbits/{orbit_id}/leave")
+        web::resource("/api/orbit/{orbit_id}/leave")
           .name("orbit_leave")
           .route(web::post().to(api_leave_orbit)),
       )
       .service(
-        web::resource("/api/orbits/{orbit_id}/moderators")
+        web::resource("/api/orbit/{orbit_id}/moderators")
           .name("orbit_moderators")
           .route(web::get().to(api_get_orbit_moderators))
           .route(web::post().to(api_create_orbit_moderator))

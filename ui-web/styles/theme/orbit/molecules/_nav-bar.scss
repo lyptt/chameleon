@@ -1,5 +1,7 @@
 .#{$theme-class} {
   .orbit-nav {
+    user-select: none;
+
     @media (prefers-color-scheme: light) {
       background: $fill-2-light;
       border-bottom: 0.5px solid $fill-3-light;

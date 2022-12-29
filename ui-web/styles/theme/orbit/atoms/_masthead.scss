@@ -1,0 +1,64 @@
+.#{$theme-class} {
+  .orbit-masthead {
+    border-radius: 8px;
+    user-select: none;
+    position: relative;
+    height: 280px;
+
+    @include mq($until: desktop) {
+      height: 180px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-3-dark;
+    }
+
+    .orbit-masthead__banner {
+      border-radius: 8px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      color: transparent;
+    }
+
+    .orbit-masthead__content-title {
+      font-size: $font-size-l;
+      color: white;
+    }
+
+    .orbit-masthead__content {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+      padding-left: 16px;
+      padding-right: 16px;
+      font-size: $font-size-m;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 2px;
+      backdrop-filter: blur(10px);
+
+      > p {
+        margin-top: 0;
+      }
+
+      :last-child {
+        margin-bottom: 0;
+      }
+
+      .orbit-masthead__content-headline {
+        margin-top: 34px;
+      }
+    }
+  }
+}

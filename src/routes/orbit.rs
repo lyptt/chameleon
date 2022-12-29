@@ -126,6 +126,25 @@ pub async fn api_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: web::Path<Uui
   HttpResponse::Ok().json(ObjectResponse { data: orbit })
 }
 
+pub async fn api_get_orbit_named(orbits: web::Data<OrbitPool>, orbit_shortcode: web::Path<String>) -> impl Responder {
+  let orbit_id = match orbits.fetch_orbit_id_from_shortcode(&orbit_shortcode).await {
+    Some(id) => id,
+    None => return build_api_not_found(orbit_shortcode.to_string()),
+  };
+
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => orbit,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let orbit = match orbit {
+    Some(orbit) => orbit,
+    None => return build_api_not_found(orbit_id.to_string()),
+  };
+
+  HttpResponse::Ok().json(ObjectResponse { data: orbit })
+}
+
 pub async fn api_create_orbit(
   sessions: web::Data<SessionPool>,
   orbits: web::Data<OrbitPool>,

@@ -12,6 +12,8 @@ import {
   likePost,
   unlikePost,
   createPostComment,
+  IOrbit,
+  fetchOrbitFeed,
 } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 import retry from 'async-retry'
@@ -19,9 +21,11 @@ import retry from 'async-retry'
 export enum FeedType {
   PublicFederated,
   Own,
+  Orbit,
 }
 
 enum FeedActionType {
+  RESET_FEED_STATE = 'RESET_FEED_STATE',
   REFRESH_FEED_LOADING = 'REFRESH_FEED_LOADING',
   REFRESH_FEED_ERROR = 'REFRESH_FEED_ERROR',
   REFRESH_FEED_LOADED = 'REFRESH_FEED_LOADED',
@@ -49,28 +53,49 @@ interface FeedAction {
   postId?: string
   liked?: boolean
   comment?: string
+  orbit?: IOrbit
+}
+
+export async function feedActionReset(dispatch: React.Dispatch<FeedAction>) {
+  dispatch({
+    type: FeedActionType.RESET_FEED_STATE,
+  })
 }
 
 export async function feedActionLoadFeed(
   page: number,
   authToken: string | undefined,
+  orbit: IOrbit | undefined,
   dispatch: React.Dispatch<FeedAction>
 ) {
+  let feedType: FeedType
+  if (orbit) {
+    feedType = FeedType.Orbit
+  } else {
+    feedType = authToken ? FeedType.Own : FeedType.PublicFederated
+  }
+
   dispatch({
     type: FeedActionType.REFRESH_FEED_LOADING,
-    feedType: authToken ? FeedType.Own : FeedType.PublicFederated,
+    feedType,
+    orbit,
   })
 
   try {
     await retry(
       async () => {
-        const result = authToken
-          ? await fetchOwnFeed(authToken, page, 5)
-          : await fetchFederatedFeed(page, 5)
+        let result: IListResponse<IPost>
+        if (orbit) {
+          result = await fetchOrbitFeed(orbit.shortcode, authToken, page, 20)
+        } else {
+          result = authToken
+            ? await fetchOwnFeed(authToken, page, 20)
+            : await fetchFederatedFeed(page, 20)
+        }
         dispatch({
           type: FeedActionType.REFRESH_FEED_LOADED,
           feedData: result,
-          feedType: authToken ? FeedType.Own : FeedType.PublicFederated,
+          feedType,
         })
       },
       {
@@ -83,7 +108,7 @@ export async function feedActionLoadFeed(
     dispatch({
       type: FeedActionType.REFRESH_FEED_ERROR,
       error,
-      feedType: authToken ? FeedType.Own : FeedType.PublicFederated,
+      feedType,
     })
   }
 }
@@ -243,6 +268,7 @@ export interface IFeedState {
   totalPages?: number
   noMorePages: boolean
   type: FeedType
+  orbit?: IOrbit
 }
 
 const initialState: IFeedState = {
@@ -266,6 +292,10 @@ export const FeedContext = createContext(
 
 const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
   switch (action.type) {
+    case FeedActionType.RESET_FEED_STATE:
+      return {
+        ...initialState,
+      }
     case FeedActionType.REFRESH_FEED_LOADING:
       return {
         ...state,
@@ -273,6 +303,9 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         loadingFailed: false,
         initialLoadComplete: true,
         type: action.feedType ?? state.type,
+        feed:
+          !!action.feedType && action.feedType !== state.type ? [] : state.feed,
+        orbit: action.orbit,
       }
     case FeedActionType.REFRESH_FEED_ERROR:
       return {

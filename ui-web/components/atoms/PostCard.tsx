@@ -26,7 +26,7 @@ export default function PostCard({ post, className, ...rest }: PostCardProps) {
                 <a className="orbit-post-card__info-bar-origin">
                   <img
                     className="orbit-post-card__info-bar-icon"
-                    alt={post.orbit_name?.toLowerCase()}
+                    alt={post.orbit_shortcode?.toLowerCase()}
                     src={post.orbit_avatar_uri || transparentPixelUri}
                   />
                   o/{post.orbit_name?.toLowerCase()}
