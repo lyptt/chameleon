@@ -54,7 +54,7 @@ export default function UserButton({
         'orbit-user-button--unauthenticated',
         className
       )}
-      href="/api/oauth/authorize"
+      href="/api/oauth/login"
       {...(rest as any)}
     >
       Sign in

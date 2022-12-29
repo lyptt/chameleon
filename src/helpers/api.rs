@@ -50,7 +50,7 @@ pub fn app_is_blessed(req: &HttpRequest) -> bool {
   });
 
   if let Some(referrer) = referrer {
-    referrer.starts_with(&SETTINGS.server.fqdn)
+    referrer.starts_with(&SETTINGS.server.fqdn) || referrer.starts_with(&SETTINGS.server.api_root_fqdn)
   } else {
     false
   }
@@ -63,7 +63,8 @@ pub fn validate_referer_redirect_uris(req: &HttpRequest, redirect_uri: &str) -> 
   });
 
   if let Some(referrer) = referrer {
-    redirect_uri.starts_with(&referrer)
+    println!("{} -> {} -> {}", redirect_uri, referrer, SETTINGS.server.api_root_fqdn);
+    redirect_uri.starts_with(&referrer) || referrer.starts_with(&SETTINGS.server.api_root_fqdn)
   } else {
     // If the requester does not pass a 'Referer' header, we don't need to validate as they're not trying to abuse the
     // app blessing system.

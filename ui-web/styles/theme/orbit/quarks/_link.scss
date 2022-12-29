@@ -1,0 +1,12 @@
+.#{$theme-class} {
+  .orbit-link {
+    font-weight: $font-weight-medium;
+    @media (prefers-color-scheme: light) {
+      color: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $brand-dark;
+    }
+  }
+}

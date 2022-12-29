@@ -6,6 +6,7 @@ import { useAuth } from '@/components/organisms/AuthContext'
 import { usePost } from '@/components/organisms/PostContext'
 import SideNav from '@/components/molecules/SideNav'
 import PostCard from '@/components/atoms/PostCard'
+import WelcomeCard from '@/components/atoms/WelcomeCard'
 
 export default function HomePage({
   className,
@@ -45,6 +46,9 @@ export default function HomePage({
             />
           ))}
       </div>
+      <aside className="orbit-page-home__sidebar">
+        <WelcomeCard />
+      </aside>
     </section>
   )
 }

@@ -1,0 +1,68 @@
+.#{$theme-class} {
+  .orbit-welcome-card {
+    border-radius: 8px;
+    user-select: none;
+    position: relative;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-2-dark;
+      border: 0.5px solid $fill-3-dark;
+    }
+
+    .orbit-welcome-card__banner {
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-image: url('/images/space.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center center;
+    }
+
+    .orbit-welcome-card__banner-logo {
+      width: 86px;
+      position: absolute;
+      top: 28px;
+      left: 12px;
+    }
+
+    .orbit-welcome-card__content-title {
+      margin-left: 90px;
+      margin-top: 54px;
+      font-size: $font-size-l;
+    }
+
+    .orbit-welcome-card__content {
+      font-size: $font-size-m;
+
+      > p {
+        margin-top: 0;
+      }
+
+      :last-child {
+        margin-bottom: 0;
+      }
+
+      .orbit-welcome-card__content-headline {
+        margin-top: 34px;
+      }
+
+      @media (prefers-color-scheme: light) {
+        color: $text-2-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: $text-2-dark;
+      }
+    }
+  }
+}

@@ -15,4 +15,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
+  @include mq($until: desktop) {
+    display: none;
+  }
 }
