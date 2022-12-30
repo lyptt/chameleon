@@ -1,6 +1,7 @@
 .orbit-nav {
   height: 60px;
   position: sticky;
+  z-index: 100;
   display: flex;
   gap: 10px;
   top: 0;

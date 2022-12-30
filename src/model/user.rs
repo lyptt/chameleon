@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use tokio_postgres::Row;
 use uuid::Uuid;
@@ -41,6 +42,7 @@ pub struct User {
   pub ext_apub_following_uri: Option<String>,
   pub ext_apub_inbox_uri: Option<String>,
   pub ext_apub_outbox_uri: Option<String>,
+  pub created_at: DateTime<Utc>,
 }
 
 impl User {
@@ -87,6 +89,7 @@ impl FromRow for User {
       ext_apub_following_uri: row.get("ext_apub_following_uri"),
       ext_apub_inbox_uri: row.get("ext_apub_inbox_uri"),
       ext_apub_outbox_uri: row.get("ext_apub_outbox_uri"),
+      created_at: row.get("created_at"),
     })
   }
 }
@@ -180,6 +183,7 @@ mod tests {
       ext_apub_following_uri: None,
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
+      created_at: Utc::now(),
     };
 
     temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {

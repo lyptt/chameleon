@@ -5,19 +5,19 @@ use crate::settings::SETTINGS;
 
 pub async fn api_redirect_to_post(post_id: web::Path<Uuid>) -> impl Responder {
   HttpResponse::Found()
-    .append_header(("location", format!("{}/posts/{}", SETTINGS.server.fqdn, post_id)))
+    .append_header(("location", format!("{}/feed/{}", SETTINGS.server.fqdn, post_id)))
     .finish()
 }
 
 pub async fn api_redirect_to_post_comments(post_id: web::Path<Uuid>) -> impl Responder {
   HttpResponse::Found()
-    .append_header(("location", format!("{}/posts/{}", SETTINGS.server.fqdn, post_id)))
+    .append_header(("location", format!("{}/feed/{}", SETTINGS.server.fqdn, post_id)))
     .finish()
 }
 
 pub async fn api_redirect_to_post_comment(ids: web::Path<(Uuid, Uuid)>) -> impl Responder {
   HttpResponse::Found()
-    .append_header(("location", format!("{}/posts/{}", SETTINGS.server.fqdn, ids.0)))
+    .append_header(("location", format!("{}/feed/{}", SETTINGS.server.fqdn, ids.0)))
     .finish()
 }
 

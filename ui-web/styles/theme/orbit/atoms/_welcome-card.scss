@@ -57,11 +57,11 @@
       }
 
       @media (prefers-color-scheme: light) {
-        color: $text-2-light;
+        color: $text-light;
       }
 
       @media (prefers-color-scheme: dark) {
-        color: $text-2-dark;
+        color: $text-dark;
       }
     }
   }

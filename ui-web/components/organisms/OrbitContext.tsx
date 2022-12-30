@@ -1,4 +1,4 @@
-import { fetchUserOrbit, fetchUserOrbits, IOrbit } from '@/core/api'
+import { fetchOrbit, fetchUserOrbits, IOrbit } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 
 enum OrbitActionType {
@@ -8,6 +8,7 @@ enum OrbitActionType {
   REFRESH_USER_ORBIT_LOADING = 'REFRESH_USER_ORBIT_LOADING',
   REFRESH_USER_ORBIT_ERROR = 'REFRESH_USER_ORBIT_ERROR',
   REFRESH_USER_ORBIT_LOADED = 'REFRESH_USER_ORBIT_LOADED',
+  CLEAR_USER_ORBIT = 'CLEAR_USER_ORBIT',
 }
 
 interface OrbitAction {
@@ -49,7 +50,7 @@ export async function orbitActionLoadOrbit(
   })
 
   try {
-    const orbits = await fetchUserOrbit(shortcode, authToken)
+    const orbits = await fetchOrbit(shortcode, authToken)
     dispatch({
       type: OrbitActionType.REFRESH_USER_ORBIT_LOADED,
       data: orbits.data,
@@ -60,6 +61,14 @@ export async function orbitActionLoadOrbit(
       error,
     })
   }
+}
+
+export async function orbitActionClearOrbit(
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  dispatch({
+    type: OrbitActionType.CLEAR_USER_ORBIT,
+  })
 }
 
 export interface IOrbitState {
@@ -122,6 +131,13 @@ const reducer = (state: IOrbitState, action: OrbitAction): IOrbitState => {
         loadingOrbit: false,
         loadingOrbitFailed: false,
         orbit: action.data,
+      }
+    case OrbitActionType.CLEAR_USER_ORBIT:
+      return {
+        ...state,
+        loadingOrbit: false,
+        loadingOrbitFailed: false,
+        orbit: undefined,
       }
     default:
       return state

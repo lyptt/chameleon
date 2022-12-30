@@ -1,13 +1,22 @@
 .orbit-side-nav {
-  display: flex;
-  flex-direction: column;
-  overflow-y: scroll;
   width: 222px;
-  padding: 10px;
 
   @include mq($until: desktop) {
     display: none;
   }
+}
+
+.orbit-side-nav__inner {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  padding: 10px;
+  position: sticky;
+  top: 60px;
+  left: 0;
+  bottom: 0;
+  width: 222px;
+  min-height: calc(100vh - 60px);
 }
 
 .orbit-side-nav__header {

@@ -1,15 +1,14 @@
 .#{$theme-class} {
   .orbit-user-button--authenticated {
     text-decoration: none;
+    font-size: $font-size-m;
 
     @media (prefers-color-scheme: light) {
       color: $text-light;
-      font-size: $font-size-m;
     }
 
     @media (prefers-color-scheme: dark) {
       color: $text-dark;
-      font-size: $font-size-m;
     }
   }
 
@@ -27,5 +26,17 @@
 
   .orbit-user-button__details-handle {
     font-weight: $font-weight-medium;
+  }
+
+  .orbit-user-button__details-full-handle {
+    font-size: $font-size-s;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
   }
 }

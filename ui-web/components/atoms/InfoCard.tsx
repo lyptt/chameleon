@@ -1,6 +1,8 @@
 import { HTMLProps } from 'react'
 import cx from 'classnames'
 import Button from './Button'
+import { IProfile } from '@/core/api'
+import UserButton from '../molecules/UserButton'
 
 export interface InfoCardAction {
   title: string
@@ -9,13 +11,15 @@ export interface InfoCardAction {
 }
 
 export interface InfoCardProps extends HTMLProps<HTMLDivElement> {
-  title: string
+  title?: string
+  author?: IProfile
   innerHTML?: string
   actions?: InfoCardAction[]
 }
 
 export default function InfoCard({
   title,
+  author,
   innerHTML,
   actions,
   children,
@@ -24,7 +28,12 @@ export default function InfoCard({
 }: InfoCardProps) {
   return (
     <div className={cx('orbit-info-card', className)} {...rest}>
-      <div className="orbit-info-card__header">{title}</div>
+      {!author && <div className="orbit-info-card__header">{title}</div>}
+      {!!author && (
+        <div className="orbit-info-card__header">
+          <UserButton specificProfile profile={author} />
+        </div>
+      )}
       {!!innerHTML && (
         <div
           className="orbit-info-card__content"

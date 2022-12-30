@@ -1,0 +1,98 @@
+.orbit-post-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.orbit-post-content__info-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin: 6px;
+  font-size: $font-size-s;
+  align-items: center;
+}
+
+.orbit-post-content__comment .orbit-post-content__info-bar {
+  margin: 0;
+}
+
+.orbit-post-content__info-bar-icon {
+  width: 16px;
+  height: 16px;
+  background-size: cover;
+}
+
+.orbit-post-content__info-bar-origin {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.orbit-post-content__title,
+.orbit-post-content__content {
+  margin-left: 26px;
+  margin-right: 26px;
+}
+
+.orbit-post-content__comment .orbit-post-content__content {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.orbit-post-content__content--user-post {
+  margin-top: 10px;
+}
+
+.orbit-post-content__title {
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.orbit-post-content__content h1,
+.orbit-post-content__content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.orbit-post-content__content p,
+.orbit-post-content__content h3,
+.orbit-post-content__content h4,
+.orbit-post-content__content h5,
+.orbit-post-content__content h6 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.orbit-post-content__commands {
+  display: flex;
+  margin-top: 20px;
+  margin-bottom: 26px;
+  padding-left: 26px;
+  padding-right: 26px;
+  gap: 20px;
+}
+
+.orbit-post-content__comment .orbit-post-content__commands {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0;
+}
+
+.orbit-post-content__command {
+  display: flex;
+  align-items: center;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.orbit-post-content__comments {
+  display: flex;
+  flex-direction: column;
+  margin-left: 26px;
+  margin-right: 26px;
+  margin-bottom: 26px;
+  gap: 20px;
+}

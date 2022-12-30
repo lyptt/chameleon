@@ -13,14 +13,20 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 
 export interface PostCardProps extends HTMLProps<HTMLAnchorElement> {
   post: IPost
+  hideOrbitInformation?: boolean
 }
 
-export default function PostCard({ post, className, ...rest }: PostCardProps) {
+export default function PostCard({
+  post,
+  hideOrbitInformation,
+  className,
+  ...rest
+}: PostCardProps) {
   return (
     <Link legacyBehavior href={post.uri}>
       <a className={cx('orbit-post-card', className)} {...rest}>
         <div className="orbit-post-card__info-bar">
-          {!!post.orbit_id && (
+          {!!post.orbit_id && !hideOrbitInformation && (
             <>
               <Link legacyBehavior href={post.orbit_uri || '/'}>
                 <a className="orbit-post-card__info-bar-origin">
@@ -44,7 +50,7 @@ export default function PostCard({ post, className, ...rest }: PostCardProps) {
               </div>
             </>
           )}
-          {!post.orbit_id && (
+          {(!post.orbit_id || hideOrbitInformation) && (
             <>
               <Link legacyBehavior href={`/users/${post.user_handle}`}>
                 <a className="orbit-post-card__info-bar-origin">

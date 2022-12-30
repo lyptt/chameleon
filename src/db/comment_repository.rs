@@ -103,7 +103,7 @@ impl CommentRepo for DbCommentRepo {
     let row = db
       .query_one(
         include_str!("./sql/fetch_post_comments_count.sql"),
-        &[&own_user_id, &post_id, &post_id],
+        &[&own_user_id, &post_id],
       )
       .await
       .map_err(map_db_err)?;

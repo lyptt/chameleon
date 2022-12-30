@@ -1,5 +1,6 @@
 use super::user::User;
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -40,6 +41,7 @@ pub struct UserAccountPub {
   pub intro_md: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub intro_html: Option<String>,
+  pub created_at: DateTime<Utc>,
 }
 
 impl From<User> for UserAccountPub {
@@ -63,6 +65,7 @@ impl From<User> for UserAccountPub {
       url_5_title: u.url_5_title,
       intro_md: u.intro_md,
       intro_html: u.intro_html,
+      created_at: u.created_at,
     }
   }
 }
@@ -70,6 +73,7 @@ impl From<User> for UserAccountPub {
 #[cfg(test)]
 mod tests {
   use crate::model::{user::User, user_account_pub::UserAccountPub};
+  use chrono::Utc;
   use std::str::FromStr;
   use uuid::Uuid;
 
@@ -102,6 +106,7 @@ mod tests {
       ext_apub_following_uri: None,
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
+      created_at: Utc::now(),
     };
     let user_cmp = user.clone();
 

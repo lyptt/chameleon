@@ -23,6 +23,6 @@ AND (
   (p.visibility IN ('public_local', 'public_federated'))
     OR (following IS TRUE AND p.visibility = 'followers_only'))
 GROUP BY c.comment_id, u.user_id, p.post_id
-ORDER BY c.created_at DESC
+ORDER BY c.created_at ASC
 LIMIT $3
 OFFSET $4

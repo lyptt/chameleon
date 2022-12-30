@@ -101,6 +101,18 @@
     font-size: $font-size-l;
     font-weight: $font-weight-regular;
 
+    * {
+      font-size: $font-size-l;
+      font-weight: $font-weight-regular;
+      margin: 0;
+      margin-bottom: $font-size-l;
+      padding: 0;
+    }
+
+    img {
+      display: none;
+    }
+
     @media (prefers-color-scheme: light) {
       color: $text-light;
     }

@@ -4,20 +4,28 @@ import Link from 'next/link'
 import { useAuth } from '@/components/organisms/AuthContext'
 import Button from '@/components/atoms/Button'
 import { useProfile } from '@/components/organisms/ProfileContext'
+import { IProfile } from '@/core/api'
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`
 
+export interface UserButtonProps extends HTMLProps<HTMLDivElement> {
+  specificProfile?: boolean
+  profile?: IProfile
+}
+
 export default function UserButton({
+  specificProfile,
+  profile,
   className,
   ...rest
-}: HTMLProps<HTMLDivElement>) {
+}: UserButtonProps) {
   const { authenticated } = useAuth()
   const { state } = useProfile()
-  const { profile } = state
+  const { profile: ownProfile } = state
 
-  if (authenticated) {
+  if (specificProfile) {
     return (
-      <Link legacyBehavior href="/profile">
+      <Link legacyBehavior href={profile ? `/users/${profile.handle}` : '#'}>
         <a
           className={cx(
             'orbit-user-button',
@@ -38,6 +46,38 @@ export default function UserButton({
                 </div>
                 <div className="orbit-user-button__details-full-handle">
                   {profile.fediverse_id}
+                </div>
+              </div>
+            </>
+          )}
+        </a>
+      </Link>
+    )
+  }
+
+  if (authenticated) {
+    return (
+      <Link legacyBehavior href="/profile">
+        <a
+          className={cx(
+            'orbit-user-button',
+            'orbit-user-button--authenticated',
+            className
+          )}
+        >
+          {!!ownProfile && (
+            <>
+              <img
+                className="orbit-user-button__avatar"
+                src={ownProfile.avatar_url || transparentPixelUri}
+                alt={ownProfile.handle}
+              />
+              <div className="orbit-user-button__details">
+                <div className="orbit-user-button__details-handle">
+                  {ownProfile.handle}
+                </div>
+                <div className="orbit-user-button__details-full-handle">
+                  {ownProfile.fediverse_id}
                 </div>
               </div>
             </>

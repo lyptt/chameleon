@@ -59,6 +59,7 @@ export interface IProfile {
   url_3_title?: string
   url_4_title?: string
   url_5_title?: string
+  created_at: string
 }
 
 export interface IProfileStats {
@@ -322,10 +323,10 @@ export async function fetchUserOrbits(
   return await response.json()
 }
 
-export async function fetchUserOrbit(
+export async function fetchOrbit(
   shortcode: string,
   authToken: string | undefined
-): Promise<IListResponse<IOrbit>> {
+): Promise<IObjectResponse<IOrbit>> {
   const response = await fetch(`${Config.apiUri}/orbits/${shortcode}`, {
     ...(authToken
       ? buildDefaultHeaders(authToken)

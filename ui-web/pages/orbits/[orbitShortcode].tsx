@@ -141,6 +141,7 @@ export default function OrbitPage({
                   className="orbit-page-orbit__feed-post"
                   key={post.post_id}
                   post={post}
+                  hideOrbitInformation
                 />
               ))}
           </div>

@@ -12,7 +12,11 @@ import {
 } from '@/components/organisms/FeedContext'
 import { useRouter } from 'next/router'
 import { postActionDismissPost, usePost } from './PostContext'
-import { orbitActionLoadUserOrbits, useOrbits } from './OrbitContext'
+import {
+  orbitActionClearOrbit,
+  orbitActionLoadUserOrbits,
+  useOrbits,
+} from './OrbitContext'
 
 export default function DefaultActionsDelegator() {
   const { session } = useAuth()
@@ -20,7 +24,7 @@ export default function DefaultActionsDelegator() {
   const { state: feedState, dispatch: feedDispatch } = useFeed()
   const { state: postState, dispatch: postDispatch } = usePost()
   const { state: orbitsState, dispatch: orbitsDispatch } = useOrbits()
-  const { route } = useRouter()
+  const { route, query } = useRouter()
 
   useEffect(() => {
     if (
@@ -123,10 +127,10 @@ export default function DefaultActionsDelegator() {
   }, [session, profileState, orbitsState, orbitsDispatch])
 
   useEffect(() => {
-    if (route !== '/users/[userId]/[postId]' && !!postState.post) {
+    if (route !== '/feed/[postId]' && !!postState.post) {
       postActionDismissPost(postDispatch)
     }
-  }, [postState, postDispatch, route])
+  }, [postState, postDispatch, route, query])
 
   return <></>
 }

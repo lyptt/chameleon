@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use chrono::Utc;
 use http::Uri;
 use uuid::Uuid;
 
@@ -131,6 +132,7 @@ pub async fn federate_actor(actor_ref: &Option<Reference<Object>>, users: &UserP
     ext_apub_following_uri: Some(following_uri),
     ext_apub_inbox_uri: Some(inbox_uri),
     ext_apub_outbox_uri: Some(outbox_uri),
+    created_at: Utc::now(),
   };
 
   users.create_from(&user).await

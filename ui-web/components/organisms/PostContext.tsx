@@ -2,12 +2,16 @@ import {
   createPostComment,
   createPostCommentLike,
   deletePostCommentLike,
+  fetchOrbit,
   fetchPost,
   fetchPostComments,
+  fetchUserProfile,
   IComment,
   IListResponse,
   IObjectResponse,
+  IOrbit,
   IPost,
+  IProfile,
 } from '@/core/api'
 import retry from 'async-retry'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
@@ -16,6 +20,12 @@ enum PostActionType {
   REFRESH_POST_LOADING = 'REFRESH_POST_LOADING',
   REFRESH_POST_ERROR = 'REFRESH_POST_ERROR',
   REFRESH_POST_LOADED = 'REFRESH_POST_LOADED',
+  REFRESH_ORBIT_LOADING = 'REFRESH_ORBIT_LOADING',
+  REFRESH_ORBIT_ERROR = 'REFRESH_ORBIT_ERROR',
+  REFRESH_ORBIT_LOADED = 'REFRESH_ORBIT_LOADED',
+  REFRESH_AUTHOR_LOADING = 'REFRESH_AUTHOR_LOADING',
+  REFRESH_AUTHOR_ERROR = 'REFRESH_AUTHOR_ERROR',
+  REFRESH_AUTHOR_LOADED = 'REFRESH_AUTHOR_LOADED',
   REFRESH_POST_COMMENTS_LOADING = 'REFRESH_POST_COMMENTS_LOADING',
   REFRESH_POST_COMMENTS_ERROR = 'REFRESH_POST_COMMENTS_ERROR',
   REFRESH_POST_COMMENTS_LOADED = 'REFRESH_POST_COMMENTS_LOADED',
@@ -30,6 +40,8 @@ enum PostActionType {
 interface PostAction {
   type: PostActionType
   data?: IObjectResponse<IPost>
+  orbitData?: IObjectResponse<IOrbit>
+  authorData?: IProfile
   comments?: IListResponse<IComment>
   error?: any
   liked?: boolean
@@ -56,6 +68,52 @@ export async function postActionLoadPost(
   } catch (error) {
     dispatch({
       type: PostActionType.REFRESH_POST_ERROR,
+      error,
+    })
+  }
+}
+
+export async function postActionLoadOrbit(
+  orbitShortcode: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<PostAction>
+) {
+  dispatch({
+    type: PostActionType.REFRESH_ORBIT_LOADING,
+  })
+
+  try {
+    const post = await fetchOrbit(orbitShortcode, authToken)
+    dispatch({
+      type: PostActionType.REFRESH_ORBIT_LOADED,
+      orbitData: post,
+    })
+  } catch (error) {
+    dispatch({
+      type: PostActionType.REFRESH_ORBIT_ERROR,
+      error,
+    })
+  }
+}
+
+export async function postActionLoadAuthor(
+  userHandle: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<PostAction>
+) {
+  dispatch({
+    type: PostActionType.REFRESH_AUTHOR_LOADING,
+  })
+
+  try {
+    const post = await fetchUserProfile(userHandle, authToken)
+    dispatch({
+      type: PostActionType.REFRESH_AUTHOR_LOADED,
+      authorData: post,
+    })
+  } catch (error) {
+    dispatch({
+      type: PostActionType.REFRESH_AUTHOR_ERROR,
       error,
     })
   }
@@ -176,14 +234,21 @@ export async function postActionUpdateCommentLiked(
 
 export interface IPostState {
   post?: IPost
+  author?: IProfile
+  orbit?: IOrbit
   comments: IComment[]
   loading: boolean
   loadingFailed: boolean
   initialCommentLoadComplete: boolean
   commentsLoading: boolean
   commentsLoadingFailed: boolean
+  authorLoading: boolean
+  authorLoadingFailed: boolean
+  orbitLoading: boolean
+  orbitLoadingFailed: boolean
   page: number
   totalPages?: number
+  totalComments?: number
   noMorePages: boolean
   selectedComment?: IComment
   selectedPost?: IPost
@@ -196,8 +261,13 @@ const initialState: IPostState = {
   initialCommentLoadComplete: false,
   commentsLoading: false,
   commentsLoadingFailed: false,
+  authorLoading: false,
+  authorLoadingFailed: false,
+  orbitLoading: false,
+  orbitLoadingFailed: false,
   page: 0,
   noMorePages: false,
+  totalComments: undefined,
   selectedComment: undefined,
   selectedPost: undefined,
 }
@@ -210,17 +280,8 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
   switch (action.type) {
     case PostActionType.REFRESH_POST_LOADING:
       return {
-        ...state,
+        ...initialState,
         loading: true,
-        comments: [],
-        loadingFailed: false,
-        initialCommentLoadComplete: false,
-        commentsLoading: false,
-        commentsLoadingFailed: false,
-        page: 0,
-        noMorePages: false,
-        selectedComment: undefined,
-        selectedPost: undefined,
       }
     case PostActionType.REFRESH_POST_ERROR:
       return {
@@ -235,18 +296,45 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
         loadingFailed: false,
         post: action.data?.data,
       }
-    case PostActionType.DISMISS_POST:
+    case PostActionType.REFRESH_ORBIT_LOADING:
       return {
-        comments: [],
+        ...state,
+        loading: true,
+      }
+    case PostActionType.REFRESH_ORBIT_ERROR:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: true,
+      }
+    case PostActionType.REFRESH_ORBIT_LOADED:
+      return {
+        ...state,
         loading: false,
         loadingFailed: false,
-        initialCommentLoadComplete: false,
-        commentsLoading: false,
-        commentsLoadingFailed: false,
-        page: 0,
-        noMorePages: false,
-        selectedComment: undefined,
-        selectedPost: undefined,
+        orbit: action.orbitData?.data,
+      }
+    case PostActionType.REFRESH_AUTHOR_LOADING:
+      return {
+        ...state,
+        loading: true,
+      }
+    case PostActionType.REFRESH_AUTHOR_ERROR:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: true,
+      }
+    case PostActionType.REFRESH_AUTHOR_LOADED:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: false,
+        author: action.authorData,
+      }
+    case PostActionType.DISMISS_POST:
+      return {
+        ...initialState,
       }
     case PostActionType.REFRESH_POST_COMMENTS_LOADING:
       return {
@@ -275,6 +363,7 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
         totalPages: action.comments?.total_pages ?? state.totalPages,
         noMorePages: comments.length >= (action.comments?.total_items || 0),
         page: action.comments?.page || 0,
+        totalComments: action.comments?.total_items ?? state.totalComments,
       }
     }
     case PostActionType.UPDATE_POST_LIKED: {
