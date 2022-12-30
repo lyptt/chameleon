@@ -21,7 +21,11 @@ import InfoCard from '@/components/atoms/InfoCard'
 import WelcomeCard from '@/components/atoms/WelcomeCard'
 import AsidePlaceholder from '@/components/quarks/AsidePlaceholder'
 import Button from '@/components/atoms/Button'
-import { IoAddOutline, IoCloseOutline } from 'react-icons/io5'
+import {
+  IoAddOutline,
+  IoAlertCircleOutline,
+  IoCloseOutline,
+} from 'react-icons/io5'
 
 dayjs.extend(dayjsUtc)
 
@@ -37,6 +41,7 @@ export interface CreateFormProps
     HTMLFormElement
   > {
   title: string
+  error?: string
 }
 
 export interface CreateFormGroupProps extends FieldAttributes<any> {
@@ -59,6 +64,7 @@ export interface CreateFormRadioGroupProps extends CreateFormGroupProps {
 
 export function CreateForm({
   title,
+  error,
   className,
   ref,
   children,
@@ -67,6 +73,11 @@ export function CreateForm({
   return (
     <Form className={cx('orbit-create-layout__form', className)} {...rest}>
       <div className="orbit-create-layout__title">{title}</div>
+      {!!error && (
+        <p className="orbit-create-layout__error">
+          <IoAlertCircleOutline /> {error}
+        </p>
+      )}
       {children}
     </Form>
   )
@@ -127,6 +138,7 @@ export function CreateFormRadioGroup({
   options,
   type,
   name,
+  disabled,
   ...rest
 }: CreateFormRadioGroupProps) {
   if (hidden) {
@@ -157,7 +169,13 @@ export function CreateFormRadioGroup({
         ))}
       <div className="orbit-create-layout__form-field-radio-group">
         {options.map((option) => (
-          <Field key={option.title} value={option.value} name={name} {...rest}>
+          <Field
+            key={option.title}
+            value={option.value}
+            name={name}
+            {...rest}
+            disabled={disabled}
+          >
             {({ field, form }: any) => (
               <label
                 className={cx(
@@ -165,6 +183,10 @@ export function CreateFormRadioGroup({
                   {
                     'orbit-create-layout__form-field-radio-container--selected':
                       form.values[name] === option.value,
+                  },
+                  {
+                    'orbit-create-layout__form-field-radio-container--disabled':
+                      disabled,
                   },
                   className
                 )}
@@ -174,6 +196,7 @@ export function CreateFormRadioGroup({
                   value={option.value}
                   type="radio"
                   className="orbit-create-layout__form-field-radio"
+                  disabled={disabled}
                 />
                 {option.icon}
                 {option.title}
@@ -190,6 +213,7 @@ export function CreateFormButtons({
   className,
   submitTitle,
   cancelTitle,
+  disabled,
   ...rest
 }: CreateFormButtonsProps) {
   const router = useRouter()
@@ -199,10 +223,14 @@ export function CreateFormButtons({
       className={cx('orbit-create-layout__form-buttons', className)}
       {...rest}
     >
-      <Button href={(router.query.from as string) || '/'} variant="outline">
+      <Button
+        href={(router.query.from as string) || '/'}
+        variant="outline"
+        disabled={disabled}
+      >
         {cancelTitle}
       </Button>
-      <Button type="submit" variant="default">
+      <Button type="submit" variant="default" disabled={disabled}>
         {submitTitle}
       </Button>
     </div>
@@ -226,12 +254,14 @@ interface FileUploadThumbnailProps {
   file: File
   index: number
   onRemove: (index: number) => void
+  disabled?: boolean
 }
 
 function FileUploadThumbnail({
   file,
   index,
   onRemove,
+  disabled,
 }: FileUploadThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(transparentPixelUri)
 
@@ -260,8 +290,12 @@ function FileUploadThumbnail({
       <img src={imgSrc} alt={`Attachment ${index + 1}`} draggable={false} />
       <button
         className="orbit-create-layout__form-file-upload-delete-button"
-        onClick={() => onRemove(index)}
+        onClick={(e) => {
+          e.preventDefault()
+          onRemove(index)
+        }}
         aria-label={`Remove Attachment ${index + 1}`}
+        disabled={disabled}
       >
         <IoCloseOutline />
       </button>
@@ -270,7 +304,8 @@ function FileUploadThumbnail({
 }
 
 export function CreateFormFileUpload(props: CreateFormGroupProps) {
-  const { id, className, ref, title, detail, type, value, ...rest } = props
+  const { id, className, ref, title, detail, type, value, disabled, ...rest } =
+    props
   const [field, _meta, helpers] = useField(props as any)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
@@ -306,6 +341,7 @@ export function CreateFormFileUpload(props: CreateFormGroupProps) {
           helpers.setValue([...field.value, ...((e.target.files as any) || [])])
         }}
         onBlur={field.onBlur}
+        disabled={disabled}
         {...rest}
       />
       <div className="orbit-create-layout__form-file-upload-thumbnails">
@@ -315,11 +351,16 @@ export function CreateFormFileUpload(props: CreateFormGroupProps) {
             file={file}
             index={idx}
             onRemove={handleRemoveFile}
+            disabled={disabled}
           />
         ))}
         <button
           className="orbit-create-layout__form-file-upload-choose-button"
-          onClick={() => inputRef.current?.click()}
+          onClick={(e) => {
+            e.preventDefault()
+            inputRef.current?.click()
+          }}
+          disabled={disabled}
         >
           <IoAddOutline />
         </button>
@@ -354,7 +395,7 @@ export default function CreateLayout({
 
   useEffect(() => {
     if (!!submittedPost) {
-      router.replace(`/posts/${submittedPost.post_id}`)
+      router.replace(`/feed/${submittedPost.post_id}`)
     }
   }, [submittedPost, router])
 

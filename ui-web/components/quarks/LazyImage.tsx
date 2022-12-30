@@ -8,6 +8,7 @@ import { useBlurhash } from '@/core/useBlurhash'
 import { useInView } from 'react-intersection-observer'
 import cx from 'classnames'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 
 export interface ILazyImageProps
   extends DetailedHTMLProps<
@@ -16,6 +17,7 @@ export interface ILazyImageProps
   > {
   blurhash?: string | null
   contentClassName?: string
+  thumbnailSrc?: string
 }
 
 export function LazyImage({
@@ -25,6 +27,8 @@ export function LazyImage({
   className,
   contentClassName,
   alt,
+  src,
+  thumbnailSrc,
   ...rest
 }: ILazyImageProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -45,11 +49,16 @@ export function LazyImage({
   }, [initialLoadDate])
 
   return (
-    <div className={cx('orbit-image', className)}>
+    <Link
+      className={cx('orbit-image', className)}
+      href={src || 'about:blank'}
+      target="blank"
+    >
       <img
         className={cx('orbit-image__content', contentClassName)}
         ref={ref}
         alt={alt}
+        src={thumbnailSrc}
         {...rest}
         loading={loading}
         onLoad={handleOnLoad}
@@ -67,6 +76,6 @@ export function LazyImage({
               : '100% 100%',
         }}
       />
-    </div>
+    </Link>
   )
 }

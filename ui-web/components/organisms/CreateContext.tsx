@@ -34,7 +34,7 @@ interface CreateAction {
   error?: any
   post?: IPost
   newPostMetadata?: INewPost
-  newPostFile?: File
+  newPostFiles?: File[]
   newPostJobId?: string
   newPost?: IPost
   progress?: number
@@ -73,7 +73,7 @@ export async function createActionInitialize(
 
 export async function createActionSubmitPost(
   post: INewPost,
-  file: File,
+  files: File[],
   authToken: string | undefined,
   dispatch: React.Dispatch<CreateAction>
 ) {
@@ -91,12 +91,12 @@ export async function createActionSubmitPost(
 
     dispatch({
       type: CreateActionType.SUBMIT_POST_SENDING_IMAGE,
-      newPostFile: file,
+      newPostFiles: files,
     })
 
     const job = await submitPostImage(
       createdRecord.id,
-      file,
+      files,
       authToken,
       (progress) =>
         dispatch({
@@ -162,7 +162,7 @@ export interface ICreateState {
   submittingImageProgress?: number
   submittingFailed: boolean
   submittingPost?: INewPost | null
-  submittingFile?: File | null
+  submittingFiles?: File[] | null
   submittingJobId?: string | null
   submittedPost?: IPost
 }
@@ -225,7 +225,7 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
         submittingMetadata: false,
         submittingImage: true,
         submittingImageProgress: 0,
-        submittingFile: action.newPostFile,
+        submittingFiles: action.newPostFiles,
       }
     case CreateActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS:
       return {
@@ -243,7 +243,7 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
         submittingImage: false,
         submittingImageProgress: undefined,
         submittingPost: null,
-        submittingFile: null,
+        submittingFiles: null,
         submittingJobId: action.newPostJobId,
       }
     case CreateActionType.SUBMIT_POST_COMPLETED:
@@ -255,7 +255,7 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
           submittingImage: false,
           submittingImageProgress: undefined,
           submittingPost: null,
-          submittingFile: null,
+          submittingFiles: null,
           submittingJobId: null,
           submittingFailed: false,
         }
@@ -268,7 +268,7 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
         submittingImage: false,
         submittingImageProgress: undefined,
         submittingPost: null,
-        submittingFile: null,
+        submittingFiles: null,
         submittingJobId: null,
         submittingFailed: false,
         submittedPost: action.newPost,
@@ -281,7 +281,7 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
         submittingImage: false,
         submittingImageProgress: undefined,
         submittingPost: null,
-        submittingFile: null,
+        submittingFiles: null,
         submittingJobId: null,
         submittingFailed: true,
       }

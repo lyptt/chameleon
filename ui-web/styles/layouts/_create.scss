@@ -37,6 +37,19 @@
   flex-direction: column;
 }
 
+.orbit-create-layout__error {
+  margin: 0;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .orbit-create-layout__form-group {
   display: flex;
   flex-direction: column;

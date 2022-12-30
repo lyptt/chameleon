@@ -11,6 +11,8 @@ import {
   IoEyeOffOutline,
   IoFlagOutline,
 } from 'react-icons/io5'
+import { LazyImage } from '../quarks/LazyImage'
+import Config from '@/core/config'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -92,6 +94,32 @@ export default function PostContent({
         })}
         dangerouslySetInnerHTML={{ __html: post.content_html }}
       />
+      {!!post.attachments.length && (
+        <div className="orbit-post-content__attachments">
+          {post.attachments.map((attachment) => {
+            let uri
+            if (attachment.uri) {
+              if (attachment.uri.startsWith('http')) {
+                uri = attachment.uri
+              } else {
+                uri = `${Config.cdn}${attachment.uri}`
+              }
+            } else {
+              uri = transparentPixelUri
+            }
+
+            return (
+              <LazyImage
+                className="orbit-post-content__attachment"
+                key={attachment.attachment_id}
+                src={uri}
+                thumbnailSrc={uri}
+                blurhash={attachment.blurhash}
+              />
+            )
+          })}
+        </div>
+      )}
       <div className="orbit-post-content__commands">
         <Link
           className="orbit-post-content__command"

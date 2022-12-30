@@ -17,9 +17,10 @@ export default function Button({
   variant,
   href,
   target,
+  disabled,
   ...rest
 }: ButtonProps) {
-  if (!!href) {
+  if (!!href && !disabled) {
     if (target === 'blank') {
       return (
         <a
@@ -30,6 +31,7 @@ export default function Button({
             { 'orbit-button--outline': variant === 'outline' },
             className
           )}
+          disabled={disabled}
           {...(rest as any)}
         />
       )
@@ -44,6 +46,7 @@ export default function Button({
           { 'orbit-button--outline': variant === 'outline' },
           className
         )}
+        disabled={disabled}
         {...(rest as any)}
       />
     )
@@ -57,6 +60,7 @@ export default function Button({
         { 'orbit-button--outline': variant === 'outline' },
         className
       )}
+      disabled={disabled}
       {...rest}
     />
   )

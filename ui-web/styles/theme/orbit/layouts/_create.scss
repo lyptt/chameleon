@@ -99,6 +99,11 @@
         color: $text-2-dark;
       }
     }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   .orbit-create-layout__form-file-upload {
@@ -158,6 +163,10 @@
         color: $brand-dark;
       }
     }
+
+    &:disabled {
+      display: none;
+    }
   }
 
   .orbit-create-layout__form-file-upload-choose-button {
@@ -195,6 +204,23 @@
         color: $brand-dark;
       }
     }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      @media (prefers-color-scheme: light) {
+        background: transparent;
+        border: 1px solid $fill-4-light;
+        color: $text-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $fill-dark;
+        border: 1px solid $fill-4-dark;
+        color: $text-dark;
+      }
+    }
   }
 
   .orbit-create-layout__form-field-radio-container {
@@ -226,6 +252,11 @@
         border: 1px solid $brand-dark;
       }
     }
+
+    &.orbit-create-layout__form-field-radio-container--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   .orbit-create-layout__form-field-radio {
@@ -240,5 +271,23 @@
     height: 100%;
     margin: 0;
     padding: 0;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .orbit-create-layout__error {
+    font-size: $font-size-m;
+    font-weight: $font-weight-medium;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-error-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-error-dark;
+    }
   }
 }

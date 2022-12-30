@@ -32,6 +32,16 @@
           background: darken($brand-dark, 10%);
         }
       }
+
+      &:disabled {
+        @media (prefers-color-scheme: light) {
+          background: $brand-light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          background: $brand-dark;
+        }
+      }
     }
 
     &.orbit-button--outline {
@@ -59,6 +69,25 @@
           background: white;
         }
       }
+
+      &:disabled {
+        @media (prefers-color-scheme: light) {
+          color: $brand-light;
+          border: 2px solid $brand-light;
+          background: none;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          color: white;
+          border: 2px solid white;
+          background: none;
+        }
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 }

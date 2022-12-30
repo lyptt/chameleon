@@ -77,6 +77,18 @@ pub async fn upload_post_file(
   }
 
   for upload in uploads.iter() {
+    let content_type = match mime_guess::from_path(
+      upload
+        .file_name
+        .to_owned()
+        .unwrap_or_else(|| "unknown.jpeg".to_string()),
+    )
+    .first()
+    {
+      Some(m) => m.to_string(),
+      None => return Err(LogicErr::InternalError("Unsupported file type".to_string())),
+    };
+
     let file_name = format!("media/{}/or/{}", user_id, Uuid::new_v4());
 
     let path = match cdn.upload_tmp_file(upload, &file_name).await {
@@ -91,7 +103,7 @@ pub async fn upload_post_file(
       uri: None,
       width: 0,
       height: 0,
-      content_type: None,
+      content_type: Some(content_type),
       storage_ref: Some(path),
       blurhash: None,
       created_at: Utc::now(),
@@ -235,6 +247,7 @@ mod tests {
       orbit_name: None,
       orbit_uri: None,
       orbit_avatar_uri: None,
+      orbit_shortcode: None,
     };
 
     let mut post_repo = MockPostRepo::new();

@@ -63,10 +63,26 @@
   margin-bottom: 1rem;
 }
 
+.orbit-post-content__attachments {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 26px;
+  margin-top: 26px;
+  margin-left: 26px;
+  margin-right: 26px;
+}
+
+.orbit-post-content__attachment {
+  flex: 1;
+  flex-basis: 30%;
+}
+
 .orbit-post-content__commands {
   display: flex;
   margin-top: 20px;
-  margin-bottom: 26px;
+  margin-bottom: 20px;
   padding-left: 26px;
   padding-right: 26px;
   gap: 20px;

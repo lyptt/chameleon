@@ -6,15 +6,19 @@ import CreateLayout, {
   CreateFormRadioGroup,
   CreateFormSeparator,
 } from '@/components/layouts/CreateLayout'
-import { HTMLAttributes } from 'react'
+import { HTMLAttributes, useCallback } from 'react'
 import cx from 'classnames'
 import { useRouter } from 'next/router'
-import { useCreate } from '@/components/organisms/CreateContext'
+import {
+  createActionSubmitPost,
+  useCreate,
+} from '@/components/organisms/CreateContext'
 import { Form, Formik } from 'formik'
 import { AccessType, INewPost } from '@/core/api'
 import AsidePlaceholder from '@/components/quarks/AsidePlaceholder'
 import { IoEarthOutline, IoHomeOutline } from 'react-icons/io5'
 import Head from 'next/head'
+import { useAuth } from '@/components/organisms/AuthContext'
 
 interface INewOrbitPostForm extends INewPost {
   attachments: File[]
@@ -26,14 +30,25 @@ export default function NewOrbitPostPage({
 }: HTMLAttributes<HTMLDivElement>) {
   const router = useRouter()
   const orbitShortcode = router.query.orbitShortcode as string
-  const { state } = useCreate()
+  const { session } = useAuth()
+  const { state, dispatch } = useCreate()
   const { initialized, submitting, submittingFailed, orbit } = state
 
-  const onSubmit: (values: INewOrbitPostForm) => Promise<void> = async (
-    values
-  ) => {
-    console.log(values)
-  }
+  const onSubmit: (values: INewOrbitPostForm) => Promise<void> = useCallback(
+    async (values) => {
+      if (submitting) {
+        return
+      }
+
+      createActionSubmitPost(
+        values as INewPost,
+        values.attachments,
+        session?.access_token,
+        dispatch
+      )
+    },
+    [submitting]
+  )
 
   return (
     <CreateLayout
@@ -67,12 +82,14 @@ export default function NewOrbitPostPage({
               name="orbit_name"
               placeholder="/o/..."
               hidden
+              disabled={submitting}
             />
             <CreateFormGroup
               title="Post Title"
               id="title"
               name="title"
               placeholder="Title"
+              disabled={submitting}
             />
             <CreateFormGroup
               title="Content"
@@ -80,6 +97,7 @@ export default function NewOrbitPostPage({
               name="content_md"
               placeholder="**Hello**, world!"
               as="textarea"
+              disabled={submitting}
             />
             <CreateFormFileUpload
               title="Attachments"
@@ -87,6 +105,7 @@ export default function NewOrbitPostPage({
               name="attachments"
               accept="image/png,image/jpeg"
               multiple
+              disabled={submitting}
             />
             <CreateFormSeparator />
             <CreateFormRadioGroup
@@ -105,6 +124,7 @@ export default function NewOrbitPostPage({
                   value: AccessType.PublicLocal,
                 },
               ]}
+              disabled={submitting}
             />
             <CreateFormGroup
               title="Sensitive Content"
@@ -112,8 +132,13 @@ export default function NewOrbitPostPage({
               name="content_warning"
               detail="If your post contains sensitive material that may negatively impact this community, you can enter a disclaimer
               here. Posts with sensitive content disclaimers are hidden until users choose to view the content in the post."
+              disabled={submitting}
             />
-            <CreateFormButtons submitTitle="Submit Post" cancelTitle="Cancel" />
+            <CreateFormButtons
+              submitTitle="Submit Post"
+              cancelTitle="Cancel"
+              disabled={submitting}
+            />
           </CreateForm>
         </Formik>
       )}

@@ -1,5 +1,17 @@
 .orbit-image {
   position: relative;
+  display: flex;
+  text-decoration: none;
+  color: transparent;
+}
+
+.orbit-image__content {
+  flex: 1;
+  object-fit: cover;
+  object-position: center center;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1/1;
 }
 
 .orbit-image__overlay {

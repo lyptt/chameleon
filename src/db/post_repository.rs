@@ -276,11 +276,11 @@ impl PostRepo for DbPostRepo {
     orbit_id: &Option<Uuid>,
   ) -> Result<Uuid, LogicErr> {
     let post_id = Uuid::new_v4();
-    let uri = post_id.to_string();
+    let uri = format!("/feed/{}", post_id);
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db.query_one(
-      "INSERT INTO posts (post_id, user_id, content_md, content_html, visibility, uri, orbit_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING post_id",
+      "INSERT INTO posts (post_id, user_id, content_md, content_html, visibility, uri, orbit_id, is_external) VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING post_id",
       &[&post_id, &user_id, &content_md, &content_html, &visibility.to_string(), &uri, &orbit_id],
     )
     .await

@@ -1,4 +1,5 @@
 use blurhash::encode;
+use image::imageops::FilterType;
 use image::GenericImageView;
 use std::path::Path;
 use tempfile::TempDir;
@@ -32,27 +33,48 @@ pub async fn convert_new_post_images(
     None => return Err(LogicErr::InternalError("Post ID not found for job".to_string())),
   };
 
-  let post = match posts.fetch_post(&post_id, &job.created_by_id).await? {
-    Some(post) => post,
-    None => return Err(LogicErr::InternalError("Post not found for job".to_string())),
-  };
+  let post = posts.fetch_by_id(&post_id).await?;
+  let attachments = post_attachments.fetch_by_post_id(&post_id).await?;
 
   let tmp_dir = TempDir::new().map_err(map_ext_err)?;
-  let tmp_original_path = match tmp_dir
-    .path()
-    .join(Uuid::new_v4().to_string())
-    .into_os_string()
-    .into_string()
-  {
-    Ok(path) => path,
-    Err(_) => {
-      return Err(LogicErr::InternalError(
-        "Failed to build temporary download path".to_string(),
-      ))
-    }
-  };
 
-  for attachment in post.attachments {
+  for attachment in attachments {
+    let ext = match &attachment.content_type {
+      Some(t) => match mime_guess::get_mime_extensions_str(t) {
+        Some(e) => {
+          let mut values = Vec::from_iter(e.iter().map(|v| (*v).to_owned()));
+          values.sort_by(|a, b| {
+            if a.len() < b.len() {
+              std::cmp::Ordering::Less
+            } else if a.len() < b.len() {
+              std::cmp::Ordering::Greater
+            } else {
+              std::cmp::Ordering::Equal
+            }
+          });
+          if let Some(value) = values.last() {
+            value.to_owned()
+          } else {
+            return Err(LogicErr::InternalError(
+              "File extension not found for content type associated to post attachment for post associated to job"
+                .to_string(),
+            ));
+          }
+        }
+        None => {
+          return Err(LogicErr::InternalError(
+            "File extension not found for content type associated to post attachment for post associated to job"
+              .to_string(),
+          ))
+        }
+      },
+      None => {
+        return Err(LogicErr::InternalError(
+          "Content Type not found for post associated to job".to_string(),
+        ))
+      }
+    };
+
     let storage_ref = match &attachment.storage_ref {
       Some(storage_ref) => storage_ref,
       None => {
@@ -62,28 +84,29 @@ pub async fn convert_new_post_images(
       }
     };
 
-    let content_type = match mime_guess::from_path(storage_ref).first() {
-      Some(m) => m.to_string(),
-      None => return Err(LogicErr::InternalError("Unsupported file type".to_string())),
-    };
-
     let uri = format!("/{}", storage_ref);
+    let tmp_original_path = tmp_dir
+      .path()
+      .join(Uuid::new_v4().to_string())
+      .into_os_string()
+      .into_string()
+      .map_err(|_| LogicErr::InternalError("Failed to build temporary download path".to_string()))?;
+    let tmp_original_path = format!("{}.{}", tmp_original_path, ext);
 
     cdn.download_file(storage_ref, &tmp_original_path).await?;
 
-    let image = match image::open(Path::new(&tmp_original_path)) {
-      Ok(image) => image,
-      Err(_) => return Err(LogicErr::InternalError("Failed to open image".to_string())),
-    };
+    let image = image::open(Path::new(&tmp_original_path)).map_err(map_ext_err)?;
+    let thumb = image.resize_to_fill(64, 64, FilterType::Nearest);
 
     let (width, height) = image.dimensions();
-    let blurhash = encode(4, 3, width, height, &image.to_rgba8().into_vec());
+    let (thumb_width, thumb_height) = thumb.dimensions();
+
+    let blurhash = encode(4, 3, thumb_width, thumb_height, &thumb.to_rgba8().into_vec());
 
     let mut new_attachment = attachment.clone();
     new_attachment.width = width.try_into().unwrap_or_default();
     new_attachment.height = height.try_into().unwrap_or_default();
     new_attachment.uri = Some(uri);
-    new_attachment.content_type = Some(content_type);
     new_attachment.blurhash = Some(blurhash);
 
     post_attachments.update_attachment(new_attachment).await?;

@@ -361,12 +361,12 @@ export async function submitPost(
 
 export function submitPostImage(
   postId: string,
-  file: File,
+  files: File[],
   authToken: string,
   onProgress?: (progress: number) => void
 ): Promise<INewJobResponse> {
   const form = new FormData()
-  form.append('images[]', file)
+  files.forEach((file) => form.append('images[]', file))
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
