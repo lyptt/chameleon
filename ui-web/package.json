@@ -21,6 +21,7 @@
     "dayjs": "^1.11.7",
     "eslint": "8.30.0",
     "eslint-config-next": "13.1.1",
+    "formik": "^2.2.9",
     "lodash": "^4.17.21",
     "next": "13.1.1",
     "node-fetch": "^3.3.0",
@@ -32,7 +33,8 @@
     "react-intersection-observer": "^9.4.1",
     "react-modal": "^3.16.1",
     "react-scrolllock": "^5.0.1",
-    "typescript": "4.9.4"
+    "typescript": "4.9.4",
+    "yup": "^0.32.11"
   },
   "devDependencies": {
     "@types/async-retry": "^1.4.5",

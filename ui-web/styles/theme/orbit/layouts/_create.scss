@@ -1,0 +1,244 @@
+.#{$theme-class} {
+  .orbit-create-layout__form {
+    border-radius: 8px;
+    position: relative;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-2-dark;
+      border: 0.5px solid $fill-3-dark;
+    }
+  }
+
+  .orbit-create-layout__title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-medium;
+    user-select: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-create-layout__form-group {
+    border: none;
+  }
+
+  .orbit-create-layout__form-field-label {
+    font-size: $font-size-s;
+    font-weight: $font-weight-medium;
+    user-select: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-create-layout__form-field-detail {
+    font-size: $font-size-s;
+    user-select: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
+  }
+
+  .orbit-create-layout__form-field {
+    resize: none;
+    border-radius: 3px;
+    font-family: $font-family;
+    font-size: $font-size-m;
+    outline: none;
+
+    @media (prefers-color-scheme: light) {
+      background: transparent;
+      border: 0.5px solid $fill-4-light;
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+      border: 0.5px solid $fill-4-dark;
+      color: $text-dark;
+    }
+
+    &:focus {
+      @media (prefers-color-scheme: light) {
+        border-color: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        border-color: $brand-dark;
+      }
+    }
+
+    &::placeholder {
+      opacity: 1;
+
+      @media (prefers-color-scheme: light) {
+        color: $text-2-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: $text-2-dark;
+      }
+    }
+  }
+
+  .orbit-create-layout__form-file-upload {
+    display: none;
+  }
+
+  .orbit-create-layout__form-file-upload-thumbnail,
+  .orbit-create-layout__form-file-upload-thumbnail img {
+    border-radius: 3px;
+    object-fit: cover;
+    user-select: none;
+    color: transparent;
+  }
+
+  .orbit-create-layout__form-file-upload-thumbnail {
+    @media (prefers-color-scheme: light) {
+      background: transparent;
+      border: none;
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+      border: 1px solid $fill-4-dark;
+      color: $text-dark;
+    }
+  }
+
+  .orbit-create-layout__form-file-upload-delete-button {
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    border-radius: 9999px;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border: 0.5px solid $fill-4-light;
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+      border: 0.5px solid $fill-4-dark;
+      color: $text-dark;
+    }
+
+    &:focus-visible,
+    &:hover,
+    &:active {
+      @media (prefers-color-scheme: light) {
+        border-color: $brand-light;
+        color: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        border-color: $brand-dark;
+        color: $brand-dark;
+      }
+    }
+  }
+
+  .orbit-create-layout__form-file-upload-choose-button {
+    border-radius: 3px;
+    cursor: pointer;
+    outline: none;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    @media (prefers-color-scheme: light) {
+      background: transparent;
+      border: 1px solid $fill-4-light;
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+      border: 1px solid $fill-4-dark;
+      color: $text-dark;
+    }
+
+    &:focus,
+    &:hover,
+    &:active {
+      @media (prefers-color-scheme: light) {
+        border-color: $brand-light;
+        color: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        border-color: $brand-dark;
+        color: $brand-dark;
+      }
+    }
+  }
+
+  .orbit-create-layout__form-field-radio-container {
+    font-size: $font-size-m;
+    user-select: none;
+    position: relative;
+    flex-grow: 0;
+    flex-basis: 120px;
+    border-radius: 3px;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+      border: 1px solid $fill-4-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+      border: 1px solid $fill-4-dark;
+    }
+
+    &.orbit-create-layout__form-field-radio-container--selected {
+      @media (prefers-color-scheme: light) {
+        color: $brand-light;
+        border: 1px solid $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: $brand-dark;
+        border: 1px solid $brand-dark;
+      }
+    }
+  }
+
+  .orbit-create-layout__form-field-radio {
+    cursor: pointer;
+    position: absolute;
+    appearance: none;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}

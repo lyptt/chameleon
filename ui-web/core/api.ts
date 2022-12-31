@@ -118,6 +118,7 @@ export interface IPost {
 export interface INewPost {
   content_md: string
   visibility: AccessType
+  orbit_name?: string
 }
 
 export enum JobStatus {

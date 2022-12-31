@@ -4,10 +4,15 @@ import AnchorLink from '@/components/quarks/AnchorLink'
 import { useAuth } from '@/components/organisms/AuthContext'
 import Button from '@/components/atoms/Button'
 
+export interface WelcomeCardProps extends HTMLProps<HTMLDivElement> {
+  hideActions?: boolean
+}
+
 export default function WelcomeCard({
   className,
+  hideActions,
   ...rest
-}: HTMLProps<HTMLDivElement>) {
+}: WelcomeCardProps) {
   const { authenticated } = useAuth()
 
   return (
@@ -34,19 +39,23 @@ export default function WelcomeCard({
               <AnchorLink href="/rules">instance rules</AnchorLink> when posting
               content or interacting with members of this community.
             </p>
-            <Button
-              className="orbit-welcome-card__content-new-post"
-              href="/new-post"
-            >
-              Post Something
-            </Button>
-            <Button
-              className="orbit-welcome-card__content-new-orbit"
-              href="/new-orbit"
-              variant="outline"
-            >
-              Start an Orbit
-            </Button>
+            {!hideActions && (
+              <>
+                <Button
+                  className="orbit-welcome-card__content-new-post"
+                  href="/new-post"
+                >
+                  Post Something
+                </Button>
+                <Button
+                  className="orbit-welcome-card__content-new-orbit"
+                  href="/new-orbit"
+                  variant="outline"
+                >
+                  Start an Orbit
+                </Button>
+              </>
+            )}
           </>
         )}
         {!authenticated && (

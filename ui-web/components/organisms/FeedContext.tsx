@@ -1,14 +1,9 @@
 import {
   fetchFederatedFeed,
   fetchOwnFeed,
-  submitPost,
   IListResponse,
   INewPost,
   IPost,
-  submitPostImage,
-  getJobStatus,
-  JobStatus,
-  fetchPost,
   likePost,
   unlikePost,
   createPostComment,
@@ -29,13 +24,6 @@ enum FeedActionType {
   REFRESH_FEED_LOADING = 'REFRESH_FEED_LOADING',
   REFRESH_FEED_ERROR = 'REFRESH_FEED_ERROR',
   REFRESH_FEED_LOADED = 'REFRESH_FEED_LOADED',
-  SUBMIT_POST_SENDING_METADATA = 'SUBMIT_POST_SENDING_METADATA',
-  SUBMIT_POST_SENDING_IMAGE = 'SUBMIT_POST_SENDING_IMAGE',
-  SUBMIT_POST_SENDING_IMAGE_PROGRESS = 'SUBMIT_POST_SENDING_IMAGE_PROGRESS',
-  SUBMIT_POST_WAITING_FOR_JOB = 'SUBMIT_POST_WAITING_FOR_JOB',
-  SUBMIT_POST_ERROR = 'SUBMIT_POST_ERROR',
-  SUBMIT_POST_COMPLETED = 'SUBMIT_POST_COMPLETED',
-  SUBMIT_POST_DISMISS_ERROR = 'SUBMIT_POST_DISMISS_ERROR',
   UPDATE_POST_LIKED = 'UPDATE_POST_LIKED',
   UPDATE_POST_COMMENTED = 'UPDATE_POST_COMMENTED',
 }
@@ -43,13 +31,8 @@ enum FeedActionType {
 interface FeedAction {
   type: FeedActionType
   feedData?: IListResponse<IPost>
-  newPostMetadata?: INewPost
-  newPostFile?: File
-  newPostJobId?: string
-  newPost?: IPost
   error?: any
   feedType?: FeedType
-  progress?: number
   postId?: string
   liked?: boolean
   comment?: string
@@ -109,79 +92,6 @@ export async function feedActionLoadFeed(
       type: FeedActionType.REFRESH_FEED_ERROR,
       error,
       feedType,
-    })
-  }
-}
-
-export async function feedActionSubmitPost(
-  post: INewPost,
-  file: File,
-  authToken: string | undefined,
-  dispatch: React.Dispatch<FeedAction>
-) {
-  if (!authToken) {
-    return
-  }
-
-  dispatch({
-    type: FeedActionType.SUBMIT_POST_SENDING_METADATA,
-    newPostMetadata: post,
-  })
-
-  try {
-    const createdRecord = await submitPost(post, authToken)
-
-    dispatch({
-      type: FeedActionType.SUBMIT_POST_SENDING_IMAGE,
-      newPostFile: file,
-    })
-
-    const job = await submitPostImage(
-      createdRecord.id,
-      file,
-      authToken,
-      (progress) =>
-        dispatch({
-          type: FeedActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS,
-          progress,
-        })
-    )
-
-    dispatch({
-      type: FeedActionType.SUBMIT_POST_WAITING_FOR_JOB,
-      newPostJobId: job.job_id,
-    })
-
-    await retry(
-      async () => {
-        const res = await getJobStatus(job.job_id, authToken)
-
-        if (res.status !== JobStatus.Done && res.status !== JobStatus.Failed) {
-          throw new Error('Not complete yet')
-        } else if (res.status === JobStatus.Failed) {
-          return dispatch({
-            type: FeedActionType.SUBMIT_POST_ERROR,
-          })
-        } else {
-          const post = await fetchPost(res.record_id!, authToken)
-          return dispatch({
-            type: FeedActionType.SUBMIT_POST_COMPLETED,
-            newPost: post.data,
-          })
-        }
-      },
-      {
-        retries: 100,
-        factor: 1.2,
-        maxRetryTime: 1000 * 60 * 30,
-        maxTimeout: 1500,
-        randomize: true,
-      }
-    )
-  } catch (error) {
-    dispatch({
-      type: FeedActionType.SUBMIT_POST_ERROR,
-      error,
     })
   }
 }
@@ -256,14 +166,6 @@ export interface IFeedState {
   initialLoadComplete: boolean
   loading: boolean
   loadingFailed: boolean
-  submitting: boolean
-  submittingMetadata: boolean
-  submittingImage: boolean
-  submittingImageProgress?: number
-  submittingFailed: boolean
-  submittingPost?: INewPost | null
-  submittingFile?: File | null
-  submittingJobId?: string | null
   page: number
   totalPages?: number
   noMorePages: boolean
@@ -276,11 +178,6 @@ const initialState: IFeedState = {
   initialLoadComplete: false,
   loading: false,
   loadingFailed: false,
-  submitting: false,
-  submittingMetadata: false,
-  submittingImage: false,
-  submittingImageProgress: undefined,
-  submittingFailed: false,
   page: 0,
   noMorePages: false,
   type: FeedType.PublicFederated,
@@ -327,85 +224,6 @@ const reducer = (state: IFeedState, action: FeedAction): IFeedState => {
         page: action.feedData?.page || 0,
       }
     }
-    case FeedActionType.SUBMIT_POST_SENDING_METADATA:
-      return {
-        ...state,
-        submitting: true,
-        submittingMetadata: true,
-        submittingPost: action.newPostMetadata,
-      }
-    case FeedActionType.SUBMIT_POST_SENDING_IMAGE:
-      return {
-        ...state,
-        submitting: true,
-        submittingMetadata: false,
-        submittingImage: true,
-        submittingImageProgress: 0,
-        submittingFile: action.newPostFile,
-      }
-    case FeedActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS:
-      return {
-        ...state,
-        submittingImageProgress:
-          action.progress !== undefined && action.progress < 1
-            ? action.progress
-            : undefined,
-      }
-    case FeedActionType.SUBMIT_POST_WAITING_FOR_JOB:
-      return {
-        ...state,
-        submitting: true,
-        submittingMetadata: false,
-        submittingImage: false,
-        submittingImageProgress: undefined,
-        submittingPost: null,
-        submittingFile: null,
-        submittingJobId: action.newPostJobId,
-      }
-    case FeedActionType.SUBMIT_POST_COMPLETED:
-      if (!action.newPost) {
-        return {
-          ...state,
-          submitting: false,
-          submittingMetadata: false,
-          submittingImage: false,
-          submittingImageProgress: undefined,
-          submittingPost: null,
-          submittingFile: null,
-          submittingJobId: null,
-          submittingFailed: false,
-        }
-      }
-
-      return {
-        ...state,
-        submitting: false,
-        submittingMetadata: false,
-        submittingImage: false,
-        submittingImageProgress: undefined,
-        submittingPost: null,
-        submittingFile: null,
-        submittingJobId: null,
-        submittingFailed: false,
-        feed: [action.newPost, ...state.feed],
-      }
-    case FeedActionType.SUBMIT_POST_ERROR:
-      return {
-        ...state,
-        submitting: false,
-        submittingMetadata: false,
-        submittingImage: false,
-        submittingImageProgress: undefined,
-        submittingPost: null,
-        submittingFile: null,
-        submittingJobId: null,
-        submittingFailed: true,
-      }
-    case FeedActionType.SUBMIT_POST_DISMISS_ERROR:
-      return {
-        ...state,
-        submittingFailed: false,
-      }
     case FeedActionType.UPDATE_POST_LIKED: {
       if (action.liked === undefined || action.postId === undefined) {
         return state

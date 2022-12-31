@@ -19,6 +19,7 @@ import { useRouter } from 'next/router'
 import { UserProvider } from '@/components/organisms/UserContext'
 import NavBar from '../molecules/NavBar'
 import { OrbitProvider } from '../organisms/OrbitContext'
+import { CreateProvider } from '../organisms/CreateContext'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
@@ -66,12 +67,14 @@ export default function MainLayout({
             <PostProvider>
               <UserProvider>
                 <OrbitProvider>
-                  <DefaultActionsDelegator />
-                  <main className={cx('orbit-main', theme)}>
-                    <NavBar isBuiltInRoute={isBuiltInRoute} />
-                    {isBuiltInRoute && <>{childrenWithClassname}</>}
-                    {!isBuiltInRoute && <>{childrenWithClassname}</>}
-                  </main>
+                  <CreateProvider>
+                    <DefaultActionsDelegator />
+                    <main className={cx('orbit-main', theme)}>
+                      <NavBar isBuiltInRoute={isBuiltInRoute} />
+                      {isBuiltInRoute && <>{childrenWithClassname}</>}
+                      {!isBuiltInRoute && <>{childrenWithClassname}</>}
+                    </main>
+                  </CreateProvider>
                 </OrbitProvider>
               </UserProvider>
             </PostProvider>

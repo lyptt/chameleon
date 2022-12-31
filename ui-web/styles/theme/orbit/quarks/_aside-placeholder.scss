@@ -1,0 +1,45 @@
+.#{$theme-class} {
+  .orbit-aside-placeholder {
+    border-radius: 8px;
+    user-select: none;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-2-light;
+      border: 0.5px solid $fill-3-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-2-dark;
+      border: 0.5px solid $fill-3-dark;
+    }
+
+    .orbit-aside-placeholder__block {
+      border-radius: 8px;
+      animation: placeholder-pulse 3s infinite ease;
+      will-change: opacity;
+
+      @media (prefers-color-scheme: light) {
+        background: $fill-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $fill-dark;
+      }
+    }
+  }
+
+  @keyframes placeholder-pulse {
+    0% {
+      opacity: 0.7;
+      transform: translateZ(0);
+    }
+    50% {
+      opacity: 1;
+      transform: translateZ(0);
+    }
+    100% {
+      opacity: 0.7;
+      transform: translateZ(0);
+    }
+  }
+}

@@ -8,7 +8,7 @@ export default function AnchorLink({
   href,
   ...rest
 }: HTMLProps<HTMLAnchorElement>) {
-  if (!!target) {
+  if (target === 'blank') {
     return (
       <a
         className={cx('orbit-link', className)}

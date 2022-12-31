@@ -1,0 +1,136 @@
+.orbit-create-layout__content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 20px;
+  margin-left: 20px;
+  flex: 1;
+
+  @include mq($until: wide) {
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-left: 0;
+  }
+}
+
+.orbit-create-layout__sidebar {
+  margin: 20px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 20px;
+
+  @include mq($until: wide) {
+    display: none;
+  }
+}
+
+.orbit-create-layout__title {
+  margin-bottom: 20px;
+}
+
+.orbit-create-layout__form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.orbit-create-layout__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  margin-bottom: 10px;
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.orbit-create-layout__form-field {
+  display: flex;
+  margin: 0;
+  padding: 8px;
+}
+
+.orbit-create-layout__form-field-detail {
+  margin: 0;
+}
+
+textarea.orbit-create-layout__form-field {
+  height: 224px;
+}
+
+.orbit-create-layout__form-separator {
+  margin-bottom: 40px;
+}
+
+.orbit-create-layout__form-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 40px;
+}
+
+.orbit-create-layout__form-file-upload-thumbnails {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.orbit-create-layout__form-file-upload-choose-button,
+.orbit-create-layout__form-file-upload-thumbnail {
+  width: 80px;
+  height: 80px;
+  position: relative;
+}
+
+.orbit-create-layout__form-file-upload-thumbnail img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.orbit-create-layout__form-file-upload-delete-button {
+  position: absolute;
+  z-index: 2;
+  top: -5px;
+  right: -5px;
+  padding: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.orbit-create-layout__form-file-upload-choose-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orbit-create-layout__form-field-radio-group {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.orbit-create-layout__form-field-radio-container {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px;
+
+  svg {
+    margin-right: 8px;
+  }
+}

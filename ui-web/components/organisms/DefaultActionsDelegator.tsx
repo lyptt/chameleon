@@ -11,12 +11,18 @@ import {
   useFeed,
 } from '@/components/organisms/FeedContext'
 import { useRouter } from 'next/router'
-import { postActionDismissPost, usePost } from './PostContext'
 import {
-  orbitActionClearOrbit,
+  postActionDismissPost,
+  usePost,
+} from '@/components/organisms/PostContext'
+import {
   orbitActionLoadUserOrbits,
   useOrbits,
-} from './OrbitContext'
+} from '@/components/organisms/OrbitContext'
+import {
+  createActionDismiss,
+  useCreate,
+} from '@/components/organisms/CreateContext'
 
 export default function DefaultActionsDelegator() {
   const { session } = useAuth()
@@ -24,6 +30,7 @@ export default function DefaultActionsDelegator() {
   const { state: feedState, dispatch: feedDispatch } = useFeed()
   const { state: postState, dispatch: postDispatch } = usePost()
   const { state: orbitsState, dispatch: orbitsDispatch } = useOrbits()
+  const { state: createState, dispatch: createDispatch } = useCreate()
   const { route, query } = useRouter()
 
   useEffect(() => {
@@ -125,6 +132,14 @@ export default function DefaultActionsDelegator() {
       orbitsDispatch
     )
   }, [session, profileState, orbitsState, orbitsDispatch])
+
+  useEffect(() => {
+    if (route.endsWith('/new-post') || !createState.initialized) {
+      return
+    }
+
+    createActionDismiss(createDispatch)
+  }, [createState, createDispatch, route])
 
   useEffect(() => {
     if (route !== '/feed/[postId]' && !!postState.post) {
