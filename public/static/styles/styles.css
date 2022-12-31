@@ -311,7 +311,7 @@ p {
 
 @media screen and (min-height: 700px) {
   .orbit-panel__content {
-    min-height: 646px;
+    height: 646px;
   }
 }
 

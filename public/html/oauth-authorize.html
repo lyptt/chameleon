@@ -28,7 +28,8 @@
     </nav>
     <section class="orbit-panel">
       <div class="orbit-panel__content">
-        <img src="/images/space.png" alt="Spaaaaaaacce!" class="orbit-panel__content-image" draggable="false">
+        <img src="https://source.unsplash.com/random/?outer+space" alt="Spaaaaaaacce!"
+          class="orbit-panel__content-image" draggable="false">
         <form class="orbit-panel__content-form" method="POST">
           <div class="orbit-create-layout__title">Welcome to Orbit</div>
           {{#if error}}
@@ -59,7 +60,7 @@
           </fieldset>
           <fieldset class="orbit-create-layout__form-group">
             <label class="orbit-create-layout__form-field-label" for="password">Password</label>
-            <input class="orbit-create-layout__form-field" id="password" name="password" required>
+            <input class="orbit-create-layout__form-field" id="password" name="password" type="password" required>
           </fieldset>
           {{#if registering}}
           <fieldset class="orbit-create-layout__form-group">
