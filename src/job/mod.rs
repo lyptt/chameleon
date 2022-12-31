@@ -25,10 +25,8 @@ pub async fn delegate_job(
       convert_new_post_images::convert_new_post_images(
         queue_job.job_id,
         &repositories.jobs,
-        &repositories.posts,
         &repositories.post_attachments,
         cdn,
-        queue,
       )
       .await
     }

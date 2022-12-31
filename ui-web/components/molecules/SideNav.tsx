@@ -48,7 +48,7 @@ export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
           {!!orbits &&
             orbits.map((orbit) => (
               <li key={orbit.orbit_id} className="orbit-side-nav__list-item">
-                <Link legacyBehavior href={`/orbits/${orbit.orbit_id}`}>
+                <Link legacyBehavior href={`/orbits/${orbit.shortcode}`}>
                   <a>
                     <img
                       className="orbit-side-nav__list-item-icon orbit-side-nav__list-item-icon--external"

@@ -87,32 +87,42 @@ export async function createActionSubmitPost(
   })
 
   try {
-    const createdRecord = await submitPost(post, authToken)
-
-    dispatch({
-      type: CreateActionType.SUBMIT_POST_SENDING_IMAGE,
-      newPostFiles: files,
-    })
-
-    const job = await submitPostImage(
-      createdRecord.id,
-      files,
-      authToken,
-      (progress) =>
-        dispatch({
-          type: CreateActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS,
-          progress,
-        })
+    const createdRecord = await submitPost(
+      { ...post, attachment_count: files.length },
+      authToken
     )
+
+    let job_id: string
+
+    if ('id' in createdRecord) {
+      dispatch({
+        type: CreateActionType.SUBMIT_POST_SENDING_IMAGE,
+        newPostFiles: files,
+      })
+
+      const job = await submitPostImage(
+        createdRecord.id,
+        files,
+        authToken,
+        (progress) =>
+          dispatch({
+            type: CreateActionType.SUBMIT_POST_SENDING_IMAGE_PROGRESS,
+            progress,
+          })
+      )
+      job_id = job.job_id
+    } else {
+      job_id = createdRecord.job_id
+    }
 
     dispatch({
       type: CreateActionType.SUBMIT_POST_WAITING_FOR_JOB,
-      newPostJobId: job.job_id,
+      newPostJobId: job_id,
     })
 
     await retry(
       async () => {
-        const res = await getJobStatus(job.job_id, authToken)
+        const res = await getJobStatus(job_id, authToken)
 
         if (res.status !== JobStatus.Done && res.status !== JobStatus.Failed) {
           throw new Error('Not complete yet')

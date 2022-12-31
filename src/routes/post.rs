@@ -17,7 +17,7 @@ use crate::{
   },
   logic::post::{
     create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
-    upload_post_file, NewPostRequest, NewPostResponse,
+    upload_post_files, CreatePostResult, NewPostRequest, NewPostResponse,
   },
   model::{
     access_type::AccessType,
@@ -311,14 +311,19 @@ pub async fn api_create_post(
   posts: web::Data<PostPool>,
   req: web::Json<NewPostRequest>,
   jwt: web::ReqData<JwtContext>,
+  queue: web::Data<Queue>,
+  jobs: web::Data<JobPool>,
 ) -> impl Responder {
   let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
 
-  match create_post(&posts, &req, &props.uid).await {
-    Ok(post_id) => HttpResponse::Ok().json(NewPostResponse { id: post_id }),
+  match create_post(&posts, &jobs, &queue, &req, &props.uid).await {
+    Ok(result) => match result {
+      CreatePostResult::WaitingForImages(post_id) => HttpResponse::Ok().json(NewPostResponse { id: post_id }),
+      CreatePostResult::JobQueued(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
+    },
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
   }
 }
@@ -343,7 +348,7 @@ pub async fn api_upload_post_image(
     Err(res) => return res,
   };
 
-  match upload_post_file(
+  match upload_post_files(
     &posts,
     &jobs,
     &post_attachments,

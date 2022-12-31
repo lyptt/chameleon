@@ -9,7 +9,12 @@ pub struct CdnFileStore {}
 
 #[async_trait]
 impl CdnStore for CdnFileStore {
-  async fn upload_tmp_file(&self, local_path: &Tempfile, remote_path: &str) -> Result<String, LogicErr> {
+  async fn upload_tmp_file(
+    &self,
+    local_path: &Tempfile,
+    content_type: &str,
+    remote_path: &str,
+  ) -> Result<String, LogicErr> {
     let absolute_remote_path = match SETTINGS.cdn.path.is_empty() {
       true => remote_path.to_string(),
       false => format!("{}/{}", SETTINGS.cdn.path, remote_path),

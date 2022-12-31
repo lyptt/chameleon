@@ -1,12 +1,15 @@
 use actix_easy_multipart::tempfile::Tempfile;
 use chrono::Utc;
+use futures_util::future::join_all;
 use serde::{Deserialize, Serialize};
+use std::{pin::Pin, str::FromStr};
 use uuid::Uuid;
 
 use super::LogicErr;
 use crate::{
   cdn::cdn_store::Cdn,
   db::{job_repository::JobPool, post_attachment_repository::PostAttachmentPool, post_repository::PostPool},
+  helpers::api::{map_db_err, map_ext_err},
   model::{
     access_type::AccessType,
     job::{JobStatus, NewJob},
@@ -22,11 +25,18 @@ pub struct NewPostRequest {
   pub content_md: String,
   pub visibility: AccessType,
   pub orbit_id: Option<Uuid>,
+  pub attachment_count: i64,
 }
 
 #[derive(Debug, Serialize)]
 pub struct NewPostResponse {
   pub id: Uuid,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CreatePostResult {
+  WaitingForImages(Uuid),
+  JobQueued(Uuid),
 }
 
 pub async fn get_user_posts(
@@ -54,15 +64,94 @@ pub async fn get_global_posts_count(posts: &PostPool) -> Result<i64, LogicErr> {
   posts.count_global_federated_feed().await
 }
 
-pub async fn create_post(posts: &PostPool, req: &NewPostRequest, user_id: &Uuid) -> Result<Uuid, LogicErr> {
+pub async fn create_post(
+  posts: &PostPool,
+  jobs: &JobPool,
+  queue: &Queue,
+  req: &NewPostRequest,
+  user_id: &Uuid,
+) -> Result<CreatePostResult, LogicErr> {
   let content_html = markdown::to_html(&req.content_md);
 
-  posts
+  let post_id = posts
     .create_post(user_id, &req.content_md, &content_html, &req.visibility, &req.orbit_id)
+    .await?;
+
+  if req.attachment_count > 0 {
+    return Ok(CreatePostResult::WaitingForImages(post_id));
+  }
+
+  let job_id = jobs
+    .create(NewJob {
+      created_by_id: Some(user_id.to_owned()),
+      status: JobStatus::NotStarted,
+      record_id: Some(post_id.to_owned()),
+      associated_record_id: None,
+    })
     .await
+    .map_err(map_db_err)?;
+
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::CreatePostEvents)
+    .build();
+
+  match queue.send_job(job).await {
+    Ok(_) => Ok(CreatePostResult::JobQueued(job_id)),
+    Err(err) => Err(err),
+  }
 }
 
-pub async fn upload_post_file(
+async fn upload_post_file(
+  post_attachments: &PostAttachmentPool,
+  post_id: &Uuid,
+  user_id: &Uuid,
+  cdn: &Cdn,
+  upload: &Tempfile,
+) -> Result<(), LogicErr> {
+  let file_name = match upload.file_name.to_owned() {
+    Some(name) => name,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let content_type = match mime_guess::from_path(&file_name).first() {
+    Some(m) => m.to_string(),
+    None => return Err(LogicErr::InternalError("Unsupported file type".to_string())),
+  };
+
+  let mime = mime::Mime::from_str(&content_type).map_err(map_ext_err)?;
+  if mime != mime::IMAGE_PNG && mime != mime::IMAGE_JPEG {
+    return Err(LogicErr::InvalidData);
+  }
+
+  let metadata = immeta::load_from_file(upload.file.path()).map_err(map_ext_err)?;
+  let dimens = metadata.dimensions();
+
+  let file_name = format!("media/{}/or/{}", user_id, Uuid::new_v4());
+
+  let path = match cdn.upload_tmp_file(upload, &content_type, &file_name).await {
+    Ok(path) => path,
+    Err(err) => return Err(err),
+  };
+
+  let attachment = PostAttachment {
+    attachment_id: Uuid::new_v4(),
+    user_id: *user_id,
+    post_id: *post_id,
+    uri: Some(format!("/{}", path)),
+    width: dimens.width.try_into().unwrap_or_default(),
+    height: dimens.height.try_into().unwrap_or_default(),
+    content_type: Some(content_type),
+    storage_ref: Some(path),
+    blurhash: None,
+    created_at: Utc::now(),
+  };
+
+  post_attachments.create_attachment_from(attachment).await?;
+  Ok(())
+}
+
+pub async fn upload_post_files(
   posts: &PostPool,
   jobs: &JobPool,
   post_attachments: &PostAttachmentPool,
@@ -76,40 +165,28 @@ pub async fn upload_post_file(
     return Err(LogicErr::UnauthorizedError);
   }
 
-  for upload in uploads.iter() {
-    let content_type = match mime_guess::from_path(
-      upload
-        .file_name
-        .to_owned()
-        .unwrap_or_else(|| "unknown.jpeg".to_string()),
-    )
-    .first()
-    {
-      Some(m) => m.to_string(),
-      None => return Err(LogicErr::InternalError("Unsupported file type".to_string())),
-    };
+  // This type is complex, yes, but also unavoidable due to the types we have to work with here
+  #[allow(clippy::type_complexity)]
+  let mut futures: Vec<
+    Pin<Box<dyn futures_util::Future<Output = std::result::Result<(), LogicErr>> + std::marker::Send>>,
+  > = vec![];
 
-    let file_name = format!("media/{}/or/{}", user_id, Uuid::new_v4());
+  for upload in uploads {
+    futures.push(Box::pin(upload_post_file(
+      post_attachments,
+      post_id,
+      user_id,
+      cdn,
+      upload,
+    )));
+  }
 
-    let path = match cdn.upload_tmp_file(upload, &file_name).await {
-      Ok(path) => path,
-      Err(err) => return Err(err),
-    };
+  let results = join_all(futures).await;
 
-    let attachment = PostAttachment {
-      attachment_id: Uuid::new_v4(),
-      user_id: *user_id,
-      post_id: *post_id,
-      uri: None,
-      width: 0,
-      height: 0,
-      content_type: Some(content_type),
-      storage_ref: Some(path),
-      blurhash: None,
-      created_at: Utc::now(),
-    };
-
-    post_attachments.create_attachment_from(attachment).await?;
+  for result in results {
+    if let Err(err) = result {
+      log::error!("Failed to upload attachment: {}", err);
+    }
   }
 
   let job_id = jobs
@@ -124,6 +201,23 @@ pub async fn upload_post_file(
   let job = QueueJob::builder()
     .job_id(job_id)
     .job_type(QueueJobType::ConvertNewPostImages)
+    .build();
+
+  queue.send_job(job).await?;
+
+  let job_id = jobs
+    .create(NewJob {
+      created_by_id: Some(user_id.to_owned()),
+      status: JobStatus::NotStarted,
+      record_id: Some(post_id.to_owned()),
+      associated_record_id: None,
+    })
+    .await
+    .map_err(map_db_err)?;
+
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::CreatePostEvents)
     .build();
 
   match queue.send_job(job).await {
@@ -152,7 +246,7 @@ mod tests {
     logic::{
       post::{
         create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
-        upload_post_file, NewPostRequest,
+        upload_post_files, CreatePostResult, NewPostRequest,
       },
       LogicErr,
     },
@@ -365,11 +459,14 @@ mod tests {
       content_md: "hello\n**world**!".to_string(),
       visibility: AccessType::PublicFederated,
       orbit_id: None,
+      attachment_count: 0,
     };
     let content_md_eq = new_post.content_md.clone();
     let visibility_eq = new_post.visibility.clone();
 
     let mut post_repo = MockPostRepo::new();
+    let jobs: JobPool = Arc::new(MockJobRepo::new());
+    let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
     post_repo
       .expect_create_post()
       .with(
@@ -385,7 +482,7 @@ mod tests {
     let posts: PostPool = Arc::new(post_repo);
 
     assert_eq!(
-      create_post(&posts, &new_post, &user_id).await,
+      create_post(&posts, &jobs, &queue, &new_post, &user_id).await,
       Err(LogicErr::DbError("Boop".to_string()))
     );
   }
@@ -394,16 +491,21 @@ mod tests {
   async fn create_post_succeeds() {
     let user_id = Uuid::new_v4();
     let post_id = Uuid::new_v4();
+    let job_id = Uuid::new_v4();
 
     let new_post = NewPostRequest {
       content_md: "hello\n**world**!".to_string(),
       visibility: AccessType::PublicFederated,
       orbit_id: None,
+      attachment_count: 0,
     };
     let content_md_eq = new_post.content_md.clone();
     let visibility_eq = new_post.visibility.clone();
 
     let mut post_repo = MockPostRepo::new();
+    let mut job_repo = MockJobRepo::new();
+    let mut queue_be = MockQueueBackend::new();
+
     post_repo
       .expect_create_post()
       .with(
@@ -416,9 +518,22 @@ mod tests {
       .times(1)
       .return_const(Ok(post_id));
 
-    let posts: PostPool = Arc::new(post_repo);
+    job_repo
+      .expect_create()
+      .with(always())
+      .times(1)
+      .return_const(Ok(job_id));
 
-    assert_eq!(create_post(&posts, &new_post, &user_id).await, Ok(post_id));
+    queue_be.expect_send_job().with(always()).times(1).return_const(Ok(()));
+
+    let posts: PostPool = Arc::new(post_repo);
+    let jobs: JobPool = Arc::new(job_repo);
+    let mut queue = Queue::new_inner(Box::new(queue_be));
+
+    assert_eq!(
+      create_post(&posts, &jobs, &queue, &new_post, &user_id).await,
+      Ok(CreatePostResult::JobQueued(post_id))
+    );
   }
 
   #[async_std::test]
@@ -446,7 +561,7 @@ mod tests {
     let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
 
     assert_eq!(
-      upload_post_file(
+      upload_post_files(
         &posts,
         &jobs,
         &post_attachments,
@@ -482,7 +597,7 @@ mod tests {
     let mut cdn_store = MockCdnStore::new();
     cdn_store
       .expect_upload_tmp_file()
-      .with(always(), starts_with("media/"))
+      .with(always(), always(), starts_with("media/"))
       .return_const(Err(LogicErr::InternalError("Upload failed".to_string())));
 
     let posts: PostPool = Arc::new(post_repo);
@@ -492,7 +607,7 @@ mod tests {
     let queue = Queue::new_inner(Box::new(MockQueueBackend::new()));
 
     assert_eq!(
-      upload_post_file(
+      upload_post_files(
         &posts,
         &jobs,
         &post_attachments,

@@ -257,10 +257,37 @@ pub async fn api_update_orbit_assets(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
+  let avatar_content_type = match mime_guess::from_path(
+    &form.images[0]
+      .file_name
+      .to_owned()
+      .unwrap_or_else(|| ".§§§".to_string()),
+  )
+  .first()
+  {
+    Some(m) => m.to_string(),
+    None => return build_api_err(500, "Unsupported file type".to_string(), None),
+  };
+
+  let banner_content_type = match mime_guess::from_path(
+    &form.images[1]
+      .file_name
+      .to_owned()
+      .unwrap_or_else(|| ".§§§".to_string()),
+  )
+  .first()
+  {
+    Some(m) => m.to_string(),
+    None => return build_api_err(500, "Unsupported file type".to_string(), None),
+  };
+
   let avatar_uri = match {
     let file_name = format!("media/{}/or/{}", orbit_id, Uuid::new_v4());
 
-    let path = match cdn.upload_tmp_file(&form.images[0], &file_name).await {
+    let path = match cdn
+      .upload_tmp_file(&form.images[0], &avatar_content_type, &file_name)
+      .await
+    {
       Ok(path) => path,
       Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
     };
@@ -274,7 +301,10 @@ pub async fn api_update_orbit_assets(
   let banner_uri = match {
     let file_name = format!("media/{}/or/{}", orbit_id, Uuid::new_v4());
 
-    let path = match cdn.upload_tmp_file(&form.images[1], &file_name).await {
+    let path = match cdn
+      .upload_tmp_file(&form.images[1], &banner_content_type, &file_name)
+      .await
+    {
       Ok(path) => path,
       Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
     };

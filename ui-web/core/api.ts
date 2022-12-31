@@ -119,6 +119,7 @@ export interface INewPost {
   content_md: string
   visibility: AccessType
   orbit_name?: string
+  attachment_count: number
 }
 
 export enum JobStatus {
@@ -345,7 +346,7 @@ export async function fetchOrbit(
 export async function submitPost(
   post: INewPost,
   authToken: string
-): Promise<IRecordResponse> {
+): Promise<IRecordResponse | INewJobResponse> {
   const response = await fetch(`${Config.apiUri}/feed`, {
     ...buildDefaultHeaders(authToken),
     method: 'POST',
