@@ -148,3 +148,12 @@ textarea.orbit-create-layout__form-field {
     margin-right: 8px;
   }
 }
+
+.orbit-create-layout__progress {
+  position: fixed;
+  top: 60px;
+  left: 222px;
+  right: 0;
+  width: calc(100% - 222px);
+  z-index: 90;
+}

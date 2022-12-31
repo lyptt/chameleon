@@ -27,7 +27,7 @@ export async function orbitActionLoadUserOrbits(
   })
 
   try {
-    const orbits = await fetchUserOrbits(handle, authToken, 0)
+    const orbits = await fetchUserOrbits(handle, authToken, 0, 100000)
     dispatch({
       type: OrbitActionType.REFRESH_USER_ORBITS_LOADED,
       data: orbits.data,

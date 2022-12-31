@@ -11,6 +11,11 @@ import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import { useRouter } from 'next/router'
 import { Field, FieldAttributes, Form, useField } from 'formik'
+import {
+  IoAddOutline,
+  IoAlertCircleOutline,
+  IoCloseOutline,
+} from 'react-icons/io5'
 import SideNav from '@/components/molecules/SideNav'
 import {
   createActionInitialize,
@@ -21,11 +26,8 @@ import InfoCard from '@/components/atoms/InfoCard'
 import WelcomeCard from '@/components/atoms/WelcomeCard'
 import AsidePlaceholder from '@/components/quarks/AsidePlaceholder'
 import Button from '@/components/atoms/Button'
-import {
-  IoAddOutline,
-  IoAlertCircleOutline,
-  IoCloseOutline,
-} from 'react-icons/io5'
+import Progress from '@/components/quarks/Progress'
+import FancySelect from '../atoms/FancySelect'
 
 dayjs.extend(dayjsUtc)
 
@@ -47,19 +49,16 @@ export interface CreateFormProps
 export interface CreateFormGroupProps extends FieldAttributes<any> {
   hidden?: boolean
   detail?: string
+  options?: {
+    title: string
+    value: any
+    icon?: string | JSX.Element
+  }[]
 }
 
 export interface CreateFormButtonsProps extends HTMLProps<HTMLDivElement> {
   submitTitle: string
   cancelTitle: string
-}
-
-export interface CreateFormRadioGroupProps extends CreateFormGroupProps {
-  options: {
-    title: string
-    icon: JSX.Element
-    value: any
-  }[]
 }
 
 export function CreateForm({
@@ -90,16 +89,45 @@ export function CreateFormGroup({
   title,
   detail,
   hidden,
+  options,
+  type,
   ...rest
 }: CreateFormGroupProps) {
   if (hidden) {
     return (
       <Field
-        className={cx('orbit-create-layout__form-field', className)}
+        className={cx('orbit-create-layout__form-field-custom', className)}
         id={id}
         type="hidden"
         {...rest}
       />
+    )
+  }
+
+  if (type === 'select') {
+    return (
+      <fieldset className="orbit-create-layout__form-group">
+        <label
+          className={cx('orbit-create-layout__form-field-label', {
+            [`${className}-label`]: !!className,
+          })}
+          htmlFor={id}
+        >
+          {title}
+        </label>
+        <Field
+          id={id}
+          className={cx('orbit-create-layout__form-field-custom', className)}
+          ref={ref}
+          title={title}
+          detail={detail}
+          hidden={hidden}
+          options={options}
+          type={type}
+          component={FancySelect}
+          {...rest}
+        />
+      </fieldset>
     )
   }
 
@@ -119,9 +147,18 @@ export function CreateFormGroup({
             {para}
           </p>
         ))}
+
       <Field
         className={cx('orbit-create-layout__form-field', className)}
         id={id}
+        type={type}
+        onKeyDown={(e: any) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            e.stopPropagation()
+            return false
+          }
+        }}
         {...rest}
       />
     </fieldset>
@@ -140,7 +177,7 @@ export function CreateFormRadioGroup({
   name,
   disabled,
   ...rest
-}: CreateFormRadioGroupProps) {
+}: CreateFormGroupProps) {
   if (hidden) {
     return (
       <Field
@@ -168,7 +205,7 @@ export function CreateFormRadioGroup({
           </p>
         ))}
       <div className="orbit-create-layout__form-field-radio-group">
-        {options.map((option) => (
+        {(options || []).map((option) => (
           <Field
             key={option.title}
             value={option.value}
@@ -197,8 +234,15 @@ export function CreateFormRadioGroup({
                   type="radio"
                   className="orbit-create-layout__form-field-radio"
                   disabled={disabled}
+                  onKeyDown={(e: any) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      return false
+                    }
+                  }}
                 />
-                {option.icon}
+                {typeof option.icon !== 'string' && option.icon}
                 {option.title}
               </label>
             )}
@@ -355,6 +399,7 @@ export function CreateFormFileUpload(props: CreateFormGroupProps) {
           />
         ))}
         <button
+          type="button"
           className="orbit-create-layout__form-file-upload-choose-button"
           onClick={(e) => {
             e.preventDefault()
@@ -383,7 +428,9 @@ export default function CreateLayout({
     orbit,
     orbitLoading,
     orbitLoadingFailed,
+    submitting,
     submittedPost,
+    submittingImageProgress,
   } = state
   const router = useRouter()
 
@@ -407,6 +454,13 @@ export default function CreateLayout({
 
   return (
     <section className={cx('orbit-create-layout', className)} {...rest}>
+      {submitting && (
+        <Progress
+          className="orbit-create-layout__progress"
+          value={submittingImageProgress}
+          max={1}
+        />
+      )}
       <SideNav />
       <div className="orbit-create-layout__content">{children}</div>
       {!!orbitShortcode && (orbitLoading || orbitLoadingFailed || !orbit) && (

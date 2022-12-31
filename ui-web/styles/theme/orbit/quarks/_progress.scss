@@ -1,0 +1,59 @@
+.#{$theme-class} {
+  .orbit-progress {
+    appearance: none;
+    background: none;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .orbit-progress__value {
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    transition: all 0.15s ease;
+
+    @media (prefers-color-scheme: light) {
+      background: $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $brand-dark;
+    }
+  }
+
+  .orbit-progress--indeterminate .orbit-progress__value {
+    transition: all 0.15s ease;
+    animation: progresspulse 1.45s infinite;
+  }
+
+  @media (prefers-color-scheme: light) {
+    @keyframes progresspulse {
+      0% {
+        background: $brand-light;
+      }
+
+      50% {
+        background: transparentize($brand-light, 0.5);
+      }
+
+      100% {
+        background: $brand-light;
+      }
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    @keyframes progresspulse {
+      0% {
+        background: $brand-dark;
+      }
+
+      50% {
+        background: transparentize($brand-dark, 0.5);
+      }
+
+      100% {
+        background: $brand-dark;
+      }
+    }
+  }
+}

@@ -54,6 +54,7 @@ export default function Button({
 
   return (
     <button
+      type="button"
       className={cx(
         'orbit-button',
         { 'orbit-button--brand': !variant || variant === 'default' },

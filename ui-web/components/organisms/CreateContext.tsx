@@ -87,10 +87,7 @@ export async function createActionSubmitPost(
   })
 
   try {
-    const createdRecord = await submitPost(
-      { ...post, attachment_count: files.length },
-      authToken
-    )
+    const createdRecord = await submitPost(post, authToken)
 
     let job_id: string
 

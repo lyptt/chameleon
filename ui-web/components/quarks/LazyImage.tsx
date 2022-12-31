@@ -18,6 +18,7 @@ export interface ILazyImageProps
   blurhash?: string | null
   contentClassName?: string
   thumbnailSrc?: string
+  asLink?: boolean
 }
 
 export function LazyImage({
@@ -29,6 +30,7 @@ export function LazyImage({
   alt,
   src,
   thumbnailSrc,
+  asLink,
   ...rest
 }: ILazyImageProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
@@ -48,12 +50,8 @@ export function LazyImage({
     }
   }, [initialLoadDate])
 
-  return (
-    <Link
-      className={cx('orbit-image', className)}
-      href={src || 'about:blank'}
-      target="blank"
-    >
+  const content = () => (
+    <>
       <img
         className={cx('orbit-image__content', contentClassName)}
         ref={ref}
@@ -76,6 +74,20 @@ export function LazyImage({
               : '100% 100%',
         }}
       />
-    </Link>
+    </>
   )
+
+  if (asLink) {
+    return (
+      <Link
+        className={cx('orbit-image', className)}
+        href={src || 'about:blank'}
+        target="blank"
+      >
+        {content()}
+      </Link>
+    )
+  }
+
+  return <div className={cx('orbit-image', className)}>{content()}</div>
 }

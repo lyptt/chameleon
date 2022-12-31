@@ -20,7 +20,10 @@ import { IoEarthOutline, IoHomeOutline } from 'react-icons/io5'
 import Head from 'next/head'
 import { useAuth } from '@/components/organisms/AuthContext'
 
-interface INewOrbitPostForm extends INewPost {
+interface INewOrbitPostForm {
+  content_md: string
+  visibility: AccessType
+  orbit_name?: string
   attachments: File[]
   content_warning?: string
 }
@@ -32,7 +35,7 @@ export default function NewOrbitPostPage({
   const orbitShortcode = router.query.orbitShortcode as string
   const { session } = useAuth()
   const { state, dispatch } = useCreate()
-  const { initialized, submitting, submittingFailed, orbit } = state
+  const { submitting, orbit } = state
 
   const onSubmit: (values: INewOrbitPostForm) => Promise<void> = useCallback(
     async (values) => {
@@ -41,7 +44,7 @@ export default function NewOrbitPostPage({
       }
 
       createActionSubmitPost(
-        values as INewPost,
+        { ...values, attachment_count: values.attachments.length },
         values.attachments,
         session?.access_token,
         dispatch

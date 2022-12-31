@@ -41,6 +41,10 @@
         );
       }
     }
+
+    &.orbit-post-card--image-post::after {
+      display: none;
+    }
   }
 
   .orbit-post-card__info-bar-icon {

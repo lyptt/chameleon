@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 20px;
   padding-top: 20px;
+  padding-bottom: 20px;
 
   @include mq($until: wide) {
     flex: 1;
@@ -15,10 +16,6 @@
     margin-left: auto;
     margin-right: auto;
   }
-}
-
-.orbit-page-home__feed-post {
-  height: 160px;
 }
 
 .orbit-page-home__sidebar {

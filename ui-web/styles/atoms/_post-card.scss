@@ -2,6 +2,11 @@
   display: flex;
   overflow-y: hidden;
   flex-direction: column;
+  height: 160px;
+
+  &.orbit-post-card--image-post {
+    height: auto;
+  }
 }
 
 .orbit-post-card__info-bar {
@@ -26,12 +31,14 @@
 }
 
 .orbit-post-card__title,
-.orbit-post-card__content {
+.orbit-post-card__content,
+.orbit-post-card__image-content {
   margin-left: 26px;
   margin-right: 26px;
 }
 
-.orbit-post-card__content--user-post {
+.orbit-post-card__content--user-post,
+.orbit-post-card__image-content--user-post {
   margin-top: 10px;
 }
 
@@ -53,4 +60,9 @@
 .orbit-post-card__content h6 {
   margin-top: 0;
   margin-bottom: 1rem;
+}
+
+.orbit-post-card__image-content {
+  aspect-ratio: 1/1;
+  margin-bottom: 26px;
 }

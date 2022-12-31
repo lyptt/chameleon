@@ -5,6 +5,8 @@ import Link from 'next/link'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsRelative from 'dayjs/plugin/relativeTime'
+import { LazyImage } from '../quarks/LazyImage'
+import Config from '@/core/config'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -22,9 +24,30 @@ export default function PostCard({
   className,
   ...rest
 }: PostCardProps) {
+  const post_content_empty = post.content_md.trim().length === 0
+  let firstAttachmentUri: string | undefined
+  if (post.attachments.length > 0) {
+    const attachment = post.attachments[0]
+    if (attachment.uri) {
+      if (attachment.uri.startsWith('http')) {
+        firstAttachmentUri = attachment.uri
+      } else {
+        firstAttachmentUri = `${Config.cdn}${attachment.uri}`
+      }
+    } else {
+      firstAttachmentUri = transparentPixelUri
+    }
+  }
+
   return (
     <Link legacyBehavior href={post.uri}>
-      <a className={cx('orbit-post-card', className)} {...rest}>
+      <a
+        className={cx('orbit-post-card', className, {
+          'orbit-post-card--image-post':
+            !!post.attachments.length && post_content_empty,
+        })}
+        {...rest}
+      >
         <div className="orbit-post-card__info-bar">
           {!!post.orbit_id && !hideOrbitInformation && (
             <>
@@ -72,12 +95,25 @@ export default function PostCard({
         {!!post.title && (
           <div className="orbit-post-card__title">{post.title}</div>
         )}
-        <div
-          className={cx('orbit-post-card__content', {
-            'orbit-post-card__content--user-post': !post.orbit_id,
-          })}
-          dangerouslySetInnerHTML={{ __html: post.content_html }}
-        />
+        {!post_content_empty && (
+          <div
+            className={cx('orbit-post-card__content', {
+              'orbit-post-card__content--user-post': !post.orbit_id,
+            })}
+            dangerouslySetInnerHTML={{ __html: post.content_html }}
+          />
+        )}
+        {!!firstAttachmentUri && post_content_empty && (
+          <LazyImage
+            className={cx('orbit-post-card__image-content', {
+              'orbit-post-card__image-content--user-post': !post.orbit_id,
+            })}
+            src={firstAttachmentUri}
+            thumbnailSrc={firstAttachmentUri}
+            blurhash={post.attachments[0].blurhash}
+            alt={post.title}
+          />
+        )}
       </a>
     </Link>
   )

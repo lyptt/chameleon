@@ -1,0 +1,164 @@
+.#{$theme-class} {
+  .orbit-fancy-select__control {
+    border-radius: 2px;
+    transition: none;
+    font-size: $font-size-m;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+      background: transparent;
+      border: 0.5px solid $fill-4-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+      background: $fill-dark;
+      border: 0.5px solid $fill-4-dark;
+    }
+
+    &:hover {
+      @media (prefers-color-scheme: light) {
+        color: $text-light;
+        background: $fill-light;
+        border: 0.5px solid $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: $text-dark;
+        background: $fill-dark;
+        border: 0.5px solid $brand-dark;
+      }
+    }
+
+    &.orbit-fancy-select__control--is-focused {
+      @media (prefers-color-scheme: light) {
+        border: 0.5px solid $brand-light;
+        box-shadow: none;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        border: 0.5px solid $brand-dark;
+        box-shadow: none;
+      }
+    }
+  }
+
+  .orbit-fancy-select__menu-list {
+    border-radius: 2px;
+    transition: none;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+      background: $fill-light;
+      border: 0.5px solid $brand-light;
+      box-shadow: 0px 4px 10px 0px rgba(186, 186, 186, 0.75);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+      background: $fill-dark;
+      border: 0.5px solid $brand-dark;
+      box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.75);
+    }
+  }
+
+  .orbit-fancy-select__option-input-icon {
+    border-radius: 9999px;
+    border: 1px solid transparent;
+  }
+
+  .orbit-fancy-select__option,
+  .orbit-fancy-select__single-value {
+    font-size: $font-size-m;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-fancy-select__placeholder {
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
+  }
+
+  .orbit-fancy-select__option {
+    background: transparent;
+    cursor: pointer;
+
+    @media (prefers-color-scheme: light) {
+      border-bottom: 0.5px solid $brand-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      border-bottom: 0.5px solid $brand-dark;
+    }
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    &.orbit-fancy-select__option--is-focused {
+      @media (prefers-color-scheme: light) {
+        background: $fill-4-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background: $fill-4-dark;
+      }
+    }
+
+    &.orbit-fancy-select__option--is-selected {
+      @media (prefers-color-scheme: light) {
+        color: white;
+        background: $brand-light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: white;
+        background: $brand-dark;
+      }
+    }
+
+    .orbit-fancy-select__option-input-icon {
+      border: 1px solid white;
+    }
+  }
+
+  .orbit-fancy-select__single-value {
+    .orbit-fancy-select__option-input-icon {
+      border: 1px solid white;
+    }
+  }
+
+  .orbit-fancy-select__option-input {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .orbit-fancy-select__indicators,
+  .orbit-fancy-select__indicators svg {
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+    margin-right: 4px;
+  }
+}
