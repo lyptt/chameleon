@@ -18,7 +18,7 @@ export default function NavBar({ className, isBuiltInRoute }: NavBarProps) {
             <img
               className="orbit-nav__logo-image"
               alt="Orbit"
-              src="/images/logo-light.svg"
+              src="/images/logo.svg"
               draggable="false"
             />
             <span className="orbit-nav__logo-text">orbit</span>

@@ -2,8 +2,7 @@
 
 ![Server Build Status](https://img.shields.io/github/actions/workflow/status/lyptt/orbit/ci.yml?label=server%20build) ![Server Build Status](https://img.shields.io/github/actions/workflow/status/lyptt/orbit/ci-web.yml?label=ui%20build) ![Open issues](https://img.shields.io/github/issues-raw/lyptt/orbit?color=%2300cc00)
 
-<img src="./public/static/images/logo-dark.svg#gh-dark-mode-only" width="128" alt="Orbit">
-<img src="./public/static/images/logo-light.svg#gh-light-mode-only" width="128" alt="Orbit">
+<img src="./public/static/images/logo.svg" width="128" alt="Orbit">
 
 Orbit is a **free, open source social network server** where users can post on public, federated forums, and discover a feed of content tailored to their interests. All Orbit servers are interoperable and part of the Fediverse, allowing for multiple servers to share each other's content as part of a federated network.
 

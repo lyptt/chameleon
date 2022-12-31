@@ -19,7 +19,7 @@ export default function WelcomeCard({
     <div className={cx('orbit-welcome-card', className)} {...rest}>
       <div className="orbit-welcome-card__banner">
         <img
-          src="/images/logo-light.svg"
+          src="/images/logo.svg"
           alt="Orbit mascot"
           className="orbit-welcome-card__banner-logo"
           draggable="false"

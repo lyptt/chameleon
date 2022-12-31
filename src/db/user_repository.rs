@@ -314,7 +314,6 @@ impl UserRepo for DbUserRepo {
         &user.ext_apub_following_uri,
         &user.ext_apub_inbox_uri,
         &user.ext_apub_outbox_uri,
-  
       ],
     )
     .await
@@ -325,12 +324,9 @@ impl UserRepo for DbUserRepo {
 
   async fn delete_user_from_uri(&self, uri: &str) -> Result<(), LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
-    db.execute(
-      "DELETE FROM users WHERE fediverse_uri = $1",
-      &[&uri],
-    )
-    .await
-    .map_err(map_db_err)?;
+    db.execute("DELETE FROM users WHERE fediverse_uri = $1", &[&uri])
+      .await
+      .map_err(map_db_err)?;
 
     Ok(())
   }

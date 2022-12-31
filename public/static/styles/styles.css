@@ -1,148 +1,464 @@
 :root {
-  --button-color: rgb(55, 173, 94);
-  --button-color-highlight: rgb(40, 127, 69);
-  --button-color-disabled: rgb(134, 185, 151);
-  --button-text-color: rgb(255, 255, 255);
-  --link-color: rgb(55, 173, 94);
-  --error-color: rgb(204, 71, 37);
+  --fill-light: #f6f6f6;
+  --fill-dark: #201e23;
+  --fill-2-light: #ffffff;
+  --fill-2-dark: #2a2730;
+  --fill-3-light: #dcdcdc;
+  --fill-3-dark: #060607;
+  --fill-4-light: #dcdcdc;
+  --fill-4-dark: #4e4e60;
+  --brand-light: #724cb4;
+  --brand-dark: #9676cf;
+  --brand-2-light: #5a3b8e;
+  --brand-2-dark: #8064af;
+  --text-light: #000000;
+  --text-dark: #eeeeee;
+  --text-2-light: #666666;
+  --text-2-dark: #c9c9c9;
+  --text-error-light: #d52727;
+  --text-error-dark: #ba5f5f;
+  --font-family: "Ubuntu";
+  --font-weight-black: bold;
+  --font-weight-bold: bold;
+  --font-weight-medium: 500;
+  --font-weight-regular: normal;
+  --font-weight-light: 300;
+  --font-weight-thin: 300;
+  --font-size-xs: 0.625rem;
+  --font-size-s: 0.75rem;
+  --font-size-m: 0.875rem;
+  --font-size-l: 1rem;
+  --font-size-xl: 1.125rem;
+  --font-size-xxl: 1.4rem;
+  --font-size-xxxl: 2rem;
+}
+
+/*
+var(--mq-breakpoints): (
+  mobileMini: 300px,
+  mobile: 400px,
+  tablet: 740px,
+  desktop: 980px,
+  wide: 1300px,
+);
+*/
+
+* {
+  box-sizing: border-box;
 }
 
 html,
 body {
   padding: 0;
   margin: 0;
-  font-family: "Open Sans", sans-serif;
-  background: rgb(250, 250, 250);
-  color: rgb(38, 38, 38);
+  min-height: 100vh;
   display: flex;
-  align-items: center;
+  width: 100%;
+  font-family: "Ubuntu", sans-serif;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+}
+
+.orbit-main {
+  display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+  position: relative;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-form,
-.sign-up-panel {
-  margin-top: 20px;
-  border: 1px solid rgb(219, 219, 219);
-  background: white;
-  max-width: 360px;
+.orbit-main__content {
   display: flex;
-  flex-direction: column;
-  padding: 20px;
-  border-radius: 3px;
+  flex-direction: row;
+  min-height: calc(100vh - 60px);
 }
 
-.sign-up-panel {
-  font-size: 0.9rem;
-  text-align: center;
+.orbit-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: var(--font-weight-medium);
 }
 
-label {
-  position: absolute;
-  top: -9999px;
-  left: -9999px;
-}
-
-h1 {
-  font-family: "Pacifico", serif;
-  font-size: 2.4rem;
-  text-align: center;
+p {
   margin-top: 0;
-  line-height: 1;
-  margin-top: 10px;
-  margin-bottom: 50px;
 }
 
-input {
-  padding: 8px;
-  margin-bottom: 4px;
-  border-radius: 3px;
+.orbit-button {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 24px;
+  padding-right: 24px;
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-medium);
   outline: none;
-  border: 1px solid rgb(219, 219, 219);
-  background-color: rgb(250, 250, 250);
-  font-size: 0.8rem;
-}
-
-input:focus {
-  border-color: rgb(190, 190, 190);
-}
-
-button {
-  margin-top: 10px;
-  outline: none;
-  background: var(--button-color);
-  color: var(--button-text-color);
-  border: 1px solid var(--button-color);
-  border-radius: 3px;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  font-size: 0.8rem;
+  border: none;
+  appearance: none;
   cursor: pointer;
-  transition: all ease 0.15s;
-  transition-property: border-color, background-color;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  border-radius: 9999px;
+  text-decoration: none;
+  text-align: center;
+  user-select: none;
+  color: white;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.orbit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.orbit-nav {
+  height: 60px;
+  position: sticky;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-left: 20px;
+  padding-right: 20px;
+  align-items: center;
+  justify-content: space-between;
   user-select: none;
 }
 
-form:invalid button {
-  pointer-events: none;
-  background: var(--button-color-disabled);
-  border-color: var(--button-color-disabled);
-}
-
-button:focus-within,
-button:hover {
-  border-color: var(--button-color-highlight);
-}
-
-button:hover,
-button:active {
-  background: var(--button-color-highlight);
-}
-
-.sign-up-panel p {
-  margin: 0;
-}
-
-.sign-up-panel a {
-  color: var(--link-color);
+.orbit-nav__logo {
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
-  font-weight: 500;
 }
 
-.form-info,
-.form-error {
-  font-size: 0.8rem;
-  margin-bottom: 20px;
+.orbit-nav__logo-top {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+  align-items: flex-end;
 }
 
-.form-info p,
-.form-error p {
+.orbit-nav__logo-image {
+  max-width: 36px;
+}
+
+.orbit-nav__logo-text {
+  font-size: var(--font-size-xxl);
+  line-height: var(--font-size-xxl);
+  user-select: none;
+}
+
+.orbit-nav__logo-subtitle {
+  font-size: var(--font-size-xs);
+  line-height: var(--font-size-xs);
+  user-select: none;
+}
+
+.orbit-panel {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.orbit-panel__content {
+  border-radius: 8px;
+  display: flex;
+  flex-direction: row;
+}
+
+.orbit-panel__content-form {
+  display: flex;
+  flex-direction: column;
+  margin: 20px;
+}
+
+.orbit-panel__content-image {
+  display: none;
+  color: transparent;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.orbit-panel__content-form {
+  flex: 1;
+}
+
+.orbit-panel__content {
+  width: calc(100% - 40px);
+}
+
+.orbit-create-layout__title {
+  margin-bottom: 25px;
+}
+
+.orbit-create-layout__error {
   margin: 0;
-  margin-bottom: 0.4rem;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.form-error {
-  color: var(--error-color);
+.orbit-create-layout__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  margin-bottom: 10px;
 }
 
-@media screen and (min-width: 500px) {
-  body {
-    justify-content: center;
+.orbit-create-layout__form-group:last-of-type {
+  margin-bottom: 0;
+}
+
+.orbit-create-layout__form-field {
+  display: flex;
+  margin: 0;
+  padding: 8px;
+}
+
+.orbit-create-layout__title {
+  font-size: var(--font-size-xxxl);
+  font-weight: var(--font-weight-regular);
+  user-select: none;
+  text-align: center;
+}
+
+.orbit-create-layout__form-group {
+  border: none;
+}
+
+.orbit-create-layout__form-field-label {
+  font-size: var(--font-size-s);
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+}
+
+.orbit-create-layout__form-field-detail {
+  font-size: var(--font-size-s);
+  user-select: none;
+}
+
+.orbit-create-layout__form-field {
+  resize: none;
+  border-radius: 3px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-m);
+  outline: none;
+}
+
+.orbit-create-layout__form-field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.orbit-create-layout__error {
+  font-size: var(--font-size-m);
+  font-weight: var(--font-weight-medium);
+}
+
+.orbit-form-info,
+.orbit-sign-up-panel {
+  font-size: var(--font-size-m);
+  margin-bottom: 16px;
+}
+
+.orbit-form-info p,
+.orbit-sign-up-panel p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.orbit-form-info p:last-of-type,
+.orbit-sign-up-panel p:last-of-type {
+  margin-bottom: 0;
+}
+
+@media screen and (max-width: 739px) {
+  .orbit-panel__content {
+    margin-top: 20px;
+    margin-bottom: auto;
+  }
+}
+
+@media screen and (min-width: 740px) {
+  .orbit-panel {
+    align-items: center;
   }
 
-  form {
-    min-width: 360px;
-    padding: 40px;
+  .orbit-panel__content-form {
+    margin: 60px;
+  }
+}
+
+@media screen and (min-width: 1060px) {
+  .orbit-panel__content {
+    width: 1020px;
   }
 
-  .sign-up-panel {
-    min-width: 360px;
+  .orbit-panel__content-image {
+    display: block;
+    width: 540px;
+  }
+
+  .orbit-panel__content-form {
+    width: 480px;
+  }
+}
+
+@media screen and (min-height: 700px) {
+  .orbit-panel__content {
+    min-height: 646px;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  html,
+  body,
+  .orbit-main {
+    background: var(--fill-light);
+  }
+
+  .orbit-button,
+  .orbit-button:disabled {
+    background: var(--brand-light);
+  }
+
+  .orbit-button:active,
+  .orbit-button:focus-visible {
+    background: var(--brand-2-light);
+  }
+
+  .orbit-nav {
+    background: var(--fill-2-light);
+    border-bottom: 0.5px solid var(--fill-3-light);
+  }
+
+  .orbit-nav__logo-text {
+    color: var(--text-light);
+  }
+
+  .orbit-nav__logo-subtitle {
+    color: var(--text-2-light);
+  }
+
+  .orbit-panel__content {
+    background: var(--fill-2-light);
+    border: 0.5px solid var(--fill-3-light);
+  }
+
+  .orbit-create-layout__title,
+  .orbit-form-info,
+  .orbit-sign-up-panel {
+    color: var(--text-light);
+  }
+
+  .orbit-create-layout__form-field-label {
+    color: var(--text-light);
+  }
+
+  .orbit-create-layout__form-field-detail {
+    color: var(--text-2-light);
+  }
+
+  .orbit-create-layout__form-field {
+    background: transparent;
+    border: 0.5px solid var(--fill-4-light);
+    color: var(--text-light);
+  }
+
+  .orbit-create-layout__form-field:focus {
+    border-color: var(--brand-light);
+  }
+
+  .orbit-create-layout__form-field::placeholder {
+    opacity: 1;
+    border-color: var(--brand-light);
+    color: var(--text-2-light);
+  }
+
+  .orbit-create-layout__error {
+    color: var(--text-error-light);
+  }
+
+  .orbit-link {
+    color: var(--brand-light);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  .orbit-main {
+    background: var(--fill-dark);
+  }
+
+  .orbit-button,
+  .orbit-button:disabled {
+    background: var(--brand-dark);
+  }
+
+  .orbit-button:active,
+  .orbit-button:focus-visible {
+    background: var(--brand-2-dark);
+  }
+
+  .orbit-nav {
+    background: var(--fill-2-dark);
+    border-bottom: 0.5px solid var(--fill-3-dark);
+  }
+
+  .orbit-nav__logo-text {
+    color: var(--text-dark);
+  }
+
+  .orbit-nav__logo-subtitle {
+    color: var(--text-2-dark);
+  }
+
+  .orbit-panel__content {
+    background: var(--fill-2-dark);
+    border: 0.5px solid var(--fill-3-dark);
+  }
+
+  .orbit-create-layout__title,
+  .orbit-form-info,
+  .orbit-sign-up-panel {
+    color: var(--text-dark);
+  }
+
+  .orbit-create-layout__form-field-label {
+    color: var(--text-dark);
+  }
+
+  .orbit-create-layout__form-field-detail {
+    color: var(--text-2-dark);
+  }
+
+  .orbit-create-layout__form-field {
+    background: var(--fill-dark);
+    border: 0.5px solid var(--fill-4-dark);
+    color: var(--text-dark);
+  }
+
+  .orbit-create-layout__form-field:focus {
+    border-color: var(--brand-dark);
+  }
+
+  .orbit-create-layout__form-field::placeholder {
+    opacity: 1;
+    border-color: var(--brand-dark);
+    color: var(--text-2-dark);
+  }
+
+  .orbit-create-layout__error {
+    color: var(--text-error-dark);
+  }
+
+  .orbit-link {
+    color: var(--brand-dark);
   }
 }

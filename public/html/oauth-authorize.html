@@ -1,48 +1,91 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <link rel="stylesheet" href="/styles/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com"> 
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500&family=Pacifico&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <form method="POST">
-      <h1>Orbit</h1>
-      {{#if error}}
-      <div class="form-error">{{ error }}</div>
-      {{/if}}
-      {{#unless blessed}}
-      <div class="form-info">
-        {{#if registering}}
-        <p>The application {{app_name}} wants to create an account on your behalf.</p>
-        {{else}}
-        <p>The application {{app_name}} wants to sign in using your credentials.</p>
-        {{/if}}
-        <p>By continuing, {{app_name}} will be able to access your account, and your public and private information.</p>
-        <p>If this is not expected, you can close this page.</p>
+
+<head>
+  <link rel="stylesheet" href="/styles/styles.css">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#724cb4">
+  <meta name="apple-mobile-web-app-title" content="Orbit">
+  <meta name="application-name" content="Orbit">
+  <meta name="msapplication-TileColor" content="#724cb4">
+  <meta name="theme-color" content="#ffffff">
+  <title>Orbit</title>
+</head>
+
+<body>
+  <main class="orbit-main">
+    <nav class="orbit-nav">
+      <div class="orbit-nav__logo">
+        <div class="orbit-nav__logo-top">
+          <img class="orbit-nav__logo-image" alt="Orbit" src="/images/logo.svg" draggable="false">
+          <span class="orbit-nav__logo-text">orbit</span>
+        </div>
+        <span class="orbit-nav__logo-subtitle">{{orbit_name}}</span>
       </div>
-      {{/unless}}
-      <label for="handle">Username</label>
-      <input id="handle" type="text" name="username" value="{{ username }}" placeholder="Username" required>
-      <label for="password">Password</label>
-      <input id="password" type="password" name="password" placeholder="Password" required>
-      {{#if registering}}
-      <label for="email">E-mail address</label>
-      <input id="email" type="text" name="email" value="{{ email }}" placeholder="E-mail address" pattern=".*@.*\..*">
-      <input id="form_type" type="hidden" name="request_type" value="register">
-      <button type="submit">Create account</button>
-      {{else}}
-      <input id="form_type" type="hidden" name="request_type" value="login">
-      <button type="submit">Sign in</button>
-      {{/if}}
-    </form>
-    <div class="sign-up-panel">
-      {{#if registering}}
-      <p>Already have an account? <a href="{{ sign_in_url }}">Sign in</a></p>
-      {{else}}
-      <p>Don't have an account? <a href="{{ sign_up_url }}">Sign up</a></p>
-      {{/if}}
-    </div>
-  </body>
+    </nav>
+    <section class="orbit-panel">
+      <div class="orbit-panel__content">
+        <img src="/images/space.png" alt="Spaaaaaaacce!" class="orbit-panel__content-image" draggable="false">
+        <form class="orbit-panel__content-form" method="POST">
+          <div class="orbit-create-layout__title">Welcome to Orbit</div>
+          {{#if error}}
+          <div class="orbit-create-layout__error">{{ error }}</div>
+          {{/if}}
+          {{#unless blessed}}
+          <div class="orbit-form-info">
+            {{#if registering}}
+            <p>
+              The application {{app_name}} wants to create an account on your
+              behalf.
+            </p>
+            {{else}}
+            <p>
+              The application {{app_name}} wants to sign in using your credentials.
+            </p>
+            {{/if}}
+            <p>
+              By continuing, {{app_name}} will be able to access your account, and
+              your public and private information.
+            </p>
+            <p>If this is not expected, you can close this page.</p>
+          </div>
+          {{/unless}}
+          <fieldset class="orbit-create-layout__form-group">
+            <label class="orbit-create-layout__form-field-label" for="username">Username</label>
+            <input class="orbit-create-layout__form-field" id="username" name="username" required>
+          </fieldset>
+          <fieldset class="orbit-create-layout__form-group">
+            <label class="orbit-create-layout__form-field-label" for="password">Password</label>
+            <input class="orbit-create-layout__form-field" id="password" name="password" required>
+          </fieldset>
+          {{#if registering}}
+          <fieldset class="orbit-create-layout__form-group">
+            <label class="orbit-create-layout__form-field-label" for="email">E-mail address</label>
+            <input class="orbit-create-layout__form-field" id="email" type="text" name="email" value="{{ email }}"
+              pattern=".*@.*\..*" />
+          </fieldset>
+          <input id="form_type" type="hidden" name="request_type" value="register" />
+          <button class="orbit-button" type="submit">Create account</button>
+          {{else}}
+          <input id="form_type" type="hidden" name="request_type" value="login" />
+          <button class="orbit-button" type="submit">Sign in</button>
+          {{/if}}
+          <div class="orbit-sign-up-panel">
+            {{#if registering}}
+            <p>Already have an account on this instance? <a class="orbit-link" href="{{ sign_in_url }}">Sign in</a> to
+              continue.</p>
+            {{else}}
+            <p>Don't have an account on this instance? <a class="orbit-link" href="{{ sign_up_url }}">Sign up</a> to get
+              started.</p>
+            {{/if}}
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+</body>
+
 </html>

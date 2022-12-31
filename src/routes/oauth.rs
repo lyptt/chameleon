@@ -10,7 +10,7 @@ use crate::{
     api::{app_is_blessed, validate_referer_redirect_uris},
     auth::require_auth,
     core::build_api_err,
-    html::{handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
+    html::{build_orbit_name, handle_oauth_app_body, handle_oauth_app_err, oauth_app_unwrap_result},
   },
   logic::{
     user::{authorize_user, register_user},
@@ -76,6 +76,7 @@ struct OAuthAuthorizeData<'a> {
   pub sign_up_url: &'a str,
   pub sign_in_url: &'a str,
   pub registering: bool,
+  pub orbit_name: &'a str,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -142,6 +143,7 @@ pub async fn api_oauth_authorize(
           username: None,
           blessed: app_is_blessed(&req),
           app_name: Some(&app.name),
+          orbit_name: &build_orbit_name(),
           sign_up_url: &(match query.scope.as_ref() {
             Some(scope) => format!(
               "{}/oauth/authorize?response_type={}&client_id={}&redirect_uri={}&scope={}&request_type=register",

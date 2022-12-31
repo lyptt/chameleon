@@ -1,7 +1,7 @@
 use actix_web::HttpResponse;
 use serde::Serialize;
 
-use crate::{logic::LogicErr, model::app::App, net::templates::HANDLEBARS};
+use crate::{logic::LogicErr, model::app::App, net::templates::HANDLEBARS, settings::SETTINGS};
 
 #[derive(Debug, Serialize)]
 struct OAuthAuthorizeErrData<'a> {
@@ -11,6 +11,11 @@ struct OAuthAuthorizeErrData<'a> {
   pub blessed: bool,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub app_name: Option<&'a str>,
+  pub orbit_name: &'a str,
+}
+
+pub fn build_orbit_name() -> String {
+  SETTINGS.server.fqdn.replace("https://", "").replace("http://", "")
 }
 
 pub fn handle_oauth_app_err(err: &'static str) -> HttpResponse {
@@ -21,6 +26,7 @@ pub fn handle_oauth_app_err(err: &'static str) -> HttpResponse {
       username: None,
       blessed: false,
       app_name: None,
+      orbit_name: &build_orbit_name(),
     },
   ) {
     Ok(body) => return HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body),
@@ -36,6 +42,7 @@ pub fn handle_oauth_app_body(app: &App, blessed: bool, err: &str) -> HttpRespons
       username: None,
       blessed,
       app_name: Some(&app.name),
+      orbit_name: &build_orbit_name(),
     },
   ) {
     Ok(body) => return HttpResponse::Ok().content_type("text/html; charset=utf-8").body(body),
