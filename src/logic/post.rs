@@ -182,11 +182,18 @@ pub async fn upload_post_files(
   }
 
   let results = join_all(futures).await;
+  let results_len = results.len();
+  let mut err_count = 0;
 
   for result in results {
     if let Err(err) = result {
       log::error!("Failed to upload attachment: {}", err);
+      err_count += 1;
     }
+  }
+
+  if err_count == results_len {
+    return Err(LogicErr::InternalError("Failed to process all attachments".to_owned()));
   }
 
   let job_id = jobs
@@ -246,7 +253,7 @@ mod tests {
     logic::{
       post::{
         create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
-        upload_post_files, CreatePostResult, NewPostRequest,
+        upload_post_files, NewPostRequest,
       },
       LogicErr,
     },
@@ -528,12 +535,9 @@ mod tests {
 
     let posts: PostPool = Arc::new(post_repo);
     let jobs: JobPool = Arc::new(job_repo);
-    let mut queue = Queue::new_inner(Box::new(queue_be));
+    let queue = Queue::new_inner(Box::new(queue_be));
 
-    assert_eq!(
-      create_post(&posts, &jobs, &queue, &new_post, &user_id).await,
-      Ok(CreatePostResult::JobQueued(post_id))
-    );
+    assert!(create_post(&posts, &jobs, &queue, &new_post, &user_id).await.is_ok(),);
   }
 
   #[async_std::test]
@@ -618,7 +622,7 @@ mod tests {
         &[tempfile]
       )
       .await,
-      Err(LogicErr::InternalError("Upload failed".to_string()))
+      Err(LogicErr::InternalError("Failed to process all attachments".to_string()))
     );
   }
 }

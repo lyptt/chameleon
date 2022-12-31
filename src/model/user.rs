@@ -158,7 +158,7 @@ mod tests {
   fn test_to_webfinger_returns_data() {
     let user = User {
       user_id: Uuid::from_str("ae1481a5-2eb7-4c52-93c3-e95839578dce").unwrap(),
-      fediverse_id: "user@127.0.0.1:8000".to_string(),
+      fediverse_id: "@user@127.0.0.1:8000".to_string(),
       handle: "user".to_string(),
       fediverse_uri: "http://127.0.0.1:8000/api/users/user".to_string(),
       avatar_url: None,
@@ -189,7 +189,7 @@ mod tests {
     temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {
       let finger = user.to_webfinger();
 
-      assert_eq!(&finger.subject, &user.fediverse_id);
+      assert_eq!(&finger.subject, "acct:user@127.0.0.1:8000");
       assert!(finger.aliases.is_some());
       assert_eq!(finger.aliases.unwrap().len(), 1);
       assert_eq!(finger.links.len(), 3);

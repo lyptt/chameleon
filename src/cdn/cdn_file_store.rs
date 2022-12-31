@@ -12,7 +12,7 @@ impl CdnStore for CdnFileStore {
   async fn upload_tmp_file(
     &self,
     local_path: &Tempfile,
-    content_type: &str,
+    _content_type: &str,
     remote_path: &str,
   ) -> Result<String, LogicErr> {
     let absolute_remote_path = match SETTINGS.cdn.path.is_empty() {
