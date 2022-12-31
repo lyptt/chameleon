@@ -16,5 +16,5 @@ labels:
   'feature request':
     action: close
     delay: 30 minutes
-    comment: "For new feature requests, please [start a new discussion](https://github.com/lyptt/chameleon/discussions/new). Closing in $DELAY..."
+    comment: "For new feature requests, please [start a new discussion](https://github.com/lyptt/orbit/discussions/new). Closing in $DELAY..."
 

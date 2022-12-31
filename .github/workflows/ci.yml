@@ -81,8 +81,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            target/release/chameleon
-            target/release/chameleon-worker
+            target/release/orbit
+            target/release/orbit-worker
             LICENSE.md
             THIRD_PARTY.md
         env:
