@@ -126,6 +126,7 @@ export default function PostPage({
         <aside className="orbit-page-post__sidebar">
           <InfoCard
             title="About this community"
+            titleImageUrl={orbit.avatar_uri}
             innerHTML={orbit.description_html}
             actions={[
               {

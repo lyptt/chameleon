@@ -1,12 +1,16 @@
 import {
   fetchOrbit,
+  fetchOrbitById,
   fetchPost,
   getJobStatus,
+  INewOrbit,
   INewPost,
   IObjectResponse,
   IOrbit,
   IPost,
   JobStatus,
+  submitOrbit,
+  submitOrbitImage,
   submitPost,
   submitPostImage,
 } from '@/core/api'
@@ -26,6 +30,12 @@ enum CreateActionType {
   SUBMIT_POST_ERROR = 'SUBMIT_POST_ERROR',
   SUBMIT_POST_COMPLETED = 'SUBMIT_POST_COMPLETED',
   SUBMIT_POST_DISMISS_ERROR = 'SUBMIT_POST_DISMISS_ERROR',
+  SUBMIT_ORBIT_SENDING_METADATA = 'SUBMIT_ORBIT_SENDING_METADATA',
+  SUBMIT_ORBIT_SENDING_IMAGE = 'SUBMIT_ORBIT_SENDING_IMAGE',
+  SUBMIT_ORBIT_SENDING_IMAGE_PROGRESS = 'SUBMIT_ORBIT_SENDING_IMAGE_PROGRESS',
+  SUBMIT_ORBIT_ERROR = 'SUBMIT_ORBIT_ERROR',
+  SUBMIT_ORBIT_COMPLETED = 'SUBMIT_ORBIT_COMPLETED',
+  SUBMIT_ORBIT_DISMISS_ERROR = 'SUBMIT_ORBIT_DISMISS_ERROR',
 }
 
 interface CreateAction {
@@ -37,6 +47,10 @@ interface CreateAction {
   newPostFiles?: File[]
   newPostJobId?: string
   newPost?: IPost
+  newOrbitMetadata?: INewOrbit
+  newOrbitFiles?: File[]
+  newOrbitJobId?: string
+  newOrbit?: IOrbit
   progress?: number
 }
 
@@ -151,6 +165,52 @@ export async function createActionSubmitPost(
   }
 }
 
+export async function createActionSubmitOrbit(
+  orbit: INewOrbit,
+  files: File[],
+  authToken: string | undefined,
+  dispatch: React.Dispatch<CreateAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: CreateActionType.SUBMIT_ORBIT_SENDING_METADATA,
+    newOrbitMetadata: orbit,
+  })
+
+  try {
+    const createdRecord = await submitOrbit(orbit, authToken)
+
+    if (files.length) {
+      dispatch({
+        type: CreateActionType.SUBMIT_ORBIT_SENDING_IMAGE,
+        newOrbitFiles: files,
+      })
+
+      await submitOrbitImage(createdRecord.id, files, authToken, (progress) =>
+        dispatch({
+          type: CreateActionType.SUBMIT_ORBIT_SENDING_IMAGE_PROGRESS,
+          progress,
+        })
+      )
+    }
+
+    const newOrbit = await fetchOrbitById(createdRecord.id, authToken)
+
+    return dispatch({
+      type: CreateActionType.SUBMIT_ORBIT_COMPLETED,
+      newOrbit: newOrbit.data,
+    })
+  } catch (error) {
+    dispatch({
+      type: CreateActionType.SUBMIT_ORBIT_ERROR,
+      error,
+    })
+  }
+}
+
 export function createActionDismiss(dispatch: React.Dispatch<CreateAction>) {
   return dispatch({
     type: CreateActionType.DISMISS,
@@ -169,9 +229,11 @@ export interface ICreateState {
   submittingImageProgress?: number
   submittingFailed: boolean
   submittingPost?: INewPost | null
+  submittingOrbit?: INewOrbit | null
   submittingFiles?: File[] | null
   submittingJobId?: string | null
   submittedPost?: IPost
+  submittedOrbit?: IOrbit
 }
 
 const initialState: ICreateState = {
@@ -293,6 +355,74 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
         submittingFailed: true,
       }
     case CreateActionType.SUBMIT_POST_DISMISS_ERROR:
+      return {
+        ...state,
+        submittingFailed: false,
+      }
+    case CreateActionType.SUBMIT_ORBIT_SENDING_METADATA:
+      return {
+        ...state,
+        submitting: true,
+        submittingMetadata: true,
+        submittingOrbit: action.newOrbitMetadata,
+      }
+    case CreateActionType.SUBMIT_ORBIT_SENDING_IMAGE:
+      return {
+        ...state,
+        submitting: true,
+        submittingMetadata: false,
+        submittingImage: true,
+        submittingImageProgress: 0,
+        submittingFiles: action.newOrbitFiles,
+      }
+    case CreateActionType.SUBMIT_ORBIT_SENDING_IMAGE_PROGRESS:
+      return {
+        ...state,
+        submittingImageProgress:
+          action.progress !== undefined && action.progress < 1
+            ? action.progress
+            : undefined,
+      }
+    case CreateActionType.SUBMIT_ORBIT_COMPLETED:
+      if (!action.newOrbit) {
+        return {
+          ...state,
+          submitting: false,
+          submittingMetadata: false,
+          submittingImage: false,
+          submittingImageProgress: undefined,
+          submittingOrbit: null,
+          submittingFiles: null,
+          submittingJobId: null,
+          submittingFailed: false,
+        }
+      }
+
+      return {
+        ...state,
+        submitting: false,
+        submittingMetadata: false,
+        submittingImage: false,
+        submittingImageProgress: undefined,
+        submittingOrbit: null,
+        submittingFiles: null,
+        submittingJobId: null,
+        submittingFailed: false,
+        submittedOrbit: action.newOrbit,
+      }
+    case CreateActionType.SUBMIT_ORBIT_ERROR:
+      return {
+        ...state,
+        submitting: false,
+        submittingMetadata: false,
+        submittingImage: false,
+        submittingImageProgress: undefined,
+        submittingOrbit: null,
+        submittingFiles: null,
+        submittingJobId: null,
+        submittingFailed: true,
+      }
+    case CreateActionType.SUBMIT_ORBIT_DISMISS_ERROR:
       return {
         ...state,
         submittingFailed: false,

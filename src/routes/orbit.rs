@@ -25,9 +25,7 @@ use crate::{
 pub struct NewOrbitRequest {
   pub name: String,
   pub description_md: String,
-  pub description_html: String,
-  pub avatar_uri: Option<String>,
-  pub banner_uri: Option<String>,
+  pub shortcode: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -149,6 +147,7 @@ pub async fn api_create_orbit(
   sessions: web::Data<SessionPool>,
   orbits: web::Data<OrbitPool>,
   orbit_moderators: web::Data<OrbitModeratorPool>,
+  user_orbits: web::Data<UserOrbitPool>,
   req: web::Json<NewOrbitRequest>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
@@ -157,13 +156,27 @@ pub async fn api_create_orbit(
     Err(res) => return res,
   };
 
+  let description_html = markdown::to_html(&req.description_md);
+  let shortcode = req.shortcode.clone().unwrap_or_else(|| {
+    req
+      .name
+      .clone()
+      .replace(|c: char| !c.is_ascii_alphabetic() && !c.is_whitespace(), "")
+      .to_ascii_lowercase()
+  });
+
+  if shortcode.is_empty() {
+    return build_api_err(400, "shortcode".to_string(), None);
+  }
+
   let orbit_id = match orbits
     .create_orbit(
       &req.name,
+      &shortcode,
       &req.description_md,
-      &req.description_html,
-      &req.avatar_uri,
-      &req.banner_uri,
+      &description_html,
+      &None,
+      &None,
       false,
     )
     .await
@@ -176,6 +189,11 @@ pub async fn api_create_orbit(
     .create_orbit_moderator(&orbit_id, &session.uid, true)
     .await
   {
+    Ok(_) => {}
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  match user_orbits.create_user_orbit(&orbit_id, &session.uid).await {
     Ok(_) => {}
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
@@ -205,14 +223,24 @@ pub async fn api_update_orbit(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
+  let description_html = markdown::to_html(&req.description_md);
+
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => match orbit {
+      Some(orbit) => orbit,
+      None => return build_api_not_found(orbit_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
   match orbits
     .update_orbit(
       &orbit_id,
       &req.name,
       &req.description_md,
-      &req.description_html,
-      &req.avatar_uri,
-      &req.banner_uri,
+      &description_html,
+      &orbit.avatar_uri,
+      &orbit.banner_uri,
       false,
     )
     .await
@@ -336,7 +364,6 @@ pub async fn api_delete_orbit(
   sessions: web::Data<SessionPool>,
   orbits: web::Data<OrbitPool>,
   orbit_moderators: web::Data<OrbitModeratorPool>,
-  req: web::Json<NewOrbitRequest>,
   orbit_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
@@ -354,18 +381,7 @@ pub async fn api_delete_orbit(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  match orbits
-    .update_orbit(
-      &orbit_id,
-      &req.name,
-      &req.description_md,
-      &req.description_html,
-      &req.avatar_uri,
-      &req.banner_uri,
-      false,
-    )
-    .await
-  {
+  match orbits.delete_orbit(&orbit_id).await {
     Ok(_) => HttpResponse::Ok().finish(),
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
   }

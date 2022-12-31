@@ -5,6 +5,7 @@ import { useAuth } from '@/components/organisms/AuthContext'
 import Button from '@/components/atoms/Button'
 import { useProfile } from '@/components/organisms/ProfileContext'
 import { IProfile } from '@/core/api'
+import { cdnUrl } from '@/core/utils'
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`
 
@@ -37,7 +38,7 @@ export default function UserButton({
             <>
               <img
                 className="orbit-user-button__avatar"
-                src={profile.avatar_url || transparentPixelUri}
+                src={cdnUrl(profile.avatar_url || transparentPixelUri)}
                 alt={profile.handle}
               />
               <div className="orbit-user-button__details">
@@ -69,7 +70,7 @@ export default function UserButton({
             <>
               <img
                 className="orbit-user-button__avatar"
-                src={ownProfile.avatar_url || transparentPixelUri}
+                src={cdnUrl(ownProfile.avatar_url || transparentPixelUri)}
                 alt={ownProfile.handle}
               />
               <div className="orbit-user-button__details">

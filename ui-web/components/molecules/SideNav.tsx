@@ -1,3 +1,4 @@
+import { cdnUrl } from '@/core/utils'
 import cx from 'classnames'
 import Link from 'next/link'
 import { HTMLAttributes } from 'react'
@@ -52,7 +53,7 @@ export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
                   <a>
                     <img
                       className="orbit-side-nav__list-item-icon orbit-side-nav__list-item-icon--external"
-                      src={orbit.avatar_uri || transparentPixelUri}
+                      src={cdnUrl(orbit.avatar_uri || transparentPixelUri)}
                       alt={orbit.name}
                     />
                     {orbit.name}

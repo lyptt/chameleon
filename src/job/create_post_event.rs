@@ -54,6 +54,8 @@ pub async fn create_post_event(
     return federate_ext(FederateExtAction::CreatePost(&post_id), &user, &dest_user, posts).await;
   }
 
+  // TODO: Make sure event doesn't exist first
+
   let own_event = NewEvent {
     source_user_id: user_id,
     target_user_id: Some(target_user_id),

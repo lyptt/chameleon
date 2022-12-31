@@ -3,6 +3,7 @@ import cx from 'classnames'
 import Button from './Button'
 import { IProfile } from '@/core/api'
 import UserButton from '../molecules/UserButton'
+import { cdnUrl } from '@/core/utils'
 
 export interface InfoCardAction {
   title: string
@@ -12,6 +13,7 @@ export interface InfoCardAction {
 
 export interface InfoCardProps extends HTMLProps<HTMLDivElement> {
   title?: string
+  titleImageUrl?: string
   author?: IProfile
   innerHTML?: string
   actions?: InfoCardAction[]
@@ -19,6 +21,7 @@ export interface InfoCardProps extends HTMLProps<HTMLDivElement> {
 
 export default function InfoCard({
   title,
+  titleImageUrl,
   author,
   innerHTML,
   actions,
@@ -28,7 +31,19 @@ export default function InfoCard({
 }: InfoCardProps) {
   return (
     <div className={cx('orbit-info-card', className)} {...rest}>
-      {!author && <div className="orbit-info-card__header">{title}</div>}
+      {!author && (
+        <div className="orbit-info-card__header">
+          {title}{' '}
+          {!!titleImageUrl && (
+            <img
+              className="orbit-info-card__header-image"
+              src={cdnUrl(titleImageUrl)}
+              alt={title}
+              draggable={false}
+            />
+          )}
+        </div>
+      )}
       {!!author && (
         <div className="orbit-info-card__header">
           <UserButton specificProfile profile={author} />

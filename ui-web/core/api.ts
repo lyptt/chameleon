@@ -168,6 +168,11 @@ export interface IOrbit {
   is_external: boolean
 }
 
+export interface INewOrbit {
+  name: string
+  description_md: string
+}
+
 export async function fetchProfile(authToken: string): Promise<IProfile> {
   const response = await fetch(`${Config.apiUri}/profile`, {
     ...buildDefaultHeaders(authToken),
@@ -330,6 +335,24 @@ export async function fetchOrbit(
   authToken: string | undefined
 ): Promise<IObjectResponse<IOrbit>> {
   const response = await fetch(`${Config.apiUri}/orbits/${shortcode}`, {
+    ...(authToken
+      ? buildDefaultHeaders(authToken)
+      : buildUnauthenticatedHeaders()),
+    method: 'GET',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export async function fetchOrbitById(
+  id: string,
+  authToken: string | undefined
+): Promise<IObjectResponse<IOrbit>> {
+  const response = await fetch(`${Config.apiUri}/orbit/${id}`, {
     ...(authToken
       ? buildDefaultHeaders(authToken)
       : buildUnauthenticatedHeaders()),
@@ -554,4 +577,57 @@ export async function deletePostCommentLike(
   if (response.status !== 200) {
     throw new Error('Request failed')
   }
+}
+
+export async function submitOrbit(
+  orbit: INewOrbit,
+  authToken: string
+): Promise<IRecordResponse> {
+  const response = await fetch(`${Config.apiUri}/orbits`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+    body: JSON.stringify(orbit),
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
+export function submitOrbitImage(
+  orbitId: string,
+  files: File[],
+  authToken: string,
+  onProgress?: (progress: number) => void
+): Promise<void> {
+  const form = new FormData()
+  files.forEach((file) => form.append('images[]', file))
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.upload.addEventListener('progress', (e) =>
+      onProgress?.(e.loaded / e.total)
+    )
+    xhr.addEventListener('load', () => {
+      if (xhr.status !== 200) {
+        return reject(new Error('Request failed'))
+      }
+
+      try {
+        resolve()
+      } catch (err) {
+        reject(err)
+      }
+    })
+    xhr.addEventListener('error', () => reject(new Error('File upload failed')))
+    xhr.addEventListener('abort', () =>
+      reject(new Error('File upload aborted'))
+    )
+    xhr.open('POST', `${Config.apiUri}/orbit/${orbitId}/assets`, true)
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`)
+    xhr.setRequestHeader('Accept', `application/json`)
+    xhr.send(form)
+  })
 }

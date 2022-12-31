@@ -13,6 +13,7 @@ import {
 } from 'react-icons/io5'
 import { LazyImage } from '../quarks/LazyImage'
 import Config from '@/core/config'
+import { cdnUrl } from '@/core/utils'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -48,7 +49,7 @@ export default function PostContent({
               <img
                 className="orbit-post-content__info-bar-icon"
                 alt={post.orbit_shortcode?.toLowerCase()}
-                src={post.orbit_avatar_uri || transparentPixelUri}
+                src={cdnUrl(post.orbit_avatar_uri || transparentPixelUri)}
               />
               o/{post.orbit_name?.toLowerCase()}
             </Link>
@@ -74,7 +75,7 @@ export default function PostContent({
               <img
                 className="orbit-post-content__info-bar-icon"
                 alt={post.user_handle}
-                src={post.user_avatar_url || transparentPixelUri}
+                src={cdnUrl(post.user_avatar_url || transparentPixelUri)}
               />
               u/{post.user_handle}
             </Link>
@@ -166,7 +167,7 @@ export default function PostContent({
                   <img
                     className="orbit-post-content__info-bar-icon"
                     alt={comment.user_handle}
-                    src={comment.user_avatar_url || transparentPixelUri}
+                    src={cdnUrl(comment.user_avatar_url || transparentPixelUri)}
                   />
                   u/{comment.user_handle}
                 </Link>

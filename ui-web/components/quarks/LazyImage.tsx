@@ -9,6 +9,9 @@ import { useInView } from 'react-intersection-observer'
 import cx from 'classnames'
 import dayjs from 'dayjs'
 import Link from 'next/link'
+import { cdnUrl } from '@/core/utils'
+
+const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`
 
 export interface ILazyImageProps
   extends DetailedHTMLProps<
@@ -56,7 +59,7 @@ export function LazyImage({
         className={cx('orbit-image__content', contentClassName)}
         ref={ref}
         alt={alt}
-        src={thumbnailSrc}
+        src={cdnUrl(thumbnailSrc || src || transparentPixelUri)}
         {...rest}
         loading={loading}
         onLoad={handleOnLoad}

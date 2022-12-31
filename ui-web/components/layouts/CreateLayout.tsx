@@ -56,6 +56,10 @@ export interface CreateFormGroupProps extends FieldAttributes<any> {
   }[]
 }
 
+export interface CreateFormFileUploadGroupProps extends CreateFormGroupProps {
+  limit?: number
+}
+
 export interface CreateFormButtonsProps extends HTMLProps<HTMLDivElement> {
   submitTitle: string
   cancelTitle: string
@@ -347,16 +351,28 @@ function FileUploadThumbnail({
   )
 }
 
-export function CreateFormFileUpload(props: CreateFormGroupProps) {
-  const { id, className, ref, title, detail, type, value, disabled, ...rest } =
-    props
+export function CreateFormFileUpload(props: CreateFormFileUploadGroupProps) {
+  const {
+    id,
+    className,
+    ref,
+    title,
+    detail,
+    type,
+    value,
+    disabled,
+    limit,
+    ...rest
+  } = props
   const [field, _meta, helpers] = useField(props as any)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const [remaining, setRemaining] = useState(limit ? limit : 30)
 
   const handleRemoveFile = (index: number) => {
     const newValue = [...field.value]
     newValue.splice(index, 1)
     helpers.setValue(newValue)
+    setRemaining(remaining + 1)
   }
 
   return (
@@ -382,10 +398,12 @@ export function CreateFormFileUpload(props: CreateFormGroupProps) {
         ref={inputRef}
         name={field.name}
         onChange={(e) => {
-          helpers.setValue([...field.value, ...((e.target.files as any) || [])])
+          const newFiles = (e.target.files as any) || []
+          helpers.setValue([...field.value, ...newFiles])
+          setRemaining(remaining - newFiles.length)
         }}
         onBlur={field.onBlur}
-        disabled={disabled}
+        disabled={disabled || remaining <= 0}
         {...rest}
       />
       <div className="orbit-create-layout__form-file-upload-thumbnails">
@@ -398,17 +416,19 @@ export function CreateFormFileUpload(props: CreateFormGroupProps) {
             disabled={disabled}
           />
         ))}
-        <button
-          type="button"
-          className="orbit-create-layout__form-file-upload-choose-button"
-          onClick={(e) => {
-            e.preventDefault()
-            inputRef.current?.click()
-          }}
-          disabled={disabled}
-        >
-          <IoAddOutline />
-        </button>
+        {remaining > 0 && (
+          <button
+            type="button"
+            className="orbit-create-layout__form-file-upload-choose-button"
+            onClick={(e) => {
+              e.preventDefault()
+              inputRef.current?.click()
+            }}
+            disabled={disabled || remaining <= 0}
+          >
+            <IoAddOutline />
+          </button>
+        )}
       </div>
     </fieldset>
   )
@@ -430,6 +450,7 @@ export default function CreateLayout({
     orbitLoadingFailed,
     submitting,
     submittedPost,
+    submittedOrbit,
     submittingImageProgress,
   } = state
   const router = useRouter()
@@ -445,6 +466,12 @@ export default function CreateLayout({
       router.replace(`/feed/${submittedPost.post_id}`)
     }
   }, [submittedPost, router])
+
+  useEffect(() => {
+    if (!!submittedOrbit) {
+      router.replace(`/orbits/${submittedOrbit.shortcode}`)
+    }
+  }, [submittedOrbit, router])
 
   useEffect(() => {
     if (!session) {

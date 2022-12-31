@@ -36,6 +36,14 @@
     }
   }
 
+  .orbit-info-card__header-image {
+    border-radius: 9999px;
+
+    @media (prefers-color-scheme: dark) {
+      border: 1px solid $fill-2-dark;
+    }
+  }
+
   .orbit-info-card__content,
   .orbit-info-card__additional-content {
     font-size: $font-size-m;

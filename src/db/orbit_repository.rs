@@ -21,6 +21,7 @@ pub trait OrbitRepo {
   async fn create_orbit(
     &self,
     name: &str,
+    shortcode: &str,
     description_md: &str,
     description_html: &str,
     avatar_uri: &Option<String>,
@@ -132,6 +133,7 @@ impl OrbitRepo for DbOrbitRepo {
   async fn create_orbit(
     &self,
     name: &str,
+    shortcode: &str,
     description_md: &str,
     description_html: &str,
     avatar_uri: &Option<String>,
@@ -144,9 +146,9 @@ impl OrbitRepo for DbOrbitRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db
       .query_one(
-        r#"INSERT INTO orbits (orbit_id, name, description_md, description_html, avatar_uri, banner_uri, uri, is_external)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING orbit_id"#,
-        &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &uri, &is_external],
+        r#"INSERT INTO orbits (orbit_id, name, description_md, description_html, avatar_uri, banner_uri, uri, is_external, shortcode)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING orbit_id"#,
+        &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &uri, &is_external, &shortcode],
       )
       .await
       .map_err(map_db_err)?;

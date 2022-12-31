@@ -3,6 +3,7 @@ import cx from 'classnames'
 import Select, { FormatOptionLabelMeta } from 'react-select'
 import { IoChevronDown } from 'react-icons/io5'
 import { FieldProps } from 'formik'
+import { cdnUrl } from '@/core/utils'
 
 export interface FancySelectOption {
   title: string
@@ -26,7 +27,7 @@ const renderOption: (
         {typeof data.icon === 'string' && (
           <img
             className="orbit-fancy-select__option-input-icon"
-            src={data.icon}
+            src={cdnUrl(data.icon)}
             alt={data.title}
           />
         )}

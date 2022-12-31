@@ -134,7 +134,11 @@ export default function DefaultActionsDelegator() {
   }, [session, profileState, orbitsState, orbitsDispatch])
 
   useEffect(() => {
-    if (route.endsWith('/new-post') || !createState.initialized) {
+    if (
+      route.endsWith('/new-post') ||
+      route.endsWith('/new-orbit') ||
+      !createState.initialized
+    ) {
       return
     }
 
