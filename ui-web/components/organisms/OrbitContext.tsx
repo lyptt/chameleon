@@ -1,4 +1,12 @@
-import { fetchOrbit, fetchUserOrbits, IOrbit } from '@/core/api'
+import {
+  fetchOrbit,
+  fetchPopularOrbits,
+  fetchUserOrbits,
+  IOrbit,
+  IOrbitProfile,
+  joinOrbit,
+  leaveOrbit,
+} from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 
 enum OrbitActionType {
@@ -8,6 +16,10 @@ enum OrbitActionType {
   REFRESH_USER_ORBIT_LOADING = 'REFRESH_USER_ORBIT_LOADING',
   REFRESH_USER_ORBIT_ERROR = 'REFRESH_USER_ORBIT_ERROR',
   REFRESH_USER_ORBIT_LOADED = 'REFRESH_USER_ORBIT_LOADED',
+  REFRESH_POPULAR_ORBITS_LOADING = 'REFRESH_POPULAR_ORBITS_LOADING',
+  REFRESH_POPULAR_ORBITS_ERROR = 'REFRESH_POPULAR_ORBITS_ERROR',
+  REFRESH_POPULAR_ORBITS_LOADED = 'REFRESH_POPULAR_ORBITS_LOADED',
+  UPDATE_ORBIT_JOINED = 'UPDATE_ORBIT_JOINED',
   CLEAR_USER_ORBIT = 'CLEAR_USER_ORBIT',
 }
 
@@ -15,6 +27,7 @@ interface OrbitAction {
   type: OrbitActionType
   data?: any
   error?: any
+  joined?: boolean
 }
 
 export async function orbitActionLoadUserOrbits(
@@ -35,6 +48,27 @@ export async function orbitActionLoadUserOrbits(
   } catch (error) {
     dispatch({
       type: OrbitActionType.REFRESH_USER_ORBITS_ERROR,
+      error,
+    })
+  }
+}
+
+export async function orbitActionLoadPopularOrbits(
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  dispatch({
+    type: OrbitActionType.REFRESH_POPULAR_ORBITS_LOADING,
+  })
+
+  try {
+    const orbits = await fetchPopularOrbits()
+    dispatch({
+      type: OrbitActionType.REFRESH_POPULAR_ORBITS_LOADED,
+      data: orbits.data,
+    })
+  } catch (error) {
+    dispatch({
+      type: OrbitActionType.REFRESH_POPULAR_ORBITS_ERROR,
       error,
     })
   }
@@ -71,13 +105,59 @@ export async function orbitActionClearOrbit(
   })
 }
 
+export async function orbitActionJoinOrbit(
+  handle: string,
+  orbitId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: OrbitActionType.UPDATE_ORBIT_JOINED,
+    joined: true,
+  })
+
+  try {
+    await joinOrbit(orbitId, authToken)
+    await orbitActionLoadUserOrbits(handle, authToken, dispatch)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export async function orbitActionLeaveOrbit(
+  handle: string,
+  orbitId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: OrbitActionType.UPDATE_ORBIT_JOINED,
+    joined: false,
+  })
+
+  try {
+    await leaveOrbit(orbitId, authToken)
+    await orbitActionLoadUserOrbits(handle, authToken, dispatch)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 export interface IOrbitState {
   orbits?: IOrbit[]
   loading: boolean
   loadingFailed: boolean
   loadingOrbit: boolean
   loadingOrbitFailed: boolean
-  orbit?: IOrbit
+  orbit?: IOrbitProfile
 }
 
 const initialState: IOrbitState = {
@@ -113,6 +193,25 @@ const reducer = (state: IOrbitState, action: OrbitAction): IOrbitState => {
         loadingFailed: false,
         orbits: action.data,
       }
+    case OrbitActionType.REFRESH_POPULAR_ORBITS_LOADING:
+      return {
+        ...state,
+        loading: true,
+        loadingFailed: false,
+      }
+    case OrbitActionType.REFRESH_POPULAR_ORBITS_ERROR:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: true,
+      }
+    case OrbitActionType.REFRESH_POPULAR_ORBITS_LOADED:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: false,
+        orbits: action.data,
+      }
     case OrbitActionType.REFRESH_USER_ORBIT_LOADING:
       return {
         ...state,
@@ -139,6 +238,15 @@ const reducer = (state: IOrbitState, action: OrbitAction): IOrbitState => {
         loadingOrbitFailed: false,
         orbit: undefined,
       }
+    case OrbitActionType.UPDATE_ORBIT_JOINED: {
+      if (action.joined === undefined || !state.orbit) {
+        return state
+      }
+
+      const orbit = { ...state.orbit, joined: action.joined }
+
+      return { ...state, orbit }
+    }
     default:
       return state
   }

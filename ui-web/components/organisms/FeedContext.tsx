@@ -9,6 +9,8 @@ import {
   createPostComment,
   IOrbit,
   fetchOrbitFeed,
+  IOrbitProfile,
+  fetchOwnFriendsFeed,
 } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 import retry from 'async-retry'
@@ -16,6 +18,7 @@ import retry from 'async-retry'
 export enum FeedType {
   PublicFederated,
   Own,
+  Friends,
   Orbit,
 }
 
@@ -35,8 +38,9 @@ interface FeedAction {
   feedType?: FeedType
   postId?: string
   liked?: boolean
+  joined?: boolean
   comment?: string
-  orbit?: IOrbit
+  orbit?: IOrbitProfile
 }
 
 export async function feedActionReset(dispatch: React.Dispatch<FeedAction>) {
@@ -48,12 +52,15 @@ export async function feedActionReset(dispatch: React.Dispatch<FeedAction>) {
 export async function feedActionLoadFeed(
   page: number,
   authToken: string | undefined,
-  orbit: IOrbit | undefined,
+  orbit: IOrbitProfile | undefined,
+  friendsOnly: boolean,
   dispatch: React.Dispatch<FeedAction>
 ) {
   let feedType: FeedType
   if (orbit) {
     feedType = FeedType.Orbit
+  } else if (friendsOnly) {
+    feedType = FeedType.Friends
   } else {
     feedType = authToken ? FeedType.Own : FeedType.PublicFederated
   }
@@ -70,6 +77,11 @@ export async function feedActionLoadFeed(
         let result: IListResponse<IPost>
         if (orbit) {
           result = await fetchOrbitFeed(orbit.shortcode, authToken, page, 20)
+        } else if (friendsOnly) {
+          if (!authToken) {
+            throw new Error('Unauthorized')
+          }
+          result = await fetchOwnFriendsFeed(authToken, page, 20)
         } else {
           result = authToken
             ? await fetchOwnFeed(authToken, page, 20)
@@ -170,7 +182,7 @@ export interface IFeedState {
   totalPages?: number
   noMorePages: boolean
   type: FeedType
-  orbit?: IOrbit
+  orbit?: IOrbitProfile
 }
 
 const initialState: IFeedState = {

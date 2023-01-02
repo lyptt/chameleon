@@ -1,6 +1,13 @@
 import { feedActionLoadFeed, useFeed } from '@/components/organisms/FeedContext'
 import Head from 'next/head'
-import { HTMLAttributes, useCallback, useEffect, useState } from 'react'
+import {
+  Dispatch,
+  HTMLAttributes,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import SideNav from '@/components/molecules/SideNav'
@@ -8,13 +15,16 @@ import PostCard from '@/components/atoms/PostCard'
 import { debounce } from 'lodash'
 import { useRouter } from 'next/router'
 import {
+  orbitActionJoinOrbit,
+  orbitActionLeaveOrbit,
   orbitActionLoadOrbit,
   useOrbits,
 } from '@/components/organisms/OrbitContext'
 import Masthead from '@/components/atoms/Masthead'
-import InfoCard from '@/components/atoms/InfoCard'
+import InfoCard, { InfoCardAction } from '@/components/atoms/InfoCard'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
+import { useProfile } from '@/components/organisms/ProfileContext'
 
 dayjs.extend(dayjsUtc)
 
@@ -47,6 +57,9 @@ export default function OrbitPage({
   const { session } = useAuth()
   const { state: orbitState, dispatch: orbitDispatch } = useOrbits()
   const { state, dispatch } = useFeed()
+  const {
+    state: { profile },
+  } = useProfile()
   const { orbit } = orbitState
   const {
     loading,
@@ -106,7 +119,13 @@ export default function OrbitPage({
     // HACK: We're not getting an accurate indication that we're at the bottom from the IntersectionObserver. It's triggering
     //       at strange times, so we also need to check scroll position manually.
     if (determineScrollPercentage() >= 0.75) {
-      feedActionLoadFeed(page + 1, session?.access_token, orbit, dispatch)
+      feedActionLoadFeed(
+        page + 1,
+        session?.access_token,
+        orbit,
+        false,
+        dispatch
+      )
     }
   }, [
     loading,
@@ -119,10 +138,75 @@ export default function OrbitPage({
     orbitShortcode,
   ])
 
+  const actions = useMemo(() => {
+    if (!orbit) {
+      return []
+    }
+
+    const values: InfoCardAction[] = [
+      {
+        title: 'Post Something',
+        href: `/orbits/${orbitShortcode}/new-post`,
+        button: 'default',
+      },
+    ]
+
+    if (orbit.joined) {
+      values.push({
+        title: 'Leave Orbit',
+        button: 'outline',
+        action: (e) => {
+          e.preventDefault()
+          if (!profile?.handle) {
+            return
+          }
+
+          orbitActionLeaveOrbit(
+            profile.handle,
+            orbit.orbit_id,
+            session?.access_token,
+            orbitDispatch
+          )
+        },
+      })
+    } else {
+      values.push({
+        title: 'Join Orbit',
+        button: 'outline',
+        action: (e) => {
+          e.preventDefault()
+          if (!profile?.handle) {
+            return
+          }
+
+          orbitActionJoinOrbit(
+            profile.handle,
+            orbit.orbit_id,
+            session?.access_token,
+            orbitDispatch
+          )
+        },
+      })
+    }
+
+    if (orbit.moderating) {
+      values.push({
+        title: 'Moderation Tools',
+        button: 'outline',
+        href: `/orbits/${orbitShortcode}/moderation`,
+      })
+    }
+
+    return values
+  }, [orbit, session, profile])
+
   return (
     <section className={cx('orbit-page-orbit', className)}>
       <Head>
-        <title>Orbit</title>
+        <title>
+          {!!orbit ? `Orbit - o/${orbit.shortcode}` : ''}
+          {!orbit ? 'Orbit' : ''}
+        </title>
         <meta
           name="description"
           content="Welcome to Orbit, your place to share cool things with the world in an open, federated network"
@@ -130,39 +214,35 @@ export default function OrbitPage({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <SideNav />
-      {orbit && orbit.shortcode === orbitShortcode && feedOrbit === orbit && (
-        <>
-          <div className="orbit-page-orbit__feed">
-            <Masthead orbit={orbit} />
-            {!loading &&
-              !loadingFailed &&
-              feed.map((post) => (
-                <PostCard
-                  className="orbit-page-orbit__feed-post"
-                  key={post.post_id}
-                  post={post}
-                  hideOrbitInformation
-                />
-              ))}
-          </div>
-          <aside className="orbit-page-orbit__sidebar">
-            <InfoCard
-              title="About this community"
-              titleImageUrl={orbit.avatar_uri}
-              innerHTML={orbit.description_html}
-              actions={[
-                {
-                  title: 'Post Something',
-                  href: `/orbits/${orbitShortcode}/new-post`,
-                  button: 'default',
-                },
-              ]}
-            >
-              Created {dayjs.utc(orbit.created_at).format('MMM DD, YYYY')}
-            </InfoCard>
-          </aside>
-        </>
-      )}
+      {orbit &&
+        orbit.shortcode === orbitShortcode &&
+        feedOrbit?.orbit_id === orbit.orbit_id && (
+          <>
+            <div className="orbit-page-orbit__feed">
+              <Masthead orbit={orbit} />
+              {!loading &&
+                !loadingFailed &&
+                feed.map((post) => (
+                  <PostCard
+                    className="orbit-page-orbit__feed-post"
+                    key={post.post_id}
+                    post={post}
+                    hideOrbitInformation
+                  />
+                ))}
+            </div>
+            <aside className="orbit-page-orbit__sidebar">
+              <InfoCard
+                title="About this community"
+                titleImageUrl={orbit.avatar_uri}
+                innerHTML={orbit.description_html}
+                actions={actions}
+              >
+                Created {dayjs.utc(orbit.created_at).format('MMM DD, YYYY')}
+              </InfoCard>
+            </aside>
+          </>
+        )}
     </section>
   )
 }

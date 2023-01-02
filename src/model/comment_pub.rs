@@ -66,7 +66,7 @@ impl ActivityConvertible for CommentPub {
       SETTINGS.server.api_fqdn, self.post_id, self.comment_id
     );
 
-    let attributed_to_uri = format!("{}/users/{}", SETTINGS.server.api_fqdn, self.user_handle);
+    let attributed_to_uri = format!("{}/user/{}", SETTINGS.server.api_fqdn, self.user_id);
     let cc_uri = format!("{}/followers", actor);
     let in_reply_to_uri = format!("{}/feed/{}", SETTINGS.server.api_fqdn, self.post_id);
 

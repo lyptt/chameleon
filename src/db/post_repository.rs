@@ -19,6 +19,8 @@ pub trait PostRepo {
   async fn fetch_user_own_feed(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr>;
   /// Fetches the count of the posts in the user's feed from their own perspective, i.e. all of the posts they have submitted
   async fn count_user_own_feed(&self, user_id: &Uuid) -> Result<i64, LogicErr>;
+  async fn fetch_user_friends_feed(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr>;
+  async fn count_user_friends_feed(&self, user_id: &Uuid) -> Result<i64, LogicErr>;
   /// Fetches the user's federated feed, i.e. what users on any server can see
   async fn fetch_user_federated_feed(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr>;
   /// Fetches the count of the user's posts in their federated feed, i.e.
@@ -116,6 +118,29 @@ impl PostRepo for DbPostRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db
       .query_one(include_str!("./sql/count_user_own_feed.sql"), &[&user_id])
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.get(0))
+  }
+
+  async fn fetch_user_friends_feed(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<PostEvent>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        include_str!("./sql/fetch_user_friend_feed.sql"),
+        &[&user_id, &limit, &skip],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    PostEvent::from_rows(rows)
+  }
+
+  async fn count_user_friends_feed(&self, user_id: &Uuid) -> Result<i64, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(include_str!("./sql/count_user_friend_feed.sql"), &[&user_id])
       .await
       .map_err(map_db_err)?;
 

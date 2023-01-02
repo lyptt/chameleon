@@ -29,7 +29,6 @@ pub trait UserRepo {
     &self,
     handle: &str,
     fediverse_id: &str,
-    fediverse_uri: &str,
     avatar_url: &Option<String>,
     email: &Option<String>,
     password_hash: &str,
@@ -250,7 +249,6 @@ impl UserRepo for DbUserRepo {
     &self,
     handle: &str,
     fediverse_id: &str,
-    fediverse_uri: &str,
     avatar_url: &Option<String>,
     email: &Option<String>,
     password_hash: &str,
@@ -259,6 +257,7 @@ impl UserRepo for DbUserRepo {
     public_key: &str,
   ) -> Result<Uuid, LogicErr> {
     let user_id = Uuid::new_v4();
+    let fediverse_uri = format!("/user/{user_id}");
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db.query_one(r#"INSERT INTO users (user_id, handle, fediverse_id, fediverse_uri, avatar_url, email, password_hash, is_external, private_key, public_key) 

@@ -1,5 +1,9 @@
 use super::FromRow;
-use crate::{helpers::api::map_db_err, logic::LogicErr, model::orbit::Orbit};
+use crate::{
+  helpers::api::map_db_err,
+  logic::LogicErr,
+  model::{orbit::Orbit, orbit_pub::OrbitPub},
+};
 
 use async_trait::async_trait;
 use deadpool_postgres::Pool;
@@ -16,8 +20,10 @@ pub trait OrbitRepo {
   async fn count_orbits(&self) -> Result<i64, LogicErr>;
   async fn fetch_orbits(&self, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn fetch_orbit(&self, orbit_id: &Uuid) -> Result<Option<Orbit>, LogicErr>;
+  async fn fetch_orbit_for_user(&self, orbit_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<OrbitPub>, LogicErr>;
   async fn count_user_orbits(&self, user_id: &Uuid) -> Result<i64, LogicErr>;
   async fn fetch_user_orbits(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
+  async fn fetch_popular_orbits(&self) -> Result<Vec<Orbit>, LogicErr>;
   async fn create_orbit(
     &self,
     name: &str,
@@ -112,8 +118,26 @@ impl OrbitRepo for DbOrbitRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     let rows = db
       .query(
-        "SELECT o.* FROM orbits o INNER JOIN user_orbits u ON u.orbit_id = o.orbit_id WHERE u.user_id = $1 LIMIT $2 OFFSET $3",
+        "SELECT o.* FROM orbits o INNER JOIN user_orbits u ON u.orbit_id = o.orbit_id WHERE u.user_id = $1 ORDER BY o.shortcode ASC LIMIT $2 OFFSET $3",
         &[&user_id, &limit, &skip],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(rows.into_iter().flat_map(Orbit::from_row).collect())
+  }
+
+  async fn fetch_popular_orbits(&self) -> Result<Vec<Orbit>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        r#"SELECT o.* FROM orbits o
+      INNER JOIN posts p
+      ON p.orbit_id = o.orbit_id
+      GROUP BY o.orbit_id
+      ORDER BY COUNT(p.*) DESC
+      LIMIT 10"#,
+        &[],
       )
       .await
       .map_err(map_db_err)?;
@@ -129,6 +153,26 @@ impl OrbitRepo for DbOrbitRepo {
       .map_err(map_db_err)?;
 
     Ok(row.and_then(Orbit::from_row))
+  }
+
+  async fn fetch_orbit_for_user(&self, orbit_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<OrbitPub>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_opt(
+        r#"SELECT o.*, COUNT(uo.*) >= 1 AS joined, COUNT(om.*) >= 1 AS moderating
+      FROM orbits o
+      LEFT OUTER JOIN user_orbits uo
+      ON uo.orbit_id = o.orbit_id AND uo.user_id = $2
+      LEFT OUTER JOIN orbit_moderators om
+      ON om.orbit_id = o.orbit_id AND om.user_id = $2
+      WHERE o.orbit_id = $1
+      GROUP BY o.orbit_id"#,
+        &[&orbit_id, &user_id],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.and_then(OrbitPub::from_row))
   }
 
   async fn create_orbit(

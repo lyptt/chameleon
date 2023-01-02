@@ -9,6 +9,7 @@ pub mod job;
 pub mod like;
 pub mod orbit;
 pub mod orbit_moderator;
+pub mod orbit_pub;
 pub mod post;
 pub mod post_attachment;
 pub mod post_create_request;

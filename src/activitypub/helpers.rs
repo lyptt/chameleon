@@ -44,15 +44,17 @@ pub fn create_activitypub_ordered_collection_page_feed(
   let posts = posts
     .into_iter()
     .filter_map(
-      |p| match p.to_object(&format!("{}/users/{}", SETTINGS.server.api_fqdn, p.user_handle)) {
+      |p| match p.to_object(&format!("{}/user/{}", SETTINGS.server.api_fqdn, p.user_id)) {
         Some(post_obj) => {
           let activity = match p.event_type {
             EventType::Boost => ActivityType::Announce,
             _ => ActivityType::Create,
           };
 
+          let id = relative_to_absolute_uri(&p.uri);
+
           let obj = Object::builder()
-            .id(Some(format!("{}/{}", &base_uri, &p.uri)))
+            .id(Some(id))
             .kind(Some(activity.to_string()))
             .cc(post_obj.cc.clone())
             .to(post_obj.to.clone())
@@ -122,7 +124,7 @@ pub fn create_activitypub_ordered_collection_page_specific_feed(
   let posts = posts
     .into_iter()
     .filter_map(
-      |p| match p.to_object(&format!("{}/users/{}", SETTINGS.server.api_fqdn, p.user_handle)) {
+      |p| match p.to_object(&format!("{}/user/{}", SETTINGS.server.api_fqdn, p.user_id)) {
         Some(post_obj) => {
           let obj = Object::builder()
             .id(Some(format!("{}/{}", &base_uri, &p.uri)))

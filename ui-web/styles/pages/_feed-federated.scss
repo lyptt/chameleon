@@ -1,0 +1,32 @@
+.orbit-page-feed-federated__feed {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+
+  @include mq($until: wide) {
+    flex: 1;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  @include mq($from: wide) {
+    width: 660px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.orbit-page-feed-federated__sidebar {
+  margin: 20px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 20px;
+
+  @include mq($until: wide) {
+    display: none;
+  }
+}

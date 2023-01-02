@@ -69,6 +69,7 @@ export default function InfoCard({
                 key={action.title}
                 href={action.href}
                 onClick={action.action}
+                variant={action.button}
               >
                 {action.title}
               </Button>

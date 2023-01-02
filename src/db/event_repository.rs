@@ -37,7 +37,7 @@ impl EventRepo for DbEventRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(
       r#"INSERT INTO events (event_id, source_user_id, target_user_id, visibility, post_id, like_id, comment_id, event_type)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING"#,
       &[&event_id,
       &event.source_user_id,
       &event.target_user_id,
