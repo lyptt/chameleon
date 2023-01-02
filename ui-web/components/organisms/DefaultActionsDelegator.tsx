@@ -23,6 +23,7 @@ import {
   createActionDismiss,
   useCreate,
 } from '@/components/organisms/CreateContext'
+import { userActionDismiss, useUser } from './UserContext'
 
 export default function DefaultActionsDelegator() {
   const { session } = useAuth()
@@ -31,6 +32,7 @@ export default function DefaultActionsDelegator() {
   const { state: postState, dispatch: postDispatch } = usePost()
   const { state: orbitsState, dispatch: orbitsDispatch } = useOrbits()
   const { state: createState, dispatch: createDispatch } = useCreate()
+  const { state: userState, dispatch: userDispatch } = useUser()
   const { route, query } = useRouter()
 
   useEffect(() => {
@@ -69,7 +71,15 @@ export default function DefaultActionsDelegator() {
     ) {
       feedActionReset(feedDispatch)
     }
-  }, [feedState, feedDispatch, route])
+
+    if (
+      route === '/orbits/[orbitShortcode]' &&
+      feedState.type === FeedType.Orbit &&
+      feedState.orbit?.shortcode !== query.orbitShortcode
+    ) {
+      feedActionReset(feedDispatch)
+    }
+  }, [feedState, feedDispatch, route, query])
 
   useEffect(() => {
     if (route !== '/') {
@@ -137,6 +147,7 @@ export default function DefaultActionsDelegator() {
     if (
       route.endsWith('/new-post') ||
       route.endsWith('/new-orbit') ||
+      route.endsWith('/edit') ||
       !createState.initialized
     ) {
       return
@@ -150,6 +161,18 @@ export default function DefaultActionsDelegator() {
       postActionDismissPost(postDispatch)
     }
   }, [postState, postDispatch, route, query])
+
+  useEffect(() => {
+    if (
+      route !== '/profile' &&
+      route !== '/profile/edit' &&
+      route !== '/users/[userHandle]' &&
+      !!userState.profile &&
+      query.userHandle !== userState.profile.handle
+    ) {
+      userActionDismiss(userDispatch)
+    }
+  }, [userState, userDispatch, route, query])
 
   return <></>
 }

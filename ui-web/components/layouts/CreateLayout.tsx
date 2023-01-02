@@ -35,6 +35,7 @@ const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 
 export interface CreateLayoutProps extends HTMLProps<HTMLDivElement> {
   orbitShortcode?: string
+  embedded?: boolean
 }
 
 export interface CreateFormProps
@@ -437,6 +438,7 @@ export function CreateFormFileUpload(props: CreateFormFileUploadGroupProps) {
 export default function CreateLayout({
   title,
   orbitShortcode,
+  embedded,
   className,
   children,
   ...rest
@@ -451,15 +453,16 @@ export default function CreateLayout({
     submitting,
     submittedPost,
     submittedOrbit,
+    submittedProfile,
     submittingImageProgress,
   } = state
   const router = useRouter()
 
   useEffect(() => {
-    if (!initialized) {
+    if (!initialized && !embedded) {
       createActionInitialize(orbitShortcode, session?.access_token, dispatch)
     }
-  }, [initialized, dispatch, orbitShortcode, session])
+  }, [initialized, dispatch, orbitShortcode, session, embedded])
 
   useEffect(() => {
     if (!!submittedPost) {
@@ -474,10 +477,35 @@ export default function CreateLayout({
   }, [submittedOrbit, router])
 
   useEffect(() => {
+    if (!!submittedOrbit) {
+      router.replace(`/orbits/${submittedOrbit.shortcode}`)
+    }
+  }, [submittedOrbit, router])
+
+  useEffect(() => {
+    if (!!submittedProfile) {
+      router.replace(`/profile`)
+    }
+  }, [submittedProfile, router])
+
+  useEffect(() => {
     if (!session) {
       router.replace(`/api/oauth/login`)
     }
   }, [session, router])
+
+  if (embedded) {
+    return (
+      <section className={cx('orbit-create-layout', className)} {...rest}>
+        <div className="orbit-create-layout__content">{children}</div>
+        {!!orbitShortcode && (orbitLoading || orbitLoadingFailed || !orbit) && (
+          <aside className="orbit-create-layout__sidebar">
+            <AsidePlaceholder />
+          </aside>
+        )}
+      </section>
+    )
+  }
 
   return (
     <section className={cx('orbit-create-layout', className)} {...rest}>

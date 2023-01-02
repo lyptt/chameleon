@@ -173,6 +173,37 @@ export interface INewOrbit {
   description_md: string
 }
 
+export interface INewProfile {
+  handle: string
+  intro_md: string
+  email?: string
+  password?: string
+  attachments: File[]
+  links: {
+    title: string
+    url: string
+  }[]
+}
+
+type IPatchProp = 'erase' | { replace: any }
+
+interface IProfileUpdateRequest {
+  handle?: string
+  password?: string
+  intro_md?: IPatchProp
+  email?: IPatchProp
+  url_1?: IPatchProp
+  url_2?: IPatchProp
+  url_3?: IPatchProp
+  url_4?: IPatchProp
+  url_5?: IPatchProp
+  url_1_title?: IPatchProp
+  url_2_title?: IPatchProp
+  url_3_title?: IPatchProp
+  url_4_title?: IPatchProp
+  url_5_title?: IPatchProp
+}
+
 export async function fetchProfile(authToken: string): Promise<IProfile> {
   const response = await fetch(`${Config.apiUri}/profile`, {
     ...buildDefaultHeaders(authToken),
@@ -579,6 +610,70 @@ export async function deletePostCommentLike(
   }
 }
 
+export async function createFollow(
+  userHandle: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/users/${userHandle}/follows`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function deleteFollow(
+  userHandle: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/users/${userHandle}/follows`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'DELETE',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function createComment(
+  postId: string,
+  commentMd: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/feed/${postId}/comments`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+    body: JSON.stringify({
+      comment_md: commentMd,
+    }),
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function deleteComment(
+  postId: string,
+  commentId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/${postId}/comments/${commentId}`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'POST',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
 export async function submitOrbit(
   orbit: INewOrbit,
   authToken: string
@@ -626,6 +721,124 @@ export function submitOrbitImage(
       reject(new Error('File upload aborted'))
     )
     xhr.open('POST', `${Config.apiUri}/orbit/${orbitId}/assets`, true)
+    xhr.setRequestHeader('Authorization', `Bearer ${authToken}`)
+    xhr.setRequestHeader('Accept', `application/json`)
+    xhr.send(form)
+  })
+}
+
+export async function submitProfile(
+  currentProfile: IProfile,
+  profile: INewProfile,
+  authToken: string
+): Promise<void> {
+  const req: IProfileUpdateRequest = {}
+
+  if (!!profile.handle && profile.handle !== currentProfile.handle) {
+    req.handle = profile.handle
+  }
+
+  if (!!profile.password) {
+    req.password = profile.password
+  }
+
+  if (currentProfile.intro_md !== profile.intro_md) {
+    req.intro_md = profile.intro_md ? { replace: profile.intro_md } : 'erase'
+  }
+  if (currentProfile.email !== profile.email) {
+    req.email = profile.email ? { replace: profile.email } : 'erase'
+  }
+  if (currentProfile.url_1 !== profile.links[0]?.url) {
+    req.url_1 = profile.links[0]?.url
+      ? { replace: profile.links[0]?.url }
+      : 'erase'
+  }
+  if (currentProfile.url_2 !== profile.links[1]?.url) {
+    req.url_2 = profile.links[1]?.url
+      ? { replace: profile.links[1]?.url }
+      : 'erase'
+  }
+  if (currentProfile.url_3 !== profile.links[2]?.url) {
+    req.url_3 = profile.links[2]?.url
+      ? { replace: profile.links[2]?.url }
+      : 'erase'
+  }
+  if (currentProfile.url_4 !== profile.links[3]?.url) {
+    req.url_4 = profile.links[3]?.url
+      ? { replace: profile.links[3]?.url }
+      : 'erase'
+  }
+  if (currentProfile.url_5 !== profile.links[4]?.url) {
+    req.url_5 = profile.links[4]?.url
+      ? { replace: profile.links[4]?.url }
+      : 'erase'
+  }
+  if (currentProfile.url_1_title !== profile.links[0]?.title) {
+    req.url_1_title = profile.links[0]?.title
+      ? { replace: profile.links[0]?.title }
+      : 'erase'
+  }
+  if (currentProfile.url_2_title !== profile.links[1]?.title) {
+    req.url_2_title = profile.links[1]?.title
+      ? { replace: profile.links[1]?.title }
+      : 'erase'
+  }
+  if (currentProfile.url_3_title !== profile.links[2]?.title) {
+    req.url_3_title = profile.links[2]?.title
+      ? { replace: profile.links[2]?.title }
+      : 'erase'
+  }
+  if (currentProfile.url_4_title !== profile.links[3]?.title) {
+    req.url_4_title = profile.links[3]?.title
+      ? { replace: profile.links[3]?.title }
+      : 'erase'
+  }
+  if (currentProfile.url_5_title !== profile.links[4]?.title) {
+    req.url_5_title = profile.links[4]?.title
+      ? { replace: profile.links[4]?.title }
+      : 'erase'
+  }
+
+  const response = await fetch(`${Config.apiUri}/profile`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+    body: JSON.stringify(req),
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+}
+
+export function submitProfileImage(
+  files: File[],
+  authToken: string,
+  onProgress?: (progress: number) => void
+): Promise<void> {
+  const form = new FormData()
+  files.forEach((file) => form.append('images[]', file))
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.upload.addEventListener('progress', (e) =>
+      onProgress?.(e.loaded / e.total)
+    )
+    xhr.addEventListener('load', () => {
+      if (xhr.status !== 200) {
+        return reject(new Error('Request failed'))
+      }
+
+      try {
+        resolve()
+      } catch (err) {
+        reject(err)
+      }
+    })
+    xhr.addEventListener('error', () => reject(new Error('File upload failed')))
+    xhr.addEventListener('abort', () =>
+      reject(new Error('File upload aborted'))
+    )
+    xhr.open('POST', `${Config.apiUri}/profile/assets`, true)
     xhr.setRequestHeader('Authorization', `Bearer ${authToken}`)
     xhr.setRequestHeader('Accept', `application/json`)
     xhr.send(form)

@@ -1,4 +1,6 @@
 import {
+  createFollow,
+  deleteFollow,
   fetchUserFeed,
   fetchUserProfile,
   fetchUserStats,
@@ -18,6 +20,9 @@ enum UserActionType {
   REFRESH_USER_POSTS_LOADING = 'REFRESH_USER_POSTS_LOADING',
   REFRESH_USER_POSTS_ERROR = 'REFRESH_USER_POSTS_ERROR',
   REFRESH_USER_POSTS_LOADED = 'REFRESH_USER_POSTS_LOADED',
+  USER_FOLLOWED = 'USER_FOLLOWED',
+  USER_UNFOLLOWED = 'USER_UNFOLLOWED',
+  DISMISS = 'DISMISS',
 }
 
 interface UserAction {
@@ -93,6 +98,52 @@ export async function userActionLoadFeed(
       error,
     })
   }
+}
+
+export async function userActionFollowUser(
+  handle: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<UserAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: UserActionType.USER_FOLLOWED,
+  })
+
+  try {
+    await createFollow(handle, authToken)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+export async function userActionUnfollowUser(
+  handle: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<UserAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: UserActionType.USER_UNFOLLOWED,
+  })
+
+  try {
+    await deleteFollow(handle, authToken)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+export async function userActionDismiss(dispatch: React.Dispatch<UserAction>) {
+  dispatch({
+    type: UserActionType.DISMISS,
+  })
 }
 
 export interface IUserState {
@@ -182,6 +233,32 @@ const reducer = (state: IUserState, action: UserAction): IUserState => {
           !feedData.length,
         page: action.feedData?.page || 0,
         totalItems: action.feedData?.total_items || feed.length,
+      }
+    case UserActionType.USER_FOLLOWED:
+      return {
+        ...state,
+        stats: state.stats
+          ? {
+              ...state.stats,
+              following_user: true,
+              followers_count: state.stats.followers_count + 1,
+            }
+          : undefined,
+      }
+    case UserActionType.USER_UNFOLLOWED:
+      return {
+        ...state,
+        stats: state.stats
+          ? {
+              ...state.stats,
+              following_user: false,
+              followers_count: state.stats.followers_count - 1,
+            }
+          : undefined,
+      }
+    case UserActionType.DISMISS:
+      return {
+        ...initialState,
       }
     default:
       return state

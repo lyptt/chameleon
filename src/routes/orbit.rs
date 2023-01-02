@@ -169,6 +169,8 @@ pub async fn api_create_orbit(
     return build_api_err(400, "shortcode".to_string(), None);
   }
 
+  let uri = format!("/orbits/{}", shortcode);
+
   let orbit_id = match orbits
     .create_orbit(
       &req.name,
@@ -178,6 +180,7 @@ pub async fn api_create_orbit(
       &None,
       &None,
       false,
+      &uri,
     )
     .await
   {

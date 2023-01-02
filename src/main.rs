@@ -67,6 +67,7 @@ use routes::redirect::{
 use routes::status::api_get_server_status;
 use routes::user::{
   api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_profile, api_get_user_stats,
+  api_update_profile, api_update_profile_assets,
 };
 use routes::webfinger::api_webfinger_query_resource;
 use settings::SETTINGS;
@@ -311,7 +312,13 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/profile")
           .name("profile")
-          .route(web::get().to(api_get_profile)),
+          .route(web::get().to(api_get_profile))
+          .route(web::post().to(api_update_profile)),
+      )
+      .service(
+        web::resource("/api/profile/assets")
+          .name("profile_assets")
+          .route(web::post().to(api_update_profile_assets)),
       )
       .service(
         web::resource("/api/job/{job_id}")

@@ -6,14 +6,13 @@ CREATE TABLE orbits (
   name varchar(256) NOT NULL,
   description_md text NOT NULL,
   description_html text NOT NULL,
-  avatar_url varchar(2048),
-  banner_url varchar(2048),
+  avatar_uri varchar(2048),
+  banner_uri varchar(2048),
   uri varchar(2048) NOT NULL,
   is_external bool NOT NULL DEFAULT true,
   PRIMARY KEY (orbit_id)
 );
 
-CREATE INDEX orbits_post_idx ON orbits(post_id);
 CREATE UNIQUE INDEX orbits_uq_name_uri_idx ON orbits(name, uri);
 
 CREATE TABLE orbit_moderators (

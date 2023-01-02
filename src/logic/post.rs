@@ -22,6 +22,7 @@ use crate::{
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 pub struct NewPostRequest {
+  pub title: Option<String>,
   pub content_md: String,
   pub visibility: AccessType,
   pub orbit_id: Option<Uuid>,
@@ -74,7 +75,14 @@ pub async fn create_post(
   let content_html = markdown::to_html(&req.content_md);
 
   let post_id = posts
-    .create_post(user_id, &req.content_md, &content_html, &req.visibility, &req.orbit_id)
+    .create_post(
+      user_id,
+      &req.content_md,
+      &content_html,
+      &req.visibility,
+      &req.orbit_id,
+      &req.title,
+    )
     .await?;
 
   if req.attachment_count > 0 {
@@ -467,6 +475,7 @@ mod tests {
       visibility: AccessType::PublicFederated,
       orbit_id: None,
       attachment_count: 0,
+      title: None,
     };
     let content_md_eq = new_post.content_md.clone();
     let visibility_eq = new_post.visibility.clone();
@@ -481,6 +490,7 @@ mod tests {
         contains(content_md_eq),
         always(),
         eq(visibility_eq),
+        eq(None),
         eq(None),
       )
       .times(1)
@@ -505,6 +515,7 @@ mod tests {
       visibility: AccessType::PublicFederated,
       orbit_id: None,
       attachment_count: 0,
+      title: None,
     };
     let content_md_eq = new_post.content_md.clone();
     let visibility_eq = new_post.visibility.clone();
@@ -520,6 +531,7 @@ mod tests {
         contains(content_md_eq),
         always(),
         eq(visibility_eq),
+        eq(None),
         eq(None),
       )
       .times(1)

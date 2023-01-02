@@ -50,7 +50,7 @@ export default function NewOrbitPostPage({
         dispatch
       )
     },
-    [submitting]
+    [submitting, session]
   )
 
   return (

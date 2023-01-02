@@ -50,7 +50,7 @@ export default function PostCard({
         {...rest}
       >
         <div className="orbit-post-card__info-bar">
-          {!!post.orbit_id && !hideOrbitInformation && (
+          {!!post.orbit_shortcode && !hideOrbitInformation && (
             <>
               <Link legacyBehavior href={post.orbit_uri || '/'}>
                 <a className="orbit-post-card__info-bar-origin">
