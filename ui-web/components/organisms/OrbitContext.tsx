@@ -1,4 +1,11 @@
-import { fetchOrbit, fetchUserOrbits, IOrbit } from '@/core/api'
+import {
+  fetchOrbit,
+  fetchUserOrbits,
+  IOrbit,
+  IOrbitProfile,
+  joinOrbit,
+  leaveOrbit,
+} from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 
 enum OrbitActionType {
@@ -8,6 +15,7 @@ enum OrbitActionType {
   REFRESH_USER_ORBIT_LOADING = 'REFRESH_USER_ORBIT_LOADING',
   REFRESH_USER_ORBIT_ERROR = 'REFRESH_USER_ORBIT_ERROR',
   REFRESH_USER_ORBIT_LOADED = 'REFRESH_USER_ORBIT_LOADED',
+  UPDATE_ORBIT_JOINED = 'UPDATE_ORBIT_JOINED',
   CLEAR_USER_ORBIT = 'CLEAR_USER_ORBIT',
 }
 
@@ -15,6 +23,7 @@ interface OrbitAction {
   type: OrbitActionType
   data?: any
   error?: any
+  joined?: boolean
 }
 
 export async function orbitActionLoadUserOrbits(
@@ -71,13 +80,59 @@ export async function orbitActionClearOrbit(
   })
 }
 
+export async function orbitActionJoinOrbit(
+  handle: string,
+  orbitId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: OrbitActionType.UPDATE_ORBIT_JOINED,
+    joined: true,
+  })
+
+  try {
+    await joinOrbit(orbitId, authToken)
+    await orbitActionLoadUserOrbits(handle, authToken, dispatch)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export async function orbitActionLeaveOrbit(
+  handle: string,
+  orbitId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: OrbitActionType.UPDATE_ORBIT_JOINED,
+    joined: false,
+  })
+
+  try {
+    await leaveOrbit(orbitId, authToken)
+    await orbitActionLoadUserOrbits(handle, authToken, dispatch)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 export interface IOrbitState {
   orbits?: IOrbit[]
   loading: boolean
   loadingFailed: boolean
   loadingOrbit: boolean
   loadingOrbitFailed: boolean
-  orbit?: IOrbit
+  orbit?: IOrbitProfile
 }
 
 const initialState: IOrbitState = {
@@ -139,6 +194,15 @@ const reducer = (state: IOrbitState, action: OrbitAction): IOrbitState => {
         loadingOrbitFailed: false,
         orbit: undefined,
       }
+    case OrbitActionType.UPDATE_ORBIT_JOINED: {
+      if (action.joined === undefined || !state.orbit) {
+        return state
+      }
+
+      const orbit = { ...state.orbit, joined: action.joined }
+
+      return { ...state, orbit }
+    }
     default:
       return state
   }

@@ -168,6 +168,11 @@ export interface IOrbit {
   is_external: boolean
 }
 
+export interface IOrbitProfile extends IOrbit {
+  joined: boolean
+  moderating: boolean
+}
+
 export interface INewOrbit {
   name: string
   description_md: string
@@ -292,6 +297,26 @@ export async function fetchOwnFeed(
   return await response.json()
 }
 
+export async function fetchOwnFriendsFeed(
+  authToken: string,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<IPost>> {
+  const response = await fetch(
+    `${Config.apiUri}/feed/friends?page=${page}&page_size=${pageSize}`,
+    {
+      ...buildDefaultHeaders(authToken),
+      method: 'GET',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
 export async function fetchUserFeed(
   handle: string,
   authToken: string | undefined,
@@ -364,7 +389,7 @@ export async function fetchUserOrbits(
 export async function fetchOrbit(
   shortcode: string,
   authToken: string | undefined
-): Promise<IObjectResponse<IOrbit>> {
+): Promise<IObjectResponse<IOrbitProfile>> {
   const response = await fetch(`${Config.apiUri}/orbits/${shortcode}`, {
     ...(authToken
       ? buildDefaultHeaders(authToken)
@@ -382,7 +407,7 @@ export async function fetchOrbit(
 export async function fetchOrbitById(
   id: string,
   authToken: string | undefined
-): Promise<IObjectResponse<IOrbit>> {
+): Promise<IObjectResponse<IOrbitProfile>> {
   const response = await fetch(`${Config.apiUri}/orbit/${id}`, {
     ...(authToken
       ? buildDefaultHeaders(authToken)
@@ -845,4 +870,32 @@ export function submitProfileImage(
     xhr.setRequestHeader('Accept', `application/json`)
     xhr.send(form)
   })
+}
+
+export async function joinOrbit(
+  orbitId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/orbit/${orbitId}/join`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+  })
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
+}
+
+export async function leaveOrbit(
+  orbitId: string,
+  authToken: string
+): Promise<void> {
+  const response = await fetch(`${Config.apiUri}/orbit/${orbitId}/leave`, {
+    ...buildDefaultHeaders(authToken),
+    method: 'POST',
+  })
+
+  if (response.status !== 201) {
+    throw new Error('Request failed')
+  }
 }

@@ -16,8 +16,9 @@ use crate::{
     math::div_up,
   },
   logic::post::{
-    create_post, get_global_posts, get_global_posts_count, get_post, get_user_posts, get_user_posts_count,
-    upload_post_files, CreatePostResult, NewPostRequest, NewPostResponse,
+    create_post, get_global_posts, get_global_posts_count, get_post, get_user_friends_posts,
+    get_user_friends_posts_count, get_user_posts, get_user_posts_count, upload_post_files, CreatePostResult,
+    NewPostRequest, NewPostResponse,
   },
   model::{
     access_type::AccessType,
@@ -62,6 +63,38 @@ pub async fn api_get_user_own_feed(
   };
 
   let posts = match get_user_posts(&user_id, page_size, page * page_size, &posts).await {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
+pub async fn api_get_user_friends_feed(
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  query: web::Query<PostsQuery>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &sessions).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  let user_id = props.uid;
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match get_user_friends_posts_count(&user_id, &posts).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match get_user_friends_posts(&user_id, page_size, page * page_size, &posts).await {
     Ok(posts) => posts,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };

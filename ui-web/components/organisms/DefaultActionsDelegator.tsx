@@ -57,11 +57,22 @@ export default function DefaultActionsDelegator() {
       return
     }
 
+    if (route === '/') {
+      if (session && feedState.type !== FeedType.Own) {
+        feedActionReset(feedDispatch)
+      } else if (!session && feedState.type !== FeedType.PublicFederated) {
+        feedActionReset(feedDispatch)
+      }
+    }
+
     if (
-      route === '/' &&
-      feedState.type !== FeedType.PublicFederated &&
-      feedState.type !== FeedType.Own
+      route === '/feed/federated' &&
+      feedState.type !== FeedType.PublicFederated
     ) {
+      feedActionReset(feedDispatch)
+    }
+
+    if (route === '/feed/friends' && feedState.type !== FeedType.Friends) {
       feedActionReset(feedDispatch)
     }
 
@@ -87,23 +98,20 @@ export default function DefaultActionsDelegator() {
     }
 
     if (feedState.initialLoadComplete) {
-      if (feedState.type === FeedType.PublicFederated && !session) {
-        return
-      } else if (feedState.type === FeedType.Own && session) {
-        return
-      } else if (
-        feedState.type !== FeedType.PublicFederated &&
-        feedState.type !== FeedType.Own
-      ) {
-        return
-      }
+      return
     }
 
     if (feedState.loading || feedState.loadingFailed) {
       return
     }
 
-    feedActionLoadFeed(0, session?.access_token, undefined, feedDispatch)
+    feedActionLoadFeed(
+      0,
+      session?.access_token,
+      undefined,
+      feedState.type === FeedType.Friends,
+      feedDispatch
+    )
   }, [session, feedState, feedDispatch, route])
 
   useEffect(() => {
@@ -123,8 +131,47 @@ export default function DefaultActionsDelegator() {
       0,
       session?.access_token,
       orbitsState.orbit,
+      false,
       feedDispatch
     )
+  }, [session, feedState, feedDispatch, orbitsState, route])
+
+  useEffect(() => {
+    if (route !== '/feed/friends' || !session) {
+      return
+    }
+
+    if (feedState.initialLoadComplete) {
+      return
+    }
+
+    if (feedState.loading || feedState.loadingFailed) {
+      return
+    }
+
+    feedActionLoadFeed(
+      0,
+      session.access_token,
+      orbitsState.orbit,
+      true,
+      feedDispatch
+    )
+  }, [session, feedState, feedDispatch, orbitsState, route])
+
+  useEffect(() => {
+    if (route !== '/feed/federated') {
+      return
+    }
+
+    if (feedState.initialLoadComplete) {
+      return
+    }
+
+    if (feedState.loading || feedState.loadingFailed) {
+      return
+    }
+
+    feedActionLoadFeed(0, undefined, orbitsState.orbit, false, feedDispatch)
   }, [session, feedState, feedDispatch, orbitsState, route])
 
   useEffect(() => {

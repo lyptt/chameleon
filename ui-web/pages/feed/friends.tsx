@@ -30,7 +30,7 @@ function determineScrollPercentage() {
   return scrollTop / trackLength
 }
 
-export default function HomePage({
+export default function FriendsFeedPage({
   className,
 }: HTMLAttributes<HTMLDivElement>) {
   const { session } = useAuth()
@@ -81,16 +81,16 @@ export default function HomePage({
         page + 1,
         session?.access_token,
         undefined,
-        false,
+        true,
         dispatch
       )
     }
   }, [loading, feed, session, noMorePages, page, listInView])
 
   return (
-    <section className={cx('orbit-page-home', className)}>
+    <section className={cx('orbit-page-feed-friends', className)}>
       <Head>
-        <title>Orbit</title>
+        <title>Orbit - Friends and Followers</title>
         <meta
           name="description"
           content="Welcome to Orbit, your place to share cool things with the world in an open, federated network"
@@ -98,18 +98,18 @@ export default function HomePage({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <SideNav />
-      <div className="orbit-page-home__feed">
+      <div className="orbit-page-feed-friends__feed">
         {!loading &&
           !loadingFailed &&
           feed.map((post) => (
             <PostCard
-              className="orbit-page-home__feed-post"
+              className="orbit-page-feed-friends__feed-post"
               key={post.post_id}
               post={post}
             />
           ))}
       </div>
-      <aside className="orbit-page-home__sidebar">
+      <aside className="orbit-page-feed-friends__sidebar">
         <WelcomeCard />
       </aside>
     </section>

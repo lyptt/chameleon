@@ -49,12 +49,25 @@ pub async fn get_user_posts(
   posts.fetch_user_own_feed(user_id, limit, skip).await
 }
 
+pub async fn get_user_friends_posts(
+  user_id: &Uuid,
+  limit: i64,
+  skip: i64,
+  posts: &PostPool,
+) -> Result<Vec<PostEvent>, LogicErr> {
+  posts.fetch_user_friends_feed(user_id, limit, skip).await
+}
+
 pub async fn get_post(post_id: &Uuid, user_id: &Option<Uuid>, posts: &PostPool) -> Result<Option<PostEvent>, LogicErr> {
   posts.fetch_post(post_id, user_id).await
 }
 
 pub async fn get_user_posts_count(user_id: &Uuid, posts: &PostPool) -> Result<i64, LogicErr> {
   posts.count_user_own_feed(user_id).await
+}
+
+pub async fn get_user_friends_posts_count(user_id: &Uuid, posts: &PostPool) -> Result<i64, LogicErr> {
+  posts.count_user_friends_feed(user_id).await
 }
 
 pub async fn get_global_posts(limit: i64, skip: i64, posts: &PostPool) -> Result<Vec<PostEvent>, LogicErr> {

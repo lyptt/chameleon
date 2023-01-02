@@ -55,8 +55,9 @@ use routes::orbit::{
   api_update_orbit, api_update_orbit_assets, api_update_orbit_moderator,
 };
 use routes::post::{
-  api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_post, api_get_user_liked_posts,
-  api_get_user_own_feed, api_get_user_post, api_get_user_posts, api_unboost_post, api_upload_post_image,
+  api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_post, api_get_user_friends_feed,
+  api_get_user_liked_posts, api_get_user_own_feed, api_get_user_post, api_get_user_posts, api_unboost_post,
+  api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::redirect::{
@@ -263,6 +264,11 @@ async fn main() -> std::io::Result<()> {
           .name("feed")
           .route(web::get().to(api_get_user_own_feed))
           .route(web::post().to(api_create_post)),
+      )
+      .service(
+        web::resource("/api/feed/friends")
+          .name("friends_feed")
+          .route(web::get().to(api_get_user_friends_feed)),
       )
       .service(
         web::resource("/api/feed/federated")

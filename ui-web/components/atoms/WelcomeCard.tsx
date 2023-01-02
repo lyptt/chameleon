@@ -36,7 +36,7 @@ export default function WelcomeCard({
             </p>
             <p className="orbit-welcome-card__content-subheadline">
               Please be mindful of the{' '}
-              <AnchorLink href="/rules">instance rules</AnchorLink> when posting
+              <AnchorLink href="/about">instance rules</AnchorLink> when posting
               content or interacting with members of this community.
             </p>
             {!hideActions && (

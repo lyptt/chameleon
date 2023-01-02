@@ -10,7 +10,7 @@ use crate::{
     user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
   helpers::{
-    auth::{assert_auth, require_auth},
+    auth::{assert_auth, query_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
   },
@@ -110,8 +110,18 @@ pub async fn api_get_orbits(orbits: web::Data<OrbitPool>, query: web::Query<Orbi
   })
 }
 
-pub async fn api_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: web::Path<Uuid>) -> impl Responder {
-  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+pub async fn api_get_orbit(
+  orbits: web::Data<OrbitPool>,
+  orbit_id: web::Path<Uuid>,
+  sessions: web::Data<SessionPool>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
+  let orbit = match orbits.fetch_orbit_for_user(&orbit_id, &user_id).await {
     Ok(orbit) => orbit,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
@@ -124,13 +134,23 @@ pub async fn api_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: web::Path<Uui
   HttpResponse::Ok().json(ObjectResponse { data: orbit })
 }
 
-pub async fn api_get_orbit_named(orbits: web::Data<OrbitPool>, orbit_shortcode: web::Path<String>) -> impl Responder {
+pub async fn api_get_orbit_named(
+  orbits: web::Data<OrbitPool>,
+  orbit_shortcode: web::Path<String>,
+  sessions: web::Data<SessionPool>,
+  jwt: web::ReqData<JwtContext>,
+) -> impl Responder {
+  let user_id = match query_auth(&jwt, &sessions).await {
+    Some(props) => Some(props.uid),
+    None => None,
+  };
+
   let orbit_id = match orbits.fetch_orbit_id_from_shortcode(&orbit_shortcode).await {
     Some(id) => id,
     None => return build_api_not_found(orbit_shortcode.to_string()),
   };
 
-  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+  let orbit = match orbits.fetch_orbit_for_user(&orbit_id, &user_id).await {
     Ok(orbit) => orbit,
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };

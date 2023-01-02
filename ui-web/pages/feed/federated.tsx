@@ -30,7 +30,7 @@ function determineScrollPercentage() {
   return scrollTop / trackLength
 }
 
-export default function HomePage({
+export default function FederatedFeedPage({
   className,
 }: HTMLAttributes<HTMLDivElement>) {
   const { session } = useAuth()
@@ -77,20 +77,14 @@ export default function HomePage({
     // HACK: We're not getting an accurate indication that we're at the bottom from the IntersectionObserver. It's triggering
     //       at strange times, so we also need to check scroll position manually.
     if (determineScrollPercentage() >= 0.75) {
-      feedActionLoadFeed(
-        page + 1,
-        session?.access_token,
-        undefined,
-        false,
-        dispatch
-      )
+      feedActionLoadFeed(page + 1, undefined, undefined, false, dispatch)
     }
   }, [loading, feed, session, noMorePages, page, listInView])
 
   return (
-    <section className={cx('orbit-page-home', className)}>
+    <section className={cx('orbit-page-feed-federated', className)}>
       <Head>
-        <title>Orbit</title>
+        <title>Orbit - Federated</title>
         <meta
           name="description"
           content="Welcome to Orbit, your place to share cool things with the world in an open, federated network"
@@ -98,18 +92,18 @@ export default function HomePage({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <SideNav />
-      <div className="orbit-page-home__feed">
+      <div className="orbit-page-feed-federated__feed">
         {!loading &&
           !loadingFailed &&
           feed.map((post) => (
             <PostCard
-              className="orbit-page-home__feed-post"
+              className="orbit-page-feed-federated__feed-post"
               key={post.post_id}
               post={post}
             />
           ))}
       </div>
-      <aside className="orbit-page-home__sidebar">
+      <aside className="orbit-page-feed-federated__sidebar">
         <WelcomeCard />
       </aside>
     </section>

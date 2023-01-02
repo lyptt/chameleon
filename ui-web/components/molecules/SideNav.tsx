@@ -35,7 +35,7 @@ export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
           </li>
 
           <li className="orbit-side-nav__list-item">
-            <Link legacyBehavior href="/feeds/federated">
+            <Link legacyBehavior href="/feed/federated">
               <a>
                 <IoEarthOutline className="orbit-side-nav__list-item-icon" />
                 Fediverse
