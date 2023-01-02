@@ -199,7 +199,7 @@ mod tests {
       assert!(finger.links[0].href.is_some());
       assert_eq!(
         finger.links[0].href.as_ref().unwrap(),
-        "http://0.0.0.0:8080/api/users/user"
+        "http://0.0.0.0:8080/api/user/ae1481a5-2eb7-4c52-93c3-e95839578dce"
       );
 
       assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
