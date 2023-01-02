@@ -542,7 +542,7 @@ export async function createPostComment(
   content: string,
   postId: string,
   authToken: string
-): Promise<void> {
+): Promise<IObjectResponse<IComment>> {
   const response = await fetch(`${Config.apiUri}/feed/${postId}/comments`, {
     ...buildDefaultHeaders(authToken),
     method: 'POST',
@@ -551,9 +551,11 @@ export async function createPostComment(
     }),
   })
 
-  if (response.status !== 201) {
+  if (response.status !== 200) {
     throw new Error('Request failed')
   }
+
+  return await response.json()
 }
 
 export async function deletePostComment(

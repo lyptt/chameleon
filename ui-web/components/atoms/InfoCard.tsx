@@ -1,4 +1,4 @@
-import { HTMLProps } from 'react'
+import { HTMLProps, MouseEventHandler } from 'react'
 import cx from 'classnames'
 import Button from './Button'
 import { IProfile } from '@/core/api'
@@ -8,7 +8,7 @@ import { cdnUrl } from '@/core/utils'
 export interface InfoCardAction {
   title: string
   href?: string
-  action?: () => void
+  action?: MouseEventHandler<HTMLButtonElement>
   button: 'default' | 'outline'
 }
 

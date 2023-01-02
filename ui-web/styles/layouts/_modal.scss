@@ -1,0 +1,24 @@
+.orbit-modal-overlay {
+  z-index: 300;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+
+  @include mq($from: desktop) {
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.orbit-modal {
+  @include mq($until: desktop) {
+    flex: 1;
+  }
+
+  @include mq($from: desktop) {
+    width: 700px;
+  }
+}

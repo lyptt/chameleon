@@ -13,11 +13,9 @@ import {
   useCreate,
   createActionSubmitPost,
 } from '@/components/organisms/CreateContext'
-import AsidePlaceholder from '@/components/quarks/AsidePlaceholder'
 import { AccessType } from '@/core/api'
 import { Formik } from 'formik'
 import Head from 'next/head'
-import { useRouter } from 'next/router'
 import { IoEarthOutline, IoHomeOutline, IoListOutline } from 'react-icons/io5'
 import { useOrbits } from '@/components/organisms/OrbitContext'
 

@@ -1,5 +1,6 @@
 .#{$theme-class} {
-  &.orbit-main {
+  &.orbit-main,
+  &.orbit-modal {
     font-family: $font-family, sans-serif;
     font-size: 16px;
     letter-spacing: -0.3px;

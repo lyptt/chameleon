@@ -1,0 +1,14 @@
+.#{$theme-class} {
+  .orbit-modal-overlay {
+    @media (prefers-color-scheme: light) {
+      background: transparentize($fill-3-light, 0.4);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: transparentize($fill-3-dark, 0.4);
+    }
+  }
+
+  .orbit-modal {
+  }
+}

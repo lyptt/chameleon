@@ -8,6 +8,7 @@ import {
   IAuthContext,
 } from '@/components/organisms/AuthContext'
 import MainLayout from '@/components/layouts/MainLayout'
+import { ThemeContext } from '@/components/organisms/ThemeContext'
 
 interface IOrbitAppProps extends AppProps {
   defaultAuthContext?: IAuthContext
@@ -22,9 +23,11 @@ export default function OrbitApp(props: IOrbitAppProps) {
     theme = 'theme--orbit',
   } = props
   return (
-    <MainLayout defaultAuthContext={defaultAuthContext} theme={theme}>
-      <Component {...pageProps} />
-    </MainLayout>
+    <ThemeContext.Provider value={{ theme }}>
+      <MainLayout defaultAuthContext={defaultAuthContext}>
+        <Component {...pageProps} />
+      </MainLayout>
+    </ThemeContext.Provider>
   )
 }
 

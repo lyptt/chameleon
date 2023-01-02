@@ -90,7 +90,7 @@ impl CommentRepo for DbCommentRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(
       "DELETE FROM comments WHERE post_id = $1 AND user_id = $2 AND comment_id = $3",
-      &[&user_id, &post_id, &comment_id],
+      &[&post_id, &user_id, &comment_id],
     )
     .await
     .map_err(map_db_err)?;
