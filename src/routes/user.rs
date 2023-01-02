@@ -20,6 +20,7 @@ use crate::{
     user_account_pub::UserAccountPub,
   },
   net::jwt::JwtContext,
+  settings::SETTINGS,
 };
 
 #[derive(Debug, Deserialize)]
@@ -94,6 +95,8 @@ pub async fn api_update_profile(
 
   if let Some(handle) = &req.handle {
     user.handle = handle.to_owned();
+    user.fediverse_id = format!("@{}@{}", handle, SETTINGS.server.fqdn);
+    user.fediverse_uri = format!("/users/{handle}");
   }
 
   if let Some(val) = &req.intro_md {
