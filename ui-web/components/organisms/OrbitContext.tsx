@@ -1,5 +1,6 @@
 import {
   fetchOrbit,
+  fetchPopularOrbits,
   fetchUserOrbits,
   IOrbit,
   IOrbitProfile,
@@ -15,6 +16,9 @@ enum OrbitActionType {
   REFRESH_USER_ORBIT_LOADING = 'REFRESH_USER_ORBIT_LOADING',
   REFRESH_USER_ORBIT_ERROR = 'REFRESH_USER_ORBIT_ERROR',
   REFRESH_USER_ORBIT_LOADED = 'REFRESH_USER_ORBIT_LOADED',
+  REFRESH_POPULAR_ORBITS_LOADING = 'REFRESH_POPULAR_ORBITS_LOADING',
+  REFRESH_POPULAR_ORBITS_ERROR = 'REFRESH_POPULAR_ORBITS_ERROR',
+  REFRESH_POPULAR_ORBITS_LOADED = 'REFRESH_POPULAR_ORBITS_LOADED',
   UPDATE_ORBIT_JOINED = 'UPDATE_ORBIT_JOINED',
   CLEAR_USER_ORBIT = 'CLEAR_USER_ORBIT',
 }
@@ -44,6 +48,27 @@ export async function orbitActionLoadUserOrbits(
   } catch (error) {
     dispatch({
       type: OrbitActionType.REFRESH_USER_ORBITS_ERROR,
+      error,
+    })
+  }
+}
+
+export async function orbitActionLoadPopularOrbits(
+  dispatch: React.Dispatch<OrbitAction>
+) {
+  dispatch({
+    type: OrbitActionType.REFRESH_POPULAR_ORBITS_LOADING,
+  })
+
+  try {
+    const orbits = await fetchPopularOrbits()
+    dispatch({
+      type: OrbitActionType.REFRESH_POPULAR_ORBITS_LOADED,
+      data: orbits.data,
+    })
+  } catch (error) {
+    dispatch({
+      type: OrbitActionType.REFRESH_POPULAR_ORBITS_ERROR,
       error,
     })
   }
@@ -162,6 +187,25 @@ const reducer = (state: IOrbitState, action: OrbitAction): IOrbitState => {
         loadingFailed: true,
       }
     case OrbitActionType.REFRESH_USER_ORBITS_LOADED:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: false,
+        orbits: action.data,
+      }
+    case OrbitActionType.REFRESH_POPULAR_ORBITS_LOADING:
+      return {
+        ...state,
+        loading: true,
+        loadingFailed: false,
+      }
+    case OrbitActionType.REFRESH_POPULAR_ORBITS_ERROR:
+      return {
+        ...state,
+        loading: false,
+        loadingFailed: true,
+      }
+    case OrbitActionType.REFRESH_POPULAR_ORBITS_LOADED:
       return {
         ...state,
         loading: false,

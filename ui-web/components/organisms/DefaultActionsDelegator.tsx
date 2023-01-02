@@ -16,6 +16,7 @@ import {
   usePost,
 } from '@/components/organisms/PostContext'
 import {
+  orbitActionLoadPopularOrbits,
   orbitActionLoadUserOrbits,
   useOrbits,
 } from '@/components/organisms/OrbitContext'
@@ -175,7 +176,7 @@ export default function DefaultActionsDelegator() {
   }, [session, feedState, feedDispatch, orbitsState, route])
 
   useEffect(() => {
-    if (!profileState.profile?.handle || !session || orbitsState.orbits) {
+    if (orbitsState.orbits) {
       return
     }
 
@@ -183,11 +184,15 @@ export default function DefaultActionsDelegator() {
       return
     }
 
-    orbitActionLoadUserOrbits(
-      profileState.profile.handle,
-      session.access_token,
-      orbitsDispatch
-    )
+    if (!profileState.profile?.handle || !session) {
+      orbitActionLoadPopularOrbits(orbitsDispatch)
+    } else {
+      orbitActionLoadUserOrbits(
+        profileState.profile.handle,
+        session.access_token,
+        orbitsDispatch
+      )
+    }
   }, [session, profileState, orbitsState, orbitsDispatch])
 
   useEffect(() => {

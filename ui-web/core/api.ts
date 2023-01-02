@@ -386,6 +386,19 @@ export async function fetchUserOrbits(
   return await response.json()
 }
 
+export async function fetchPopularOrbits(): Promise<IListResponse<IOrbit>> {
+  const response = await fetch(`${Config.apiUri}/orbits/popular`, {
+    ...buildUnauthenticatedHeaders(),
+    method: 'GET',
+  })
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
+}
+
 export async function fetchOrbit(
   shortcode: string,
   authToken: string | undefined

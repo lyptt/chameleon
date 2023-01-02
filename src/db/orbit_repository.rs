@@ -23,6 +23,7 @@ pub trait OrbitRepo {
   async fn fetch_orbit_for_user(&self, orbit_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<OrbitPub>, LogicErr>;
   async fn count_user_orbits(&self, user_id: &Uuid) -> Result<i64, LogicErr>;
   async fn fetch_user_orbits(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
+  async fn fetch_popular_orbits(&self) -> Result<Vec<Orbit>, LogicErr>;
   async fn create_orbit(
     &self,
     name: &str,
@@ -119,6 +120,24 @@ impl OrbitRepo for DbOrbitRepo {
       .query(
         "SELECT o.* FROM orbits o INNER JOIN user_orbits u ON u.orbit_id = o.orbit_id WHERE u.user_id = $1 ORDER BY o.shortcode ASC LIMIT $2 OFFSET $3",
         &[&user_id, &limit, &skip],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(rows.into_iter().flat_map(Orbit::from_row).collect())
+  }
+
+  async fn fetch_popular_orbits(&self) -> Result<Vec<Orbit>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        r#"SELECT o.* FROM orbits o
+      INNER JOIN posts p
+      ON p.orbit_id = o.orbit_id
+      GROUP BY o.orbit_id
+      ORDER BY COUNT(p.*) DESC
+      LIMIT 10"#,
+        &[],
       )
       .await
       .map_err(map_db_err)?;

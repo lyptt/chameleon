@@ -51,8 +51,8 @@ use routes::nodeinfo::{api_get_nodeinfo, api_get_nodeinfo_2_1};
 use routes::oauth::{api_oauth_authorize, api_oauth_authorize_post, api_oauth_token};
 use routes::orbit::{
   api_create_orbit, api_create_orbit_moderator, api_delete_orbit, api_delete_orbit_moderator, api_get_orbit,
-  api_get_orbit_moderators, api_get_orbit_named, api_get_orbits, api_get_user_orbits, api_join_orbit, api_leave_orbit,
-  api_update_orbit, api_update_orbit_assets, api_update_orbit_moderator,
+  api_get_orbit_moderators, api_get_orbit_named, api_get_orbits, api_get_popular_orbits, api_get_user_orbits,
+  api_join_orbit, api_leave_orbit, api_update_orbit, api_update_orbit_assets, api_update_orbit_moderator,
 };
 use routes::post::{
   api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_post, api_get_user_friends_feed,
@@ -361,6 +361,11 @@ async fn main() -> std::io::Result<()> {
           .name("orbits")
           .route(web::get().to(api_get_orbits))
           .route(web::post().to(api_create_orbit)),
+      )
+      .service(
+        web::resource("/api/orbits/popular")
+          .name("orbits")
+          .route(web::get().to(api_get_popular_orbits)),
       )
       .service(
         web::resource("/api/orbits/{orbit_name}")

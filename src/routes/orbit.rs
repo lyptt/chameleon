@@ -89,6 +89,22 @@ pub async fn api_get_user_orbits(
   })
 }
 
+pub async fn api_get_popular_orbits(orbits: web::Data<OrbitPool>) -> impl Responder {
+  let orbits = match orbits.fetch_popular_orbits().await {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let total_items: i64 = orbits.len().try_into().unwrap_or_default();
+
+  HttpResponse::Ok().json(ListResponse {
+    data: orbits,
+    page: 0,
+    total_items,
+    total_pages: 1,
+  })
+}
+
 pub async fn api_get_orbits(orbits: web::Data<OrbitPool>, query: web::Query<OrbitsQuery>) -> impl Responder {
   let page = query.page.unwrap_or(0);
   let page_size = query.page_size.unwrap_or(20);

@@ -3,11 +3,13 @@ import cx from 'classnames'
 import Link from 'next/link'
 import { HTMLAttributes } from 'react'
 import { IoEarthOutline, IoHomeOutline, IoPersonOutline } from 'react-icons/io5'
+import { useAuth } from '../organisms/AuthContext'
 import { useOrbits } from '../organisms/OrbitContext'
 
 const transparentPixelUri = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=`
 
 export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
+  const { session } = useAuth()
   const { state } = useOrbits()
   const { orbits } = state
 
@@ -25,14 +27,16 @@ export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
             </Link>
           </li>
 
-          <li className="orbit-side-nav__list-item">
-            <Link legacyBehavior href="/feed/friends">
-              <a>
-                <IoPersonOutline className="orbit-side-nav__list-item-icon" />
-                Friends
-              </a>
-            </Link>
-          </li>
+          {!!session && (
+            <li className="orbit-side-nav__list-item">
+              <Link legacyBehavior href="/feed/friends">
+                <a>
+                  <IoPersonOutline className="orbit-side-nav__list-item-icon" />
+                  Friends
+                </a>
+              </Link>
+            </li>
+          )}
 
           <li className="orbit-side-nav__list-item">
             <Link legacyBehavior href="/feed/federated">
@@ -44,7 +48,10 @@ export default function SideNav({ className }: HTMLAttributes<HTMLDivElement>) {
           </li>
         </ul>
 
-        <div className="orbit-side-nav__header">Orbits</div>
+        {!!session && <div className="orbit-side-nav__header">Orbits</div>}
+        {!session && (
+          <div className="orbit-side-nav__header">Popular Orbits</div>
+        )}
         <ul className="orbit-side-nav__list">
           {!!orbits &&
             orbits.map((orbit) => (
