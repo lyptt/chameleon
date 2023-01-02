@@ -61,7 +61,6 @@ pub async fn register_user(
   .to_string();
 
   let fediverse_id = format!("@{}@{}", username, SETTINGS.server.fqdn);
-  let fediverse_uri = format!("/users/{username}");
 
   let avatar_url = Some(
     Gravatar::new(&email.clone().unwrap_or_else(|| fediverse_id.clone()))
@@ -93,7 +92,6 @@ pub async fn register_user(
     .create(
       username,
       &fediverse_id,
-      &fediverse_uri,
       &avatar_url,
       email,
       &password_hash,

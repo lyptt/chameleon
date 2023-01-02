@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::settings::SETTINGS;
 
@@ -14,24 +15,24 @@ pub struct WebfingerRecordLink {
 }
 
 impl WebfingerRecordLink {
-  pub fn build_self_uri(handle: &str) -> String {
-    format!("{}/users/{}", SETTINGS.server.api_fqdn, handle)
+  pub fn build_self_uri(id: &Uuid) -> String {
+    format!("{}/user/{}", SETTINGS.server.api_fqdn, id)
   }
 
-  pub fn build_self_link(handle: &str) -> WebfingerRecordLink {
+  pub fn build_self_link(id: &Uuid) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "self".to_string(),
       link_type: "application/activity+json".to_string(),
-      href: Some(format!("{}/users/{}", SETTINGS.server.api_fqdn, handle)),
+      href: Some(format!("{}/user/{}", SETTINGS.server.api_fqdn, id)),
       template: None,
     }
   }
 
-  pub fn build_feed_link(handle: &str) -> WebfingerRecordLink {
+  pub fn build_feed_link(id: &Uuid) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "feed".to_string(),
       link_type: "application/activity+json".to_string(),
-      href: Some(format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, handle)),
+      href: Some(format!("{}/user/{}/feed", SETTINGS.server.api_fqdn, id)),
       template: None,
     }
   }

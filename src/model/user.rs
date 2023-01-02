@@ -48,12 +48,12 @@ pub struct User {
 impl User {
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
-      aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.handle)]),
+      aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.user_id)]),
       subject: self.fediverse_id.replacen('@', "acct:", 1),
       links: [
-        WebfingerRecordLink::build_self_link(&self.handle),
+        WebfingerRecordLink::build_self_link(&self.user_id),
         WebfingerRecordLink::build_profile_page_link(&self.handle),
-        WebfingerRecordLink::build_feed_link(&self.handle),
+        WebfingerRecordLink::build_feed_link(&self.user_id),
       ]
       .into(),
     }
@@ -100,12 +100,12 @@ impl ActivityConvertible for User {
     let public_inbox_uri = format!("{}/federate/activitypub/shared-inbox", SETTINGS.server.api_fqdn);
     let inbox_uri = format!(
       "{}/federate/activitypub/inbox/{}",
-      SETTINGS.server.api_fqdn, &self.handle
+      SETTINGS.server.api_fqdn, &self.user_id
     );
-    let outbox_uri = format!("{}/users/{}/feed", SETTINGS.server.api_fqdn, &self.handle);
-    let liked_uri = format!("{}/users/{}/likes", SETTINGS.server.api_fqdn, &self.handle);
-    let followers_uri = format!("{}/users/{}/followers", SETTINGS.server.api_fqdn, &self.handle);
-    let following_uri = format!("{}/users/{}/following", SETTINGS.server.api_fqdn, &self.handle);
+    let outbox_uri = format!("{}/user/{}/feed", SETTINGS.server.api_fqdn, &self.user_id);
+    let liked_uri = format!("{}/user/{}/likes", SETTINGS.server.api_fqdn, &self.user_id);
+    let followers_uri = format!("{}/user/{}/followers", SETTINGS.server.api_fqdn, &self.user_id);
+    let following_uri = format!("{}/user/{}/following", SETTINGS.server.api_fqdn, &self.user_id);
     let icon = self.avatar_url.clone().map(|avatar_url| {
       Reference::Embedded(Box::new(
         Object::builder()

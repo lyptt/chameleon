@@ -153,30 +153,28 @@ async fn main() -> std::io::Result<()> {
       .app_data(web::Data::new(Cdn::new()))
       .app_data(web::Data::new(Queue::new()))
       .service(
-        web::resource("/api/users/{handle}")
+        web::resource("/api/user/{user_id}")
           .name("get_user_by_id")
           .route(
             web::get()
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_user_profile),
           )
-          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user))
-          .route(web::get().to(api_get_user_profile)),
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user)),
       )
       .service(
-        web::resource("/api/users/{handle}/feed")
-          .name("get_user_public_feed")
+        web::resource("/api/user/{user_id}/feed")
+          .name("get_user_id_public_feed")
           .route(
             web::get()
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
               .to(api_activitypub_get_federated_user_posts),
           )
-          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_federated_user_posts))
-          .route(web::get().to(api_get_user_posts)),
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_federated_user_posts)),
       )
       .service(
-        web::resource("/api/users/{handle}/likes")
-          .name("get_user_public_likes_feed")
+        web::resource("/api/user/{user_id}/likes")
+          .name("get_user_id_public_likes_feed")
           .route(
             web::get()
               .guard(ACTIVITYPUB_ACCEPT_GUARD)
@@ -186,7 +184,41 @@ async fn main() -> std::io::Result<()> {
             web::get()
               .guard(HTML_GUARD)
               .to(api_redirect_to_federated_user_liked_posts),
+          ),
+      )
+      .service(
+        web::resource("/api/user/{user_id}/followers")
+          .name("user_id_followers")
+          .route(
+            web::get()
+              .guard(ACTIVITYPUB_ACCEPT_GUARD)
+              .to(api_activitypub_get_user_followers),
           )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user_followers)),
+      )
+      .service(
+        web::resource("/api/user/{user_id}/following")
+          .name("user_id_following")
+          .route(
+            web::get()
+              .guard(ACTIVITYPUB_ACCEPT_GUARD)
+              .to(api_activitypub_get_user_following),
+          )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user_following)),
+      )
+      .service(
+        web::resource("/api/users/{handle}")
+          .name("get_user_by_handle")
+          .route(web::get().to(api_get_user_profile)),
+      )
+      .service(
+        web::resource("/api/users/{handle}/feed")
+          .name("get_user_public_feed")
+          .route(web::get().to(api_get_user_posts)),
+      )
+      .service(
+        web::resource("/api/users/{handle}/likes")
+          .name("get_user_public_likes_feed")
           .route(web::get().to(api_get_user_liked_posts)),
       )
       .service(
@@ -198,23 +230,11 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/users/{user_handle}/followers")
           .name("user_followers")
-          .route(
-            web::get()
-              .guard(ACTIVITYPUB_ACCEPT_GUARD)
-              .to(api_activitypub_get_user_followers),
-          )
-          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user_followers))
           .route(web::get().to(api_get_user_followers)),
       )
       .service(
         web::resource("/api/users/{user_handle}/following")
           .name("user_following")
-          .route(
-            web::get()
-              .guard(ACTIVITYPUB_ACCEPT_GUARD)
-              .to(api_activitypub_get_user_following),
-          )
-          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_user_following))
           .route(web::get().to(api_get_user_following)),
       )
       .service(

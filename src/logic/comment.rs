@@ -147,7 +147,7 @@ pub async fn activitypub_get_comments(
   page: &Option<i64>,
   page_size: &Option<i64>,
 ) -> Result<ActivityPubDocument, LogicErr> {
-  let author_handle = match posts.fetch_owner_handle_by_id(post_id).await {
+  let author_id = match posts.fetch_owner_by_id(post_id).await {
     Some(h) => h,
     None => return Err(LogicErr::MissingRecord),
   };
@@ -159,10 +159,6 @@ pub async fn activitypub_get_comments(
     Err(err) => return Err(err),
   };
 
-  if comments_count == 0 {
-    return Err(LogicErr::MissingRecord);
-  }
-
   match comments
     .fetch_comments(post_id, own_user_id, page_size, page * page_size)
     .await
@@ -173,7 +169,7 @@ pub async fn activitypub_get_comments(
       page_size.try_into().unwrap_or_default(),
       comments_count.try_into().unwrap_or_default(),
       comments,
-      Some(format!("{}/users/{}", SETTINGS.server.api_fqdn, author_handle)),
+      Some(format!("{}/user/{}", SETTINGS.server.api_fqdn, author_id)),
     )),
     Err(err) => Err(err),
   }
@@ -198,12 +194,12 @@ pub async fn activitypub_get_comment(
   comment_id: &Uuid,
   own_user_id: &Option<Uuid>,
 ) -> Result<ActivityPubDocument, LogicErr> {
-  let author_handle = match posts.fetch_owner_handle_by_id(post_id).await {
+  let author_id = match posts.fetch_owner_by_id(post_id).await {
     Some(h) => h,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  let actor = format!("{}/users/{}", SETTINGS.server.api_fqdn, author_handle);
+  let actor = format!("{}/user/{}", SETTINGS.server.api_fqdn, author_id);
 
   match comments.fetch_comment(post_id, comment_id, own_user_id).await {
     Some(comment) => match comment.to_object(&actor) {
