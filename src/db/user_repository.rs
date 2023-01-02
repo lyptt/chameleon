@@ -38,6 +38,7 @@ pub trait UserRepo {
     public_key: &str,
   ) -> Result<Uuid, LogicErr>;
   async fn create_from(&self, user: &User) -> Result<User, LogicErr>;
+  async fn update_from(&self, user: &User) -> Result<User, LogicErr>;
   async fn delete_user_from_uri(&self, uri: &str) -> Result<(), LogicErr>;
 }
 
@@ -287,6 +288,46 @@ impl UserRepo for DbUserRepo {
       url_1, url_2, url_3, url_4, url_5, url_1_title, url_2_title, url_3_title, url_4_title, url_5_title, intro_md, intro_html, private_key, public_key, 
       ext_apub_followers_uri, ext_apub_following_uri, ext_apub_inbox_uri, ext_apub_outbox_uri) 
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) RETURNING user_id"#,
+      &[
+        &user.user_id,
+        &user.handle,
+        &user.fediverse_id,
+        &user.fediverse_uri,
+        &user.avatar_url,
+        &user.email,
+        &user.password_hash,
+        &user.is_external,
+        &user.url_1,
+        &user.url_2,
+        &user.url_3,
+        &user.url_4,
+        &user.url_5,
+        &user.url_1_title,
+        &user.url_2_title,
+        &user.url_3_title,
+        &user.url_4_title,
+        &user.url_5_title,
+        &user.intro_md,
+        &user.intro_html,
+        &user.private_key,
+        &user.public_key,
+        &user.ext_apub_followers_uri,
+        &user.ext_apub_following_uri,
+        &user.ext_apub_inbox_uri,
+        &user.ext_apub_outbox_uri,
+      ],
+    )
+    .await
+    .map_err(map_db_err)?;
+
+    Ok(user.to_owned())
+  }
+
+  async fn update_from(&self, user: &User) -> Result<User, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(r#"UPDATE users SET handle = $2, fediverse_id = $3, fediverse_uri = $4, avatar_url = $5, email = $6, password_hash = $7, is_external = $8, 
+    url_1 = $9, url_2 = $10, url_3 = $11, url_4 = $12, url_5 = $13, url_1_title = $14, url_2_title = $15, url_3_title = $16, url_4_title = $17, url_5_title = $18, intro_md = $19, intro_html = $20, private_key = $21, public_key = $22, 
+    ext_apub_followers_uri = $23, ext_apub_following_uri = $24, ext_apub_inbox_uri = $25, ext_apub_outbox_uri = $26 WHERE user_id = $1"#,
       &[
         &user.user_id,
         &user.handle,

@@ -1,1 +1,2 @@
 ALTER TABLE posts ADD COLUMN title TEXT NULL;
+ALTER TABLE posts ADD COLUMN ext_apub_uri TEXT NULL;

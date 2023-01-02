@@ -7,7 +7,8 @@ import { cdnUrl } from '@/core/utils'
 
 export interface InfoCardAction {
   title: string
-  href: string
+  href?: string
+  action?: () => void
   button: 'default' | 'outline'
 }
 
@@ -64,7 +65,11 @@ export default function InfoCard({
           <div role="separator" className="orbit-info-card__separator" />
           <div className="orbit-info-card__actions">
             {actions.map((action) => (
-              <Button key={action.title + action.href} href={action.href}>
+              <Button
+                key={action.title}
+                href={action.href}
+                onClick={action.action}
+              >
                 {action.title}
               </Button>
             ))}

@@ -27,6 +27,7 @@ pub trait OrbitRepo {
     avatar_uri: &Option<String>,
     banner_uri: &Option<String>,
     is_external: bool,
+    uri: &str,
   ) -> Result<Uuid, LogicErr>;
   async fn update_orbit(
     &self,
@@ -139,9 +140,9 @@ impl OrbitRepo for DbOrbitRepo {
     avatar_uri: &Option<String>,
     banner_uri: &Option<String>,
     is_external: bool,
+    uri: &str,
   ) -> Result<Uuid, LogicErr> {
     let orbit_id = Uuid::new_v4();
-    let uri = format!("/orbits/{}", orbit_id);
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db

@@ -80,7 +80,7 @@ const reducer = (
 }
 
 export const ProfileProvider = ({ children }: any) => {
-  const [state, dispatch] = useReducer(reducer, initialState) // (**)
+  const [state, dispatch] = useReducer(reducer, initialState)
   const contextValue = useMemo(() => {
     return { state, dispatch }
   }, [state, dispatch])

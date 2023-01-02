@@ -65,7 +65,7 @@ export default function NewPostPage({
         dispatch
       )
     },
-    [submitting]
+    [submitting, session]
   )
 
   return (

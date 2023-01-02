@@ -60,6 +60,7 @@ pub trait PostRepo {
     content_html: &str,
     visibility: &AccessType,
     orbit_id: &Option<Uuid>,
+    title: &Option<String>,
   ) -> Result<Uuid, LogicErr>;
   async fn create_post_from(&self, post: Post) -> Result<(), LogicErr>;
   async fn user_owns_post(&self, user_id: &Uuid, post_id: &Uuid) -> bool;
@@ -274,14 +275,15 @@ impl PostRepo for DbPostRepo {
     content_html: &str,
     visibility: &AccessType,
     orbit_id: &Option<Uuid>,
+    title: &Option<String>,
   ) -> Result<Uuid, LogicErr> {
     let post_id = Uuid::new_v4();
     let uri = format!("/feed/{}", post_id);
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db.query_one(
-      "INSERT INTO posts (post_id, user_id, content_md, content_html, visibility, uri, orbit_id, is_external) VALUES ($1, $2, $3, $4, $5, $6, $7, false) RETURNING post_id",
-      &[&post_id, &user_id, &content_md, &content_html, &visibility.to_string(), &uri, &orbit_id],
+      "INSERT INTO posts (post_id, user_id, content_md, content_html, visibility, uri, orbit_id, title, is_external) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) RETURNING post_id",
+      &[&post_id, &user_id, &content_md, &content_html, &visibility.to_string(), &uri, &orbit_id, &title],
     )
     .await
     .map_err(map_db_err)?;

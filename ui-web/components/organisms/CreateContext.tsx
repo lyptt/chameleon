@@ -2,17 +2,23 @@ import {
   fetchOrbit,
   fetchOrbitById,
   fetchPost,
+  fetchProfile,
+  fetchUserProfile,
   getJobStatus,
   INewOrbit,
   INewPost,
+  INewProfile,
   IObjectResponse,
   IOrbit,
   IPost,
+  IProfile,
   JobStatus,
   submitOrbit,
   submitOrbitImage,
   submitPost,
   submitPostImage,
+  submitProfile,
+  submitProfileImage,
 } from '@/core/api'
 import React, { useReducer, createContext, useMemo, useContext } from 'react'
 import retry from 'async-retry'
@@ -36,6 +42,12 @@ enum CreateActionType {
   SUBMIT_ORBIT_ERROR = 'SUBMIT_ORBIT_ERROR',
   SUBMIT_ORBIT_COMPLETED = 'SUBMIT_ORBIT_COMPLETED',
   SUBMIT_ORBIT_DISMISS_ERROR = 'SUBMIT_ORBIT_DISMISS_ERROR',
+  SUBMIT_PROFILE_SENDING_METADATA = 'SUBMIT_PROFILE_SENDING_METADATA',
+  SUBMIT_PROFILE_SENDING_IMAGE = 'SUBMIT_PROFILE_SENDING_IMAGE',
+  SUBMIT_PROFILE_SENDING_IMAGE_PROGRESS = 'SUBMIT_PROFILE_SENDING_IMAGE_PROGRESS',
+  SUBMIT_PROFILE_ERROR = 'SUBMIT_PROFILE_ERROR',
+  SUBMIT_PROFILE_COMPLETED = 'SUBMIT_PROFILE_COMPLETED',
+  SUBMIT_PROFILE_DISMISS_ERROR = 'SUBMIT_PROFILE_DISMISS_ERROR',
 }
 
 interface CreateAction {
@@ -51,6 +63,10 @@ interface CreateAction {
   newOrbitFiles?: File[]
   newOrbitJobId?: string
   newOrbit?: IOrbit
+  newProfileMetadata?: INewProfile
+  newProfileFiles?: File[]
+  newProfileJobId?: string
+  newProfile?: IProfile
   progress?: number
 }
 
@@ -211,6 +227,53 @@ export async function createActionSubmitOrbit(
   }
 }
 
+export async function createActionSubmitProfile(
+  currentProfile: IProfile,
+  profile: INewProfile,
+  files: File[],
+  authToken: string | undefined,
+  dispatch: React.Dispatch<CreateAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: CreateActionType.SUBMIT_PROFILE_SENDING_METADATA,
+    newProfileMetadata: profile,
+  })
+
+  try {
+    await submitProfile(currentProfile, profile, authToken)
+
+    if (files.length) {
+      dispatch({
+        type: CreateActionType.SUBMIT_PROFILE_SENDING_IMAGE,
+        newProfileFiles: files,
+      })
+
+      await submitProfileImage(files, authToken, (progress) =>
+        dispatch({
+          type: CreateActionType.SUBMIT_PROFILE_SENDING_IMAGE_PROGRESS,
+          progress,
+        })
+      )
+    }
+
+    const newProfile = await fetchProfile(authToken)
+
+    return dispatch({
+      type: CreateActionType.SUBMIT_PROFILE_COMPLETED,
+      newProfile: newProfile,
+    })
+  } catch (error) {
+    dispatch({
+      type: CreateActionType.SUBMIT_PROFILE_ERROR,
+      error,
+    })
+  }
+}
+
 export function createActionDismiss(dispatch: React.Dispatch<CreateAction>) {
   return dispatch({
     type: CreateActionType.DISMISS,
@@ -230,10 +293,12 @@ export interface ICreateState {
   submittingFailed: boolean
   submittingPost?: INewPost | null
   submittingOrbit?: INewOrbit | null
+  submittingProfile?: INewProfile | null
   submittingFiles?: File[] | null
   submittingJobId?: string | null
   submittedPost?: IPost
   submittedOrbit?: IOrbit
+  submittedProfile?: IProfile
 }
 
 const initialState: ICreateState = {
@@ -423,6 +488,74 @@ const reducer = (state: ICreateState, action: CreateAction): ICreateState => {
         submittingFailed: true,
       }
     case CreateActionType.SUBMIT_ORBIT_DISMISS_ERROR:
+      return {
+        ...state,
+        submittingFailed: false,
+      }
+    case CreateActionType.SUBMIT_PROFILE_SENDING_METADATA:
+      return {
+        ...state,
+        submitting: true,
+        submittingMetadata: true,
+        submittingProfile: action.newProfileMetadata,
+      }
+    case CreateActionType.SUBMIT_PROFILE_SENDING_IMAGE:
+      return {
+        ...state,
+        submitting: true,
+        submittingMetadata: false,
+        submittingImage: true,
+        submittingImageProgress: 0,
+        submittingFiles: action.newProfileFiles,
+      }
+    case CreateActionType.SUBMIT_PROFILE_SENDING_IMAGE_PROGRESS:
+      return {
+        ...state,
+        submittingImageProgress:
+          action.progress !== undefined && action.progress < 1
+            ? action.progress
+            : undefined,
+      }
+    case CreateActionType.SUBMIT_PROFILE_COMPLETED:
+      if (!action.newProfile) {
+        return {
+          ...state,
+          submitting: false,
+          submittingMetadata: false,
+          submittingImage: false,
+          submittingImageProgress: undefined,
+          submittingProfile: null,
+          submittingFiles: null,
+          submittingJobId: null,
+          submittingFailed: false,
+        }
+      }
+
+      return {
+        ...state,
+        submitting: false,
+        submittingMetadata: false,
+        submittingImage: false,
+        submittingImageProgress: undefined,
+        submittingProfile: null,
+        submittingFiles: null,
+        submittingJobId: null,
+        submittingFailed: false,
+        submittedProfile: action.newProfile,
+      }
+    case CreateActionType.SUBMIT_PROFILE_ERROR:
+      return {
+        ...state,
+        submitting: false,
+        submittingMetadata: false,
+        submittingImage: false,
+        submittingImageProgress: undefined,
+        submittingProfile: null,
+        submittingFiles: null,
+        submittingJobId: null,
+        submittingFailed: true,
+      }
+    case CreateActionType.SUBMIT_PROFILE_DISMISS_ERROR:
       return {
         ...state,
         submittingFailed: false,

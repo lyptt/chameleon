@@ -46,10 +46,10 @@ Orbit provides its own API that's easy for developers to consume and build appli
 
 ## Requirements:
 
-- **A relational DB**. Currently we only support PostgreSQL 14. Older versions may work but aren't tested against. Other DBs are not planned to be supported in the medium to long term future.
+- **A relational DB**. Currently we only support PostgreSQL 15. Older versions are not supported as we rely on features new in PostgreSQL 15 ([further reading](https://blog.rustprooflabs.com/2022/07/postgres-15-unique-improvement-with-null)). Other DBs are not planned to be supported in the medium to long term future.
 - **A job queue**. Currently we support AWS SQS, and RabbitMQ. For SQS you must create the queues yourself, for RabbitMQ they're created on startup.
 - **An in-memory DB**. Currently we only support Redis.
-- **A CDN**. Currently we support AWS S3, and any file store accessible from your instance's server via a local file path.
+- **A CDN**. Currently we support AWS S3, and any file store accessible from your instance's server via a local file path. You can use any alternative media hosting platform as long as it can be accessed and written to by a local file path on the orbit server.
 
 # Contributing
 

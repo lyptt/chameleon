@@ -1,4 +1,4 @@
-DROP CONSTRAINT fk_app_user;
+ALTER TABLE apps DROP CONSTRAINT fk_app_user;
 
 ALTER TABLE apps DROP COLUMN user_id;
 ALTER TABLE apps DROP COLUMN owner_instance_uri;

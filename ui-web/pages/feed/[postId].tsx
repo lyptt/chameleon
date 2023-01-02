@@ -7,6 +7,7 @@ import { useRouter } from 'next/router'
 import InfoCard from '@/components/atoms/InfoCard'
 import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
+import dayjsLocalizedFormat from 'dayjs/plugin/localizedFormat'
 import {
   postActionLoadAuthor,
   postActionLoadComments,
@@ -17,6 +18,7 @@ import {
 import PostContent from '@/components/molecules/PostContent'
 
 dayjs.extend(dayjsUtc)
+dayjs.extend(dayjsLocalizedFormat)
 
 export default function PostPage({
   className,
@@ -99,10 +101,25 @@ export default function PostPage({
     post.post_id === postId &&
     post.orbit_id == orbit?.orbit_id
 
+  let title = 'Orbit'
+  if (post) {
+    if (post.title) {
+      if (post.orbit_shortcode) {
+        title = `${title} - u/${post.orbit_shortcode} - ${post.title}`
+      } else {
+        title = `${title} - ${post.title}`
+      }
+    } else {
+      title = `${title} - Post by ${post.user_handle} on ${dayjs
+        .utc(post.created_at)
+        .format('L')}`
+    }
+  }
+
   return (
     <section className={cx('orbit-page-post', className)}>
       <Head>
-        <title>Orbit</title>
+        <title>{title}</title>
         <meta
           name="description"
           content="Welcome to Orbit, your place to share cool things with the world in an open, federated network"

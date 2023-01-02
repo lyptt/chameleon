@@ -29,5 +29,5 @@ CREATE TABLE post_attachments (
   PRIMARY KEY (attachment_id)
 );
 
-CREATE UNIQUE INDEX post_attachments_user_post_idx ON post_attachments(user_id, post_id);
+CREATE INDEX post_attachments_user_post_idx ON post_attachments(user_id, post_id);
 
