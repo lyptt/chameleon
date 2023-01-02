@@ -14,6 +14,7 @@ import {
 import { LazyImage } from '../quarks/LazyImage'
 import Config from '@/core/config'
 import { cdnUrl } from '@/core/utils'
+import { useProfile } from '../organisms/ProfileContext'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsRelative)
@@ -26,6 +27,8 @@ export interface PostContentProps extends HTMLProps<HTMLDivElement> {
   commentsCount?: number
   comments: IComment[]
   hideOrbitInformation?: boolean
+  onAddComment?: (postId: string) => void
+  onDeleteComment?: (postId: string, commentId: string) => void
 }
 
 export default function PostContent({
@@ -35,8 +38,13 @@ export default function PostContent({
   comments,
   hideOrbitInformation,
   className,
+  onAddComment,
+  onDeleteComment,
   ...rest
 }: PostContentProps) {
+  const {
+    state: { profile },
+  } = useProfile()
   return (
     <div className={cx('orbit-post-content', className)} {...rest}>
       <div className="orbit-post-content__info-bar">
@@ -126,6 +134,14 @@ export default function PostContent({
         <Link
           className="orbit-post-content__command"
           href={`/feed/${post.post_id}/new-comment`}
+          onClick={
+            onAddComment
+              ? (e) => {
+                  e.preventDefault()
+                  onAddComment(post.post_id)
+                }
+              : undefined
+          }
         >
           <IoChatboxOutline />
           {!!commentsCount && (
@@ -193,12 +209,30 @@ export default function PostContent({
                 <div className="orbit-post-content__command" role="button">
                   Hide
                 </div>
-                <Link
-                  className="orbit-post-content__command"
-                  href={`/feed/${post.post_id}/comments/${comment.comment_id}/report`}
-                >
-                  Report
-                </Link>
+                {comment.user_id === profile?.user_id && (
+                  <Link
+                    className="orbit-post-content__command"
+                    href={`/feed/${post.post_id}/comments/${comment.comment_id}/delete`}
+                    onClick={
+                      onDeleteComment
+                        ? (e) => {
+                            e.preventDefault()
+                            onDeleteComment(post.post_id, comment.comment_id)
+                          }
+                        : undefined
+                    }
+                  >
+                    Delete
+                  </Link>
+                )}
+                {comment.user_id !== profile?.user_id && (
+                  <Link
+                    className="orbit-post-content__command"
+                    href={`/feed/${post.post_id}/comments/${comment.comment_id}/report`}
+                  >
+                    Report
+                  </Link>
+                )}
               </div>
             </div>
           ))}

@@ -1,6 +1,7 @@
 import {
   createPostComment,
   createPostCommentLike,
+  deletePostComment,
   deletePostCommentLike,
   fetchOrbit,
   fetchPost,
@@ -31,6 +32,10 @@ enum PostActionType {
   REFRESH_POST_COMMENTS_LOADED = 'REFRESH_POST_COMMENTS_LOADED',
   UPDATE_POST_LIKED = 'UPDATE_POST_LIKED',
   UPDATE_COMMENT_LIKED = 'UPDATE_COMMENT_LIKED',
+  UPDATE_POST_COMMENTING = 'UPDATE_POST_COMMENTING',
+  UPDATE_POST_COMMENT_FAILED = 'UPDATE_POST_COMMENT_FAILED',
+  UPDATE_POST_COMMENTED = 'UPDATE_POST_COMMENTED',
+  DELETE_COMMENT = 'DELETE_COMMENT',
   SELECT_COMMENT = 'SELECT_COMMENT',
   SELECT_POST = 'SELECT_POST',
   DESELECT = 'DESELECT',
@@ -46,6 +51,7 @@ interface PostAction {
   error?: any
   liked?: boolean
   commentId?: string
+  ownUserId?: string
   comment?: IComment
   post?: IPost
 }
@@ -196,13 +202,17 @@ export async function postActionAddPostComment(
     return
   }
 
-  dispatch({ type: PostActionType.DESELECT })
+  dispatch({ type: PostActionType.UPDATE_POST_COMMENTING })
 
   try {
-    await createPostComment(comment, postId, authToken)
-    await postActionLoadComments(postId, 0, authToken, dispatch)
+    const response = await createPostComment(comment, postId, authToken)
+    dispatch({
+      type: PostActionType.UPDATE_POST_COMMENTED,
+      comment: response.data,
+    })
   } catch (err) {
     console.error(err)
+    dispatch({ type: PostActionType.UPDATE_POST_COMMENT_FAILED })
   }
 }
 
@@ -232,6 +242,30 @@ export async function postActionUpdateCommentLiked(
   }
 }
 
+export async function postActionDeleteComment(
+  ownUserId: string,
+  commentId: string,
+  postId: string,
+  authToken: string | undefined,
+  dispatch: React.Dispatch<PostAction>
+) {
+  if (!authToken) {
+    return
+  }
+
+  dispatch({
+    type: PostActionType.DELETE_COMMENT,
+    commentId,
+    ownUserId,
+  })
+
+  try {
+    await deletePostComment(postId, commentId, authToken)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 export interface IPostState {
   post?: IPost
   author?: IProfile
@@ -252,6 +286,8 @@ export interface IPostState {
   noMorePages: boolean
   selectedComment?: IComment
   selectedPost?: IPost
+  submissionLoading: boolean
+  submissionFailed: boolean
 }
 
 const initialState: IPostState = {
@@ -270,6 +306,8 @@ const initialState: IPostState = {
   totalComments: undefined,
   selectedComment: undefined,
   selectedPost: undefined,
+  submissionLoading: false,
+  submissionFailed: false,
 }
 
 export const PostContext = createContext(
@@ -409,6 +447,67 @@ const reducer = (state: IPostState, action: PostAction): IPostState => {
         ...state,
         selectedPost: action.post,
       }
+    case PostActionType.UPDATE_POST_COMMENTING:
+      return {
+        ...state,
+        submissionLoading: true,
+        submissionFailed: false,
+      }
+    case PostActionType.UPDATE_POST_COMMENT_FAILED:
+      return {
+        ...state,
+        submissionLoading: false,
+        submissionFailed: true,
+      }
+    case PostActionType.UPDATE_POST_COMMENTED: {
+      if (action.comment === undefined) {
+        return state
+      }
+
+      const post = state.post
+      if (!post) {
+        return state
+      }
+
+      return {
+        ...state,
+        post: { ...post, comments: post.comments + 1 },
+        comments: [action.comment, ...state.comments],
+        submissionFailed: false,
+        submissionLoading: false,
+        selectedComment: action.comment,
+      }
+    }
+    case PostActionType.DELETE_COMMENT: {
+      if (action.commentId === undefined || action.ownUserId === undefined) {
+        return state
+      }
+
+      const post = state.post
+      if (!post) {
+        return state
+      }
+
+      const commentIndex = state.comments.findIndex(
+        (c) =>
+          c.comment_id === action.commentId && c.user_id === action.ownUserId
+      )
+      if (commentIndex === -1) {
+        return state
+      }
+
+      const newComments = [...state.comments]
+      newComments.splice(commentIndex, 1)
+
+      return {
+        ...state,
+        post: { ...post, comments: post.comments + 1 },
+        comments: newComments,
+        submissionFailed: false,
+        submissionLoading: false,
+        selectedComment: action.comment,
+      }
+    }
     case PostActionType.DESELECT:
       return {
         ...state,

@@ -64,6 +64,7 @@ export interface CreateFormFileUploadGroupProps extends CreateFormGroupProps {
 export interface CreateFormButtonsProps extends HTMLProps<HTMLDivElement> {
   submitTitle: string
   cancelTitle: string
+  onCancel?: () => void
 }
 
 export function CreateForm({
@@ -263,6 +264,7 @@ export function CreateFormButtons({
   submitTitle,
   cancelTitle,
   disabled,
+  onCancel,
   ...rest
 }: CreateFormButtonsProps) {
   const router = useRouter()
@@ -276,6 +278,14 @@ export function CreateFormButtons({
         href={(router.query.from as string) || '/'}
         variant="outline"
         disabled={disabled}
+        onClick={
+          onCancel
+            ? (e) => {
+                e.preventDefault()
+                onCancel()
+              }
+            : undefined
+        }
       >
         {cancelTitle}
       </Button>
@@ -465,44 +475,39 @@ export default function CreateLayout({
   }, [initialized, dispatch, orbitShortcode, session, embedded])
 
   useEffect(() => {
-    if (!!submittedPost) {
+    if (!!submittedPost && !embedded) {
       router.replace(`/feed/${submittedPost.post_id}`)
     }
-  }, [submittedPost, router])
+  }, [submittedPost, router, embedded])
 
   useEffect(() => {
-    if (!!submittedOrbit) {
+    if (!!submittedOrbit && !embedded) {
       router.replace(`/orbits/${submittedOrbit.shortcode}`)
     }
-  }, [submittedOrbit, router])
+  }, [submittedOrbit, router, embedded])
 
   useEffect(() => {
-    if (!!submittedOrbit) {
+    if (!!submittedOrbit && !embedded) {
       router.replace(`/orbits/${submittedOrbit.shortcode}`)
     }
-  }, [submittedOrbit, router])
+  }, [submittedOrbit, router, embedded])
 
   useEffect(() => {
-    if (!!submittedProfile) {
+    if (!!submittedProfile && !embedded) {
       router.replace(`/profile`)
     }
-  }, [submittedProfile, router])
+  }, [submittedProfile, router, embedded])
 
   useEffect(() => {
-    if (!session) {
+    if (!session && !embedded) {
       router.replace(`/api/oauth/login`)
     }
-  }, [session, router])
+  }, [session, router, embedded])
 
   if (embedded) {
     return (
       <section className={cx('orbit-create-layout', className)} {...rest}>
         <div className="orbit-create-layout__content">{children}</div>
-        {!!orbitShortcode && (orbitLoading || orbitLoadingFailed || !orbit) && (
-          <aside className="orbit-create-layout__sidebar">
-            <AsidePlaceholder />
-          </aside>
-        )}
       </section>
     )
   }

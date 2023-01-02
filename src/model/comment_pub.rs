@@ -18,7 +18,7 @@ use crate::{
 
 use super::access_type::AccessType;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Eq, PartialEq, Debug, Clone)]
 /// Represents a user's comment on a post
 pub struct CommentPub {
   pub comment_id: Uuid,

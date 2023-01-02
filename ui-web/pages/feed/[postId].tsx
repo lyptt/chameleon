@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import react, { useEffect } from 'react'
+import react, { useEffect, useState } from 'react'
 import cx from 'classnames'
 import { useAuth } from '@/components/organisms/AuthContext'
 import SideNav from '@/components/molecules/SideNav'
@@ -9,6 +9,7 @@ import dayjs from 'dayjs'
 import dayjsUtc from 'dayjs/plugin/utc'
 import dayjsLocalizedFormat from 'dayjs/plugin/localizedFormat'
 import {
+  postActionDeleteComment,
   postActionLoadAuthor,
   postActionLoadComments,
   postActionLoadOrbit,
@@ -16,6 +17,8 @@ import {
   usePost,
 } from '@/components/organisms/PostContext'
 import PostContent from '@/components/molecules/PostContent'
+import NewCommentModal from '@/components/molecules/NewCommentModal'
+import { useProfile } from '@/components/organisms/ProfileContext'
 
 dayjs.extend(dayjsUtc)
 dayjs.extend(dayjsLocalizedFormat)
@@ -26,6 +29,9 @@ export default function PostPage({
   const router = useRouter()
   const { session } = useAuth()
   const { state, dispatch } = usePost()
+  const {
+    state: { profile },
+  } = useProfile()
   const {
     loading,
     loadingFailed,
@@ -44,6 +50,7 @@ export default function PostPage({
     commentsLoadingFailed,
     initialCommentLoadComplete,
   } = state
+  const [commentModalOpen, setCommentModalOpen] = useState(false)
 
   const postId = (router.query.postId || '') as string
 
@@ -136,6 +143,16 @@ export default function PostPage({
             commentsLoading={commentsLoading}
             comments={comments}
             commentsCount={totalComments}
+            onAddComment={() => setCommentModalOpen(true)}
+            onDeleteComment={(postId, commentId) =>
+              postActionDeleteComment(
+                profile?.user_id || '',
+                commentId,
+                postId,
+                session?.access_token,
+                dispatch
+              )
+            }
           />
         )}
       </div>
@@ -150,6 +167,10 @@ export default function PostPage({
                 title: 'Post a comment',
                 href: `/feed/${post.post_id}/new-comment`,
                 button: 'default',
+                action: (e) => {
+                  e.preventDefault()
+                  setCommentModalOpen(true)
+                },
               },
             ]}
           >
@@ -173,6 +194,13 @@ export default function PostPage({
             Joined {dayjs.utc(author.created_at).format('MMM DD, YYYY')}
           </InfoCard>
         </aside>
+      )}
+      {post && (
+        <NewCommentModal
+          open={commentModalOpen}
+          onClose={() => setCommentModalOpen(false)}
+          postId={post.post_id}
+        />
       )}
     </section>
   )

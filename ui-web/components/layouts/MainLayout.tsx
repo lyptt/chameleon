@@ -14,7 +14,7 @@ import DefaultActionsDelegator from '@/components/organisms/DefaultActionsDelega
 import { FeedProvider } from '@/components/organisms/FeedContext'
 import { ProfileProvider } from '@/components/organisms/ProfileContext'
 import { PostProvider } from '@/components/organisms/PostContext'
-import { ThemeProvider } from '@/components/organisms/ThemeContext'
+import { useTheme } from '@/components/organisms/ThemeContext'
 import { useRouter } from 'next/router'
 import { UserProvider } from '@/components/organisms/UserContext'
 import NavBar from '../molecules/NavBar'
@@ -24,7 +24,6 @@ import { CreateProvider } from '../organisms/CreateContext'
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
   children: ReactNode
-  theme?: string
 }
 
 function getDocumentCookie() {
@@ -38,9 +37,9 @@ function getDocumentCookie() {
 export default function MainLayout({
   defaultAuthContext,
   children,
-  theme,
 }: MainLayoutProps) {
   const { route } = useRouter()
+  const { theme } = useTheme()
 
   const isBuiltInRoute =
     route.startsWith('/_') || route === '/404' || route === '/error'
@@ -61,26 +60,24 @@ export default function MainLayout({
 
   return (
     <AuthContext.Provider value={authContext}>
-      <ThemeProvider value={{ theme }}>
-        <ProfileProvider>
-          <FeedProvider>
-            <PostProvider>
-              <UserProvider>
-                <OrbitProvider>
-                  <CreateProvider>
-                    <DefaultActionsDelegator />
-                    <main className={cx('orbit-main', theme)}>
-                      <NavBar isBuiltInRoute={isBuiltInRoute} />
-                      {isBuiltInRoute && <>{childrenWithClassname}</>}
-                      {!isBuiltInRoute && <>{childrenWithClassname}</>}
-                    </main>
-                  </CreateProvider>
-                </OrbitProvider>
-              </UserProvider>
-            </PostProvider>
-          </FeedProvider>
-        </ProfileProvider>
-      </ThemeProvider>
+      <ProfileProvider>
+        <FeedProvider>
+          <PostProvider>
+            <UserProvider>
+              <OrbitProvider>
+                <CreateProvider>
+                  <DefaultActionsDelegator />
+                  <main className={cx('orbit-main', theme)}>
+                    <NavBar isBuiltInRoute={isBuiltInRoute} />
+                    {isBuiltInRoute && <>{childrenWithClassname}</>}
+                    {!isBuiltInRoute && <>{childrenWithClassname}</>}
+                  </main>
+                </CreateProvider>
+              </OrbitProvider>
+            </UserProvider>
+          </PostProvider>
+        </FeedProvider>
+      </ProfileProvider>
     </AuthContext.Provider>
   )
 }

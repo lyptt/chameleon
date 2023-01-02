@@ -20,7 +20,7 @@ pub async fn create_comment(
   post_id: &Uuid,
   user_id: &Uuid,
   content_md: &str,
-) -> Result<Uuid, LogicErr> {
+) -> Result<CommentPub, LogicErr> {
   let visibility = match posts.fetch_visibility_by_id(post_id).await {
     Some(visibility) => visibility,
     None => return Err(LogicErr::MissingRecord),
@@ -44,9 +44,17 @@ pub async fn create_comment(
 
   let content_html = markdown::to_html(content_md);
 
-  comments
+  let comment_id = comments
     .create_comment(user_id, post_id, content_md, &content_html)
+    .await?;
+
+  match comments
+    .fetch_comment(post_id, &comment_id, &Some(user_id.to_owned()))
     .await
+  {
+    Some(comment) => Ok(comment),
+    None => Err(LogicErr::MissingRecord),
+  }
 }
 
 pub async fn create_comment_like(
@@ -213,6 +221,7 @@ pub async fn activitypub_get_comment(
 mod tests {
   use std::sync::Arc;
 
+  use chrono::Utc;
   use mockall::predicate::*;
   use uuid::Uuid;
 
@@ -226,7 +235,7 @@ mod tests {
       comment::{create_comment, create_comment_like, delete_comment, delete_comment_like},
       LogicErr,
     },
-    model::access_type::AccessType,
+    model::{access_type::AccessType, comment_pub::CommentPub},
   };
 
   #[async_std::test]
@@ -419,6 +428,21 @@ mod tests {
     let user_id = Uuid::new_v4();
     let comment_id = Uuid::new_v4();
     let exp_comment_id = comment_id;
+    let comment = Some(CommentPub {
+      comment_id: exp_comment_id,
+      user_id,
+      post_id,
+      content_md: "test".to_string(),
+      content_html: "<p>test</p>".to_string(),
+      created_at: Utc::now(),
+      updated_at: Utc::now(),
+      user_handle: "a".to_string(),
+      user_fediverse_id: "a".to_string(),
+      user_avatar_url: Some("a".to_string()),
+      likes: 0,
+      liked: Some(true),
+      visibility: AccessType::PublicFederated,
+    });
 
     let mut post_repo = MockPostRepo::new();
 
@@ -442,14 +466,19 @@ mod tests {
       .with(eq(user_id), eq(post_id), eq("test"), always())
       .returning(move |_, _, _, _| Ok(comment_id));
 
+    comment_repo
+      .expect_fetch_comment()
+      .times(1)
+      .with(eq(post_id), eq(exp_comment_id), eq(Some(user_id)))
+      .return_const(comment);
+
     let posts: PostPool = Arc::new(post_repo);
     let follows: FollowPool = Arc::new(MockFollowRepo::new());
     let comments: CommentPool = Arc::new(comment_repo);
 
-    assert_eq!(
-      create_comment(&posts, &follows, &comments, &post_id, &user_id, "test").await,
-      Ok(exp_comment_id)
-    );
+    assert!(create_comment(&posts, &follows, &comments, &post_id, &user_id, "test")
+      .await
+      .is_ok());
   }
 
   #[async_std::test]
