@@ -12,7 +12,7 @@ import {
 } from '@/components/organisms/FeedContext'
 import { useRouter } from 'next/router'
 import {
-  postActionDismissEditor,
+  postActionDismissPost,
   usePost,
 } from '@/components/organisms/PostContext'
 import {
@@ -158,7 +158,7 @@ export default function DefaultActionsDelegator() {
 
   useEffect(() => {
     if (route !== '/feed/[postId]' && !!postState.post) {
-      postActionDismissEditor(postDispatch)
+      postActionDismissPost(postDispatch)
     }
   }, [postState, postDispatch, route, query])
 
