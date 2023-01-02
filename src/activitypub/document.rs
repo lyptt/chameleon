@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::logic::LogicErr;
+use crate::{logic::LogicErr, settings::SETTINGS};
 
 use super::{
   json_ld::{JsonLdContext, JsonLdContextEntry, JsonLdContextMapEntry},
@@ -72,6 +72,18 @@ impl ActivityPubDocument {
       "sensitive".to_string(),
       JsonLdContextMapEntry::Alias("as:sensitive".to_string()),
     );
+    aliases.insert(
+      "shortcode".to_string(),
+      JsonLdContextMapEntry::Alias("orbit:shortcode".to_string()),
+    );
+    aliases.insert(
+      "summaryMd".to_string(),
+      JsonLdContextMapEntry::Alias("orbit:summaryMd".to_string()),
+    );
+    aliases.insert(
+      "orbit".to_string(),
+      JsonLdContextMapEntry::Alias(format!("{}/.well-known/ns", SETTINGS.server.api_root_fqdn)),
+    );
 
     let ctx = JsonLdContext::Multi(vec![
       JsonLdContextEntry::Uri("https://www.w3.org/ns/activitystreams".to_string()),
@@ -91,11 +103,13 @@ impl ActivityPubDocument {
 mod tests {
   use std::collections::{HashMap, HashSet};
 
-  use crate::activitypub::{
-    document::ActivityPubDocument,
-    json_ld::{JsonLdContext, JsonLdContextEntry, JsonLdContextMapEntry},
-    object::Object,
-    rdf_string::RdfString,
+  use crate::{
+    activitypub::{
+      document::ActivityPubDocument,
+      json_ld::{JsonLdContext, JsonLdContextEntry, JsonLdContextMapEntry},
+      object::Object,
+    },
+    settings::SETTINGS,
   };
 
   use super::RawActivityPubDocument;
@@ -309,10 +323,10 @@ mod tests {
       "@context": [
         "https://www.w3.org/ns/activitystreams",
         {
-            "backgroundColorFill": "orbit:backgroundColorFill"
+            "shortcode": "orbit:shortcode"
         }
       ],
-      "backgroundColorFill": "#FF00FF"
+      "shortcode": "test"
     }"##;
 
     let raw_doc_result: Result<RawActivityPubDocument, Error> = serde_json::from_str(raw_json);
@@ -325,33 +339,45 @@ mod tests {
     assert!(doc.aliases.is_some());
     let aliases = doc.aliases.unwrap();
     assert!(!aliases.is_empty());
-    assert_eq!(aliases["backgroundColorFill"], "orbit:backgroundColorFill");
+    assert_eq!(aliases["shortcode"], "orbit:shortcode");
 
-    assert!(doc.object.background_color_fill.is_some());
-    assert_eq!(
-      doc.object.background_color_fill,
-      Some(RdfString::Raw("#FF00FF".to_string()))
-    );
+    assert!(doc.object.orbit.is_some());
+    let orbit = doc.object.orbit.unwrap();
+    assert_eq!(orbit.shortcode, Some("test".to_string()));
   }
 
   #[test]
   pub fn document_generates_valid_wrapper() {
-    let obj = Object::builder().id(Some("test".to_string())).build();
-    let doc = ActivityPubDocument::new(obj.clone());
+    temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {
+      let obj = Object::builder().id(Some("test".to_string())).build();
+      let doc = ActivityPubDocument::new(obj.clone());
 
-    let mut aliases: HashMap<String, JsonLdContextMapEntry> = HashMap::new();
-    aliases.insert(
-      "sensitive".to_string(),
-      JsonLdContextMapEntry::Alias("as:sensitive".to_string()),
-    );
+      let mut aliases: HashMap<String, JsonLdContextMapEntry> = HashMap::new();
+      aliases.insert(
+        "sensitive".to_string(),
+        JsonLdContextMapEntry::Alias("as:sensitive".to_string()),
+      );
+      aliases.insert(
+        "shortcode".to_string(),
+        JsonLdContextMapEntry::Alias("orbit:shortcode".to_string()),
+      );
+      aliases.insert(
+        "summaryMd".to_string(),
+        JsonLdContextMapEntry::Alias("orbit:summaryMd".to_string()),
+      );
+      aliases.insert(
+        "orbit".to_string(),
+        JsonLdContextMapEntry::Alias(format!("{}/.well-known/ns", SETTINGS.server.api_root_fqdn)),
+      );
 
-    let ctx = JsonLdContext::Multi(vec![
-      JsonLdContextEntry::Uri("https://www.w3.org/ns/activitystreams".to_string()),
-      JsonLdContextEntry::Uri("https://w3id.org/security/v1".to_string()),
-      JsonLdContextEntry::Map(aliases),
-    ]);
+      let ctx = JsonLdContext::Multi(vec![
+        JsonLdContextEntry::Uri("https://www.w3.org/ns/activitystreams".to_string()),
+        JsonLdContextEntry::Uri("https://w3id.org/security/v1".to_string()),
+        JsonLdContextEntry::Map(aliases),
+      ]);
 
-    assert_eq!(doc.object, obj);
-    assert_eq!(doc.context, ctx);
+      assert_eq!(doc.object, obj);
+      assert_eq!(doc.context, ctx);
+    })
   }
 }

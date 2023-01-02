@@ -157,12 +157,15 @@ impl Settings {
   fn new() -> Self {
     let run_mode = env::var("RUN_MODE").unwrap_or_else(|_| "development".into());
 
-    let settings = Config::builder()
+    let mut builder = Config::builder()
       .add_source(config::File::with_name("config/default"))
-      .add_source(config::File::with_name(&format!("config/{}", run_mode)).required(false))
-      .add_source(config::File::with_name("config/local").required(false))
-      .add_source(config::Environment::with_prefix("orbit"))
-      .build();
+      .add_source(config::File::with_name(&format!("config/{}", run_mode)).required(false));
+
+    if run_mode != "production" {
+      builder = builder.add_source(config::File::with_name("config/local").required(false));
+    }
+
+    let settings = builder.add_source(config::Environment::with_prefix("orbit")).build();
 
     match settings {
       Ok(settings) => match settings.try_deserialize() {

@@ -1,7 +1,7 @@
 SELECT DISTINCT e.event_type, p.*, u.handle AS user_handle, u.fediverse_id AS user_fediverse_id, u.fediverse_uri AS user_fediverse_uri, 
 u.avatar_url AS user_avatar_url, COUNT(DISTINCT l.like_id) AS likes, COUNT(DISTINCT l2.like_id) >= 1 AS liked, 
 COUNT(DISTINCT c.comment_id) AS comments, u2.handle AS event_user_handle, u2.fediverse_id AS event_user_fediverse_id, u2.fediverse_uri AS event_user_fediverse_uri, u2.avatar_url AS event_user_avatar_url, 
-ob.name as orbit_name, ob.shortcode as orbit_shortcode, ob.uri as orbit_uri, ob.avatar_uri as orbit_avatar_uri, 
+ob.name as orbit_name, ob.shortcode as orbit_shortcode, ob.uri as orbit_uri, ob.fediverse_uri as orbit_fediverse_uri, ob.avatar_uri as orbit_avatar_uri, 
 pa.attachment_id, pa.user_id as attachment_user_id, pa.post_id as attachment_post_id, pa.uri as attachment_uri, pa.width as attachment_width, 
 pa.height as attachment_height, pa.content_type as attachment_content_type, pa.storage_ref as attachment_storage_ref, 
 pa.blurhash as attachment_blurhash, pa.created_at as attachment_created_at 

@@ -45,6 +45,12 @@ pub struct NewOrbitModeratorRequest {
   pub is_owner: Option<bool>,
 }
 
+#[derive(Deserialize)]
+pub struct MembersQuery {
+  pub page: Option<i64>,
+  pub page_size: Option<i64>,
+}
+
 #[derive(MultipartForm)]
 pub struct OrbitAssetsUpload {
   #[multipart(rename = "images[]")]

@@ -2,6 +2,7 @@ use uuid::Uuid;
 
 use super::{
   actor::federate_actor,
+  article::{federate_create_article, federate_update_article},
   note::{
     federate_create_note, federate_ext_create_note, federate_like_note, federate_unlike_note, federate_update_note,
   },
@@ -21,8 +22,9 @@ use crate::{
     reference::Reference,
   },
   db::{
-    follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool,
-    post_attachment_repository::PostAttachmentPool, post_repository::PostPool, user_repository::UserPool,
+    follow_repository::FollowPool, job_repository::JobPool, like_repository::LikePool, orbit_repository::OrbitPool,
+    post_attachment_repository::PostAttachmentPool, post_repository::PostPool, user_orbit_repository::UserOrbitPool,
+    user_repository::UserPool,
   },
   helpers::core::unwrap_or_fail,
   logic::LogicErr,
@@ -43,6 +45,8 @@ pub async fn federate(
   likes: &LikePool,
   jobs: &JobPool,
   post_attachments: &PostAttachmentPool,
+  orbits: &OrbitPool,
+  user_orbits: &UserOrbitPool,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
   let kind = match unwrap_or_fail(doc.object.kind.as_ref().map(|v| ActivityType::from_str(v))) {
@@ -126,6 +130,49 @@ pub async fn federate(
       },
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
+    ObjectType::Article => match kind {
+      ActivityType::Create => {
+        let activity_visibility = match activity_visibility {
+          Some(v) => v,
+          None => return Err(LogicErr::InvalidData),
+        };
+
+        federate_create_article(
+          object,
+          &actor_user,
+          activity_visibility,
+          follows,
+          posts,
+          jobs,
+          post_attachments,
+          orbits,
+          user_orbits,
+          queue,
+        )
+        .await
+      }
+      ActivityType::Update => {
+        let activity_visibility = match activity_visibility {
+          Some(v) => v,
+          None => return Err(LogicErr::InvalidData),
+        };
+
+        federate_update_article(object, &actor_user, activity_visibility, posts, orbits, user_orbits).await
+      }
+      ActivityType::Remove => match determine_activity_target(target) {
+        ActivityTarget::Unknown(target) => {
+          federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
+        }
+        _ => Err(LogicErr::InvalidData),
+      },
+      ActivityType::Delete => match determine_activity_target(target) {
+        ActivityTarget::Unknown(target) => {
+          federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
+        }
+        _ => Err(LogicErr::InvalidData),
+      },
+      _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+    },
     ObjectType::Person => match kind {
       ActivityType::Follow => federate_create_follow(object, &actor_user, follows, users).await,
       ActivityType::Remove => match determine_activity_target(target) {
@@ -199,6 +246,10 @@ pub async fn federate(
 pub enum FederateExtAction<'a> {
   CreatePost(&'a Uuid),
   UpdatePost(&'a Uuid),
+  FollowProfile(&'a Uuid),
+  UnfollowProfile(&'a Uuid),
+  FollowGroup(&'a Uuid),
+  UnfollowGroup(&'a Uuid),
 }
 
 pub async fn federate_ext<'a>(
@@ -210,5 +261,9 @@ pub async fn federate_ext<'a>(
   match action {
     FederateExtAction::CreatePost(post_id) => federate_ext_create_note(post_id, actor, dest_actor, posts).await,
     FederateExtAction::UpdatePost(_) => Err(LogicErr::Unimplemented),
+    FederateExtAction::FollowProfile(_) => Err(LogicErr::Unimplemented),
+    FederateExtAction::UnfollowProfile(_) => Err(LogicErr::Unimplemented),
+    FederateExtAction::FollowGroup(_) => Err(LogicErr::Unimplemented),
+    FederateExtAction::UnfollowGroup(_) => Err(LogicErr::Unimplemented),
   }
 }

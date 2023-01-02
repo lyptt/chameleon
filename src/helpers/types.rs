@@ -2,10 +2,24 @@ use actix_web::{
   guard::{Guard, GuardContext},
   http::header::HeaderMap,
 };
+use lazy_static::lazy_static;
 use mediatype::MediaTypeList;
 use serde::Serialize;
 
+use crate::settings::SETTINGS;
+
 pub const ACTIVITY_JSON_CONTENT_TYPE: &str = "application/activity+json";
+
+lazy_static! {
+  pub static ref RELATIVE_API_ROOT_FQDN: String = {
+    let components: Vec<&str> = SETTINGS.server.api_root_fqdn.splitn(2, "://").collect();
+    if components.len() != 2 {
+      return SETTINGS.server.api_fqdn.clone();
+    }
+
+    components[1].to_owned()
+  };
+}
 
 pub struct ActivityPubHeaderGuard;
 

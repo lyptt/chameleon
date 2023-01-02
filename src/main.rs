@@ -33,9 +33,10 @@ use log::LevelFilter;
 use net::jwt_session::JwtSession;
 use rabbitmq::clients::RabbitMQClient;
 use routes::activitypub::{
-  api_activitypub_federate_shared_inbox, api_activitypub_federate_user_inbox, api_activitypub_get_comment,
-  api_activitypub_get_comments, api_activitypub_get_federated_user_liked_posts,
-  api_activitypub_get_federated_user_posts, api_activitypub_get_post, api_activitypub_get_user_followers,
+  api_activitypub_federate_orbit_inbox, api_activitypub_federate_shared_inbox, api_activitypub_federate_user_inbox,
+  api_activitypub_get_comment, api_activitypub_get_comments, api_activitypub_get_federated_orbit_posts,
+  api_activitypub_get_federated_user_liked_posts, api_activitypub_get_federated_user_posts, api_activitypub_get_orbit,
+  api_activitypub_get_orbit_members, api_activitypub_get_post, api_activitypub_get_user_followers,
   api_activitypub_get_user_following, api_activitypub_get_user_profile,
 };
 use routes::apps::api_create_app;
@@ -55,15 +56,15 @@ use routes::orbit::{
   api_join_orbit, api_leave_orbit, api_update_orbit, api_update_orbit_assets, api_update_orbit_moderator,
 };
 use routes::post::{
-  api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_post, api_get_user_friends_feed,
-  api_get_user_liked_posts, api_get_user_own_feed, api_get_user_post, api_get_user_posts, api_unboost_post,
-  api_upload_post_image,
+  api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_orbit_feed_by_id, api_get_post,
+  api_get_user_friends_feed, api_get_user_liked_posts, api_get_user_own_feed, api_get_user_post, api_get_user_posts,
+  api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::redirect::{
-  api_redirect_to_federated_user_liked_posts, api_redirect_to_federated_user_posts, api_redirect_to_post,
-  api_redirect_to_post_comment, api_redirect_to_post_comments, api_redirect_to_user, api_redirect_to_user_followers,
-  api_redirect_to_user_following,
+  api_redirect_to_federated_user_liked_posts, api_redirect_to_federated_user_posts, api_redirect_to_orbit,
+  api_redirect_to_orbit_members, api_redirect_to_post, api_redirect_to_post_comment, api_redirect_to_post_comments,
+  api_redirect_to_user, api_redirect_to_user_followers, api_redirect_to_user_following,
 };
 use routes::status::api_get_server_status;
 use routes::user::{
@@ -375,14 +376,37 @@ async fn main() -> std::io::Result<()> {
       .service(
         web::resource("/api/orbit/{orbit_id}")
           .name("orbit")
+          .route(web::get().guard(ACTIVITYPUB_ACCEPT_GUARD).to(api_activitypub_get_orbit))
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_orbit))
           .route(web::get().to(api_get_orbit))
           .route(web::patch().to(api_update_orbit))
           .route(web::delete().to(api_delete_orbit)),
       )
       .service(
+        web::resource("/api/orbit/{orbit_id}/members")
+          .name("orbit_members")
+          .route(
+            web::get()
+              .guard(ACTIVITYPUB_ACCEPT_GUARD)
+              .to(api_activitypub_get_orbit_members),
+          )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_orbit_members)),
+      )
+      .service(
         web::resource("/api/orbit/{orbit_id}/assets")
           .name("orbit_assets")
           .route(web::post().to(api_update_orbit_assets)),
+      )
+      .service(
+        web::resource("/api/orbit/{orbit_id}/feed")
+          .name("orbit_id_feed")
+          .route(
+            web::get()
+              .guard(ACTIVITYPUB_ACCEPT_GUARD)
+              .to(api_activitypub_get_federated_orbit_posts),
+          )
+          .route(web::get().guard(HTML_GUARD).to(api_redirect_to_orbit))
+          .route(web::get().to(api_get_orbit_feed_by_id)),
       )
       .service(
         web::resource("/api/orbit/{orbit_id}/join")
@@ -403,9 +427,14 @@ async fn main() -> std::io::Result<()> {
           .route(web::delete().to(api_delete_orbit_moderator)),
       )
       .service(
-        web::resource("/api/federate/activitypub/inbox/{user_handle}")
+        web::resource("/api/federate/activitypub/user/{user_id}/inbox")
           .name("federate_activitypub")
           .route(web::post().to(api_activitypub_federate_user_inbox)),
+      )
+      .service(
+        web::resource("/api/federate/activitypub/orbit/{orbit_id}/inbox")
+          .name("federate_activitypub")
+          .route(web::post().to(api_activitypub_federate_orbit_inbox)),
       )
       .service(
         web::resource("/api/federate/activitypub/shared-inbox")

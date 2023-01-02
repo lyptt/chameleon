@@ -43,6 +43,13 @@ pub fn relative_to_absolute_uri(relative: &str) -> String {
   }
 }
 
+pub fn relative_cdn_to_absolute_cdn_uri(relative: &str) -> String {
+  match relative.starts_with("http") {
+    true => relative.to_string(),
+    false => format!("{}{}", SETTINGS.server.cdn_fqdn, relative),
+  }
+}
+
 pub fn app_is_blessed(req: &HttpRequest) -> bool {
   let referrer = req.headers().get("referer").and_then(|v| match v.to_str() {
     Ok(v) => Some(v.to_string()),

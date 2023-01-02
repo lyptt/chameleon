@@ -12,8 +12,9 @@ use crate::{
     },
   },
   db::{
-    comment_repository::CommentPool, follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool,
-    session_repository::SessionPool, user_repository::UserPool,
+    comment_repository::CommentPool, follow_repository::FollowPool, job_repository::JobPool,
+    orbit_repository::OrbitPool, post_repository::PostPool, session_repository::SessionPool,
+    user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
   helpers::{
     auth::query_auth,
@@ -35,7 +36,7 @@ use crate::{
   work_queue::queue::Queue,
 };
 
-use super::{comment::CommentsQuery, post::PostsQuery, user::FollowersQuery};
+use super::{comment::CommentsQuery, orbit::MembersQuery, post::PostsQuery, user::FollowersQuery};
 
 pub async fn api_activitypub_get_post(
   sessions: web::Data<SessionPool>,
@@ -112,6 +113,39 @@ pub async fn api_activitypub_get_federated_user_posts(
 
   let doc = create_activitypub_ordered_collection_page_feed(
     &format!("{}/user/{}/feed", SETTINGS.server.api_fqdn, user_id),
+    page.try_into().unwrap_or_default(),
+    page_size.try_into().unwrap_or_default(),
+    posts_count.try_into().unwrap_or_default(),
+    posts,
+  );
+
+  HttpResponse::Ok()
+    .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
+    .json(doc)
+}
+
+pub async fn api_activitypub_get_federated_orbit_posts(
+  posts: web::Data<PostPool>,
+  query: web::Query<PostsQuery>,
+  orbit_id: web::Path<Uuid>,
+) -> impl Responder {
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_global_federated_orbit_feed(&orbit_id).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_global_federated_orbit_feed(&orbit_id, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let doc = create_activitypub_ordered_collection_page_feed(
+    &format!("{}/orbit/{}/feed", SETTINGS.server.api_fqdn, orbit_id),
     page.try_into().unwrap_or_default(),
     page_size.try_into().unwrap_or_default(),
     posts_count.try_into().unwrap_or_default(),
@@ -228,6 +262,55 @@ pub async fn api_activitypub_get_user_profile(users: web::Data<UserPool>, user_i
   }
 }
 
+pub async fn api_activitypub_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: web::Path<Uuid>) -> impl Responder {
+  match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => match orbit {
+      Some(orbit) => match orbit.to_object("") {
+        Some(obj) => {
+          let doc = ActivityPubDocument::new(obj);
+          HttpResponse::Ok()
+            .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
+            .json(doc)
+        }
+        None => HttpResponse::NotFound().finish(),
+      },
+      None => HttpResponse::NotFound().finish(),
+    },
+    Err(_) => HttpResponse::NotFound().finish(),
+  }
+}
+
+pub async fn api_activitypub_get_orbit_members(
+  user_orbits: web::Data<UserOrbitPool>,
+  orbit_id: web::Path<Uuid>,
+  query: web::Query<MembersQuery>,
+) -> impl Responder {
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let users_count = match user_orbits.count_users(&orbit_id).await {
+    Ok(count) => count,
+    Err(_) => return HttpResponse::NotFound().finish(),
+  };
+
+  let users = match user_orbits.fetch_users(&orbit_id, page_size, page * page_size).await {
+    Ok(users) => users,
+    Err(err) => return build_api_err(500, err.to_string(), None),
+  };
+
+  let doc = create_activitypub_ordered_collection_page(
+    &format!("{}/orbit/{}/members", SETTINGS.server.api_fqdn, orbit_id),
+    page.try_into().unwrap_or_default(),
+    page_size.try_into().unwrap_or_default(),
+    users_count.try_into().unwrap_or_default(),
+    users,
+    None,
+  );
+
+  HttpResponse::Ok()
+    .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
+    .json(doc)
+}
+
 pub async fn api_activitypub_get_comment(
   sessions: web::Data<SessionPool>,
   comments: web::Data<CommentPool>,
@@ -339,6 +422,47 @@ pub async fn api_activitypub_federate_user_inbox(
     .data((*data).to_owned())
     .origin(req.connection_info().host().to_string())
     .context(vec![user_id.to_string()])
+    .origin_data(origin_data)
+    .build();
+
+  match queue.send_job(job).await {
+    Ok(_) => HttpResponse::Created().finish(),
+    Err(err) => build_api_err(500, err.to_string(), None),
+  }
+}
+
+pub async fn api_activitypub_federate_orbit_inbox(
+  req: HttpRequest,
+  orbit_id: web::Path<Uuid>,
+  data: web::Json<serde_json::Value>,
+  jobs: web::Data<JobPool>,
+  queue: web::Data<Queue>,
+) -> impl Responder {
+  let origin_data = build_origin_data(&req);
+
+  if SETTINGS.app.secure && origin_data.is_none() {
+    return build_api_err(401, "signature".to_string(), None);
+  }
+
+  let job_id = match jobs
+    .create(NewJob {
+      created_by_id: None,
+      status: JobStatus::NotStarted,
+      record_id: None,
+      associated_record_id: None,
+    })
+    .await
+  {
+    Ok(id) => id,
+    Err(err) => return build_api_err(500, err.to_string(), None),
+  };
+
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::FederateActivityPub)
+    .data((*data).to_owned())
+    .origin(req.connection_info().host().to_string())
+    .context(vec![orbit_id.to_string()])
     .origin_data(origin_data)
     .build();
 

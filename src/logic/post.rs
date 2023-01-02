@@ -368,6 +368,7 @@ mod tests {
       orbit_id: None,
       orbit_name: None,
       orbit_uri: None,
+      orbit_fediverse_uri: None,
       orbit_avatar_uri: None,
       orbit_shortcode: None,
     };

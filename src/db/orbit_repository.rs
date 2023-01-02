@@ -17,6 +17,7 @@ use mockall::automock;
 #[async_trait]
 pub trait OrbitRepo {
   async fn fetch_orbit_id_from_shortcode(&self, shortcode: &str) -> Option<Uuid>;
+  async fn fetch_orbit_shortcode_from_id(&self, id: &Uuid) -> Option<String>;
   async fn count_orbits(&self) -> Result<i64, LogicErr>;
   async fn fetch_orbits(&self, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn fetch_orbit(&self, orbit_id: &Uuid) -> Result<Option<Orbit>, LogicErr>;
@@ -67,6 +68,26 @@ impl OrbitRepo for DbOrbitRepo {
       .query_opt(
         "SELECT orbit_id FROM orbits WHERE shortcode = $1 AND is_external = FALSE",
         &[&shortcode],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    row.and_then(|r| r.get(0))
+  }
+
+  async fn fetch_orbit_shortcode_from_id(&self, id: &Uuid) -> Option<String> {
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
+    let row = match db
+      .query_opt(
+        "SELECT shortcode FROM orbits WHERE orbit_id = $1 AND is_external = FALSE",
+        &[&id],
       )
       .await
       .map_err(map_db_err)
@@ -187,13 +208,14 @@ impl OrbitRepo for DbOrbitRepo {
     uri: &str,
   ) -> Result<Uuid, LogicErr> {
     let orbit_id = Uuid::new_v4();
+    let fediverse_uri = format!("/orbit/{}", orbit_id);
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db
       .query_one(
-        r#"INSERT INTO orbits (orbit_id, name, description_md, description_html, avatar_uri, banner_uri, uri, is_external, shortcode)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING orbit_id"#,
-        &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &uri, &is_external, &shortcode],
+        r#"INSERT INTO orbits (orbit_id, name, description_md, description_html, avatar_uri, banner_uri, uri, fediverse_uri, is_external, shortcode)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING orbit_id"#,
+        &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &uri, &fediverse_uri, &is_external, &shortcode],
       )
       .await
       .map_err(map_db_err)?;
