@@ -201,11 +201,11 @@ pub async fn federate(
       },
       None => Err(LogicErr::InvalidData),
     },
-    _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     ObjectType::Group => match kind {
       ActivityType::Follow => federate_create_member(object, &actor_user, user_orbits, orbits).await,
       _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
     },
+    _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
   };
 
   match result {
