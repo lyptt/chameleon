@@ -1,5 +1,10 @@
 use actix_easy_multipart::{tempfile::Tempfile, MultipartForm};
 use actix_web::{web, HttpResponse, Responder};
+use rsa::{
+  pkcs1::{EncodeRsaPrivateKey, EncodeRsaPublicKey},
+  pkcs8::LineEnding,
+  RsaPrivateKey, RsaPublicKey,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -213,6 +218,24 @@ pub async fn api_create_orbit(
 
   let uri = format!("/orbits/{}", shortcode);
 
+  let mut rng = rand::thread_rng();
+  let bits = 2048;
+  let priv_key = match RsaPrivateKey::new(&mut rng, bits) {
+    Ok(key) => key,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+  let pub_key = RsaPublicKey::from(&priv_key);
+
+  let priv_key = match priv_key.to_pkcs1_pem(LineEnding::LF) {
+    Ok(key) => key.to_string(),
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let pub_key = match pub_key.to_pkcs1_pem(LineEnding::LF) {
+    Ok(key) => key.to_string(),
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
   let orbit_id = match orbits
     .create_orbit(
       &req.name,
@@ -222,6 +245,8 @@ pub async fn api_create_orbit(
       &None,
       &None,
       false,
+      &priv_key,
+      &pub_key,
       &uri,
     )
     .await

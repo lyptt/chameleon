@@ -57,27 +57,6 @@ pub async fn create_post_events(
     warn!("Failed to create user's own event for new post: {}", err);
   }
 
-  let followers = follows.fetch_user_followers(&user_id).await.unwrap_or_default();
-
-  for follower in followers {
-    let job_id = jobs
-      .create(NewJob {
-        created_by_id: Some(user_id),
-        status: JobStatus::NotStarted,
-        record_id: Some(post_id),
-        associated_record_id: Some(follower.user_id),
-      })
-      .await
-      .map_err(map_db_err)?;
-
-    let job = QueueJob::builder()
-      .job_id(job_id)
-      .job_type(QueueJobType::CreatePostEvent)
-      .build();
-
-    queue.send_job(job).await?;
-  }
-
   if let Some(orbit_id) = post.orbit_id {
     let users = user_orbits.fetch_orbit_user_ids(&orbit_id).await?;
 
@@ -88,6 +67,27 @@ pub async fn create_post_events(
           status: JobStatus::NotStarted,
           record_id: Some(post_id),
           associated_record_id: Some(user),
+        })
+        .await
+        .map_err(map_db_err)?;
+
+      let job = QueueJob::builder()
+        .job_id(job_id)
+        .job_type(QueueJobType::CreatePostEvent)
+        .build();
+
+      queue.send_job(job).await?;
+    }
+  } else {
+    let followers = follows.fetch_user_followers(&user_id).await.unwrap_or_default();
+
+    for follower in followers {
+      let job_id = jobs
+        .create(NewJob {
+          created_by_id: Some(user_id),
+          status: JobStatus::NotStarted,
+          record_id: Some(post_id),
+          associated_record_id: Some(follower.user_id),
         })
         .await
         .map_err(map_db_err)?;

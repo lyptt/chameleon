@@ -1,6 +1,6 @@
 use crate::{
   activitypub::object::Object,
-  db::{follow_repository::FollowPool, user_repository::UserPool},
+  db::{orbit_repository::OrbitPool, user_orbit_repository::UserOrbitPool},
   logic::LogicErr,
   model::user::User,
   settings::SETTINGS,
@@ -8,11 +8,11 @@ use crate::{
 
 use super::util::FederateResult;
 
-pub async fn federate_create_follow(
+pub async fn federate_create_member(
   activity_object: Object,
   actor: &User,
-  follows: &FollowPool,
-  users: &UserPool,
+  user_orbits: &UserOrbitPool,
+  orbits: &OrbitPool,
 ) -> Result<FederateResult, LogicErr> {
   let uri = match activity_object.id {
     Some(uri) => match uri.starts_with(&SETTINGS.server.api_fqdn) {
@@ -22,49 +22,56 @@ pub async fn federate_create_follow(
     None => return Err(LogicErr::MissingRecord),
   };
 
-  let followed_user = match users.fetch_by_fediverse_uri(&uri).await {
+  let target_orbit = match orbits.fetch_by_fediverse_uri(&uri).await {
     Some(user) => user,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  if followed_user.is_external {
+  if target_orbit.is_external {
     return Err(LogicErr::MissingRecord);
   }
 
-  if !follows.user_follows_user(&actor.user_id, &followed_user.user_id).await {
-    follows.create_follow(&actor.user_id, &followed_user.user_id).await?;
+  if !user_orbits
+    .user_is_member(&actor.user_id, &target_orbit.orbit_id)
+    .await?
+  {
+    user_orbits
+      .create_user_orbit(&target_orbit.orbit_id, &actor.user_id)
+      .await?;
   }
 
   Ok(FederateResult::Accept((
-    followed_user.fediverse_uri,
-    followed_user.private_key,
+    target_orbit.fediverse_uri.to_owned(),
+    target_orbit.private_key.to_string(),
   )))
 }
 
-pub async fn federate_remove_follow(
+pub async fn federate_remove_member(
   target: String,
   actor: &User,
-  follows: &FollowPool,
-  users: &UserPool,
+  user_orbits: &UserOrbitPool,
+  orbits: &OrbitPool,
 ) -> Result<FederateResult, LogicErr> {
   let uri = match target.starts_with(&SETTINGS.server.api_fqdn) {
     true => target.replace(&SETTINGS.server.api_fqdn, ""),
     false => target,
   };
 
-  let unfollowed_user = match users.fetch_by_fediverse_uri(&uri).await {
+  let target_orbit = match orbits.fetch_by_fediverse_uri(&uri).await {
     Some(user) => user,
     None => return Err(LogicErr::MissingRecord),
   };
 
-  if unfollowed_user.is_external {
+  if target_orbit.is_external {
     return Err(LogicErr::MissingRecord);
   }
 
-  follows.delete_follow(&actor.user_id, &unfollowed_user.user_id).await?;
+  user_orbits
+    .delete_user_orbit(&target_orbit.orbit_id, &actor.user_id)
+    .await?;
 
   Ok(FederateResult::Accept((
-    unfollowed_user.fediverse_id,
-    unfollowed_user.private_key,
+    target_orbit.fediverse_uri.to_owned(),
+    target_orbit.private_key.to_string(),
   )))
 }

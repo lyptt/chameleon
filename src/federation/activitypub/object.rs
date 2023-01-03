@@ -45,6 +45,10 @@ pub async fn federate_delete_remote_object(
       users.delete_user_from_uri(&target).await?;
       return Ok(FederateResult::None);
     }
+    ObjectType::Article => {
+      posts.delete_post_from_uri(&target, &actor.user_id).await?;
+      return Ok(FederateResult::None);
+    }
     _ => {}
   };
 

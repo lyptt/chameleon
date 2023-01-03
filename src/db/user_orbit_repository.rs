@@ -17,6 +17,7 @@ pub trait UserOrbitRepo {
   async fn fetch_users(&self, orbit_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr>;
   async fn create_user_orbit(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<Uuid, LogicErr>;
   async fn delete_user_orbit(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<(), LogicErr>;
+  async fn user_is_member(&self, user_id: &Uuid, orbit_id: &Uuid) -> Result<bool, LogicErr>;
 }
 
 pub type UserOrbitPool = Arc<dyn UserOrbitRepo + Send + Sync>;
@@ -91,5 +92,18 @@ impl UserOrbitRepo for DbUserOrbitRepo {
     .map_err(map_db_err)?;
 
     Ok(())
+  }
+
+  async fn user_is_member(&self, user_id: &Uuid, orbit_id: &Uuid) -> Result<bool, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_one(
+        "SELECT COUNT(*) >= 1 FROM user_orbits WHERE user_id = $1 AND orbit_id = $2",
+        &[&user_id, &orbit_id],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.get(0))
   }
 }

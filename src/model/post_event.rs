@@ -182,6 +182,8 @@ impl ActivityConvertible for PostEvent {
       None => None,
     };
 
+    let summary = self.title.as_ref().map(|title| RdfString::Raw(title.to_owned()));
+
     let base_uri = format!("{}/feed/{}", SETTINGS.server.api_fqdn, self.post_id);
 
     let replies_collection = Object::builder()
@@ -240,6 +242,7 @@ impl ActivityConvertible for PostEvent {
         .to(to)
         .cc(cc)
         .replies(Some(Box::new(replies_collection)))
+        .summary(summary)
         .content(Some(RdfString::Raw(self.content_html.clone())))
         .source(Some(
           ObjectSource::builder()

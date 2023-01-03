@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
   activitypub::{
-    activity_convertible::ActivityConvertible, actor::ActorProps, object::Object, orbit::OrbitProps,
+    activity_convertible::ActivityConvertible, actor::ActorProps, key::KeyProps, object::Object, orbit::OrbitProps,
     rdf_string::RdfString, reference::Reference,
   },
   db::FromRow,
@@ -30,6 +30,8 @@ pub struct Orbit {
   pub banner_uri: Option<String>,
   pub uri: String,
   pub fediverse_uri: String,
+  pub private_key: String,
+  pub public_key: String,
   pub is_external: bool,
   pub ext_apub_inbox_uri: Option<String>,
   pub ext_apub_outbox_uri: Option<String>,
@@ -65,6 +67,8 @@ impl FromRow for Orbit {
       banner_uri: row.get("banner_uri"),
       uri: row.get("uri"),
       fediverse_uri: row.get("fediverse_uri"),
+      private_key: row.get("private_key"),
+      public_key: row.get("public_key"),
       is_external: row.get("is_external"),
       ext_apub_inbox_uri: row.get("ext_apub_inbox_uri"),
       ext_apub_outbox_uri: row.get("ext_apub_outbox_uri"),
@@ -92,14 +96,30 @@ impl ActivityConvertible for Orbit {
           .build(),
       ))
     });
+    let image = self.banner_uri.clone().map(|banner_uri| {
+      Reference::Embedded(Box::new(
+        Object::builder()
+          .kind(Some("Image".to_string()))
+          .media_type(Some("image/jpeg".to_string()))
+          .url(Some(Reference::Remote(relative_cdn_to_absolute_cdn_uri(&banner_uri))))
+          .build(),
+      ))
+    });
     let mut endpoints = HashMap::new();
     endpoints.insert("sharedInbox".to_string(), serde_json::Value::String(public_inbox_uri));
+
+    let key_props = KeyProps::builder()
+      .id(Some(format!("{}#main-key", id)))
+      .owner(Some(id.clone()))
+      .public_key_pem(Some(self.public_key.clone()))
+      .build();
 
     Some(
       Object::builder()
         .id(Some(id.clone()))
         .kind(Some("Group".to_string()))
         .icon(icon)
+        .image(image)
         .url(Some(Reference::Remote(id)))
         .name(Some(self.name.clone()))
         .summary(Some(RdfString::Raw(self.description_html.clone())))
@@ -118,6 +138,7 @@ impl ActivityConvertible for Orbit {
             .summary_md(Some(self.description_md.clone()))
             .build(),
         ))
+        .key(Some(key_props))
         .build(),
     )
   }

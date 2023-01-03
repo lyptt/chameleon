@@ -1,8 +1,9 @@
 use uuid::Uuid;
 
 use super::{
-  actor::federate_actor,
+  actor::federate_user_actor,
   article::{federate_create_article, federate_update_article},
+  group::{federate_create_member, federate_remove_member},
   note::{
     federate_create_note, federate_ext_create_note, federate_like_note, federate_unlike_note, federate_update_note,
   },
@@ -54,7 +55,7 @@ pub async fn federate(
     Err(err) => return Err(err),
   };
 
-  let actor_user = match federate_actor(&doc.object.actor, users).await {
+  let actor_user = match federate_user_actor(&doc.object.actor, users).await {
     Ok(user) => user,
     Err(err) => return Err(err),
   };
@@ -132,16 +133,9 @@ pub async fn federate(
     },
     ObjectType::Article => match kind {
       ActivityType::Create => {
-        let activity_visibility = match activity_visibility {
-          Some(v) => v,
-          None => return Err(LogicErr::InvalidData),
-        };
-
         federate_create_article(
           object,
           &actor_user,
-          activity_visibility,
-          follows,
           posts,
           jobs,
           post_attachments,
@@ -157,15 +151,17 @@ pub async fn federate(
           None => return Err(LogicErr::InvalidData),
         };
 
-        federate_update_article(object, &actor_user, activity_visibility, posts, orbits, user_orbits).await
+        federate_update_article(object, &actor_user, activity_visibility, posts).await
       }
       ActivityType::Remove => match determine_activity_target(target) {
+        ActivityTarget::OrbitMembers(target) => federate_remove_member(target, &actor_user, user_orbits, orbits).await,
         ActivityTarget::Unknown(target) => {
           federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
         }
         _ => Err(LogicErr::InvalidData),
       },
       ActivityType::Delete => match determine_activity_target(target) {
+        ActivityTarget::OrbitMembers(target) => federate_remove_member(target, &actor_user, user_orbits, orbits).await,
         ActivityTarget::Unknown(target) => {
           federate_delete_remote_object(target, &actor_user, object_type, origin_data, posts, users, likes).await
         }
@@ -195,6 +191,9 @@ pub async fn federate(
       Some(id) => match id.starts_with(&SETTINGS.server.api_root_fqdn) {
         true => match determine_activity_target(Some(id)) {
           ActivityTarget::UserFollowers(target) => federate_remove_follow(target, &actor_user, follows, users).await,
+          ActivityTarget::OrbitMembers(target) => {
+            federate_remove_member(target, &actor_user, user_orbits, orbits).await
+          }
           ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
           _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
         },
@@ -203,17 +202,21 @@ pub async fn federate(
       None => Err(LogicErr::InvalidData),
     },
     _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+    ObjectType::Group => match kind {
+      ActivityType::Follow => federate_create_member(object, &actor_user, user_orbits, orbits).await,
+      _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+    },
   };
 
   match result {
     Ok(result) => {
-      let (activity_type, actor) = match result {
+      let (activity_type, actor_private_key, actor_fediverse_uri) = match result {
         FederateResult::None => return Ok(()),
-        FederateResult::Accept(actor) => (ActivityType::Accept, actor),
-        FederateResult::TentativeAccept(actor) => (ActivityType::TentativeAccept, actor),
-        FederateResult::Ignore(actor) => (ActivityType::Ignore, actor),
-        FederateResult::Reject(actor) => (ActivityType::Reject, actor),
-        FederateResult::TentativeReject(actor) => (ActivityType::TentativeReject, actor),
+        FederateResult::Accept(actor) => (ActivityType::Accept, actor.0, actor.1),
+        FederateResult::TentativeAccept(actor) => (ActivityType::TentativeAccept, actor.0, actor.1),
+        FederateResult::Ignore(actor) => (ActivityType::Ignore, actor.0, actor.1),
+        FederateResult::Reject(actor) => (ActivityType::Reject, actor.0, actor.1),
+        FederateResult::TentativeReject(actor) => (ActivityType::TentativeReject, actor.0, actor.1),
       };
 
       let response_object = Object::builder()
@@ -221,7 +224,7 @@ pub async fn federate(
         .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
         .actor(Some(Reference::Remote(format!(
           "{}{}",
-          SETTINGS.server.api_fqdn, actor.fediverse_uri
+          SETTINGS.server.api_fqdn, actor_fediverse_uri
         ))))
         .activity(Some(
           ActivityProps::builder()
@@ -237,7 +240,7 @@ pub async fn federate(
         None => return Ok(()),
       };
 
-      send_activitypub_object(&response_uri, doc, &actor).await
+      send_activitypub_object(&response_uri, doc, &actor_fediverse_uri, &actor_private_key).await
     }
     Err(err) => Err(err),
   }

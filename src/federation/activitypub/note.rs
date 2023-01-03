@@ -50,7 +50,6 @@ pub async fn federate_create_note(
     None => return Err(LogicErr::InvalidData),
   };
 
-  // TODO: Figure out some presentation method for text posts
   let attachments: Vec<Object> = match deref_activitypub_ref_list(&activity_object.attachment).await {
     Some(obj) => obj
       .into_iter()
@@ -122,11 +121,9 @@ pub async fn federate_create_note(
   let post = Post {
     post_id,
     user_id: actor.user_id,
-    // TODO: Figure out which orbit something came from
     orbit_id: None,
     uri,
     is_external: true,
-    // TODO: Figure out where we get the title from
     title: None,
     content_md,
     content_html,
@@ -319,7 +316,7 @@ pub async fn federate_ext_create_note(
     None => return Ok(()),
   };
 
-  send_activitypub_object(response_uri, doc, actor).await
+  send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
 }
 
 pub async fn federate_delete_note(target: String, actor: &User, posts: &PostPool) -> Result<FederateResult, LogicErr> {
