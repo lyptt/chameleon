@@ -1,8 +1,11 @@
 use uuid::Uuid;
 
 use crate::{
-  db::{event_repository::EventPool, job_repository::JobPool, post_repository::PostPool, user_repository::UserPool},
-  federation::activitypub::{federate_ext, FederateExtAction},
+  db::{
+    event_repository::EventPool, job_repository::JobPool, orbit_repository::OrbitPool, post_repository::PostPool,
+    user_repository::UserPool,
+  },
+  federation::activitypub::{federate_ext, FederateExtAction, FederateExtDestActor},
   helpers::api::map_ext_err,
   logic::LogicErr,
   model::{event::NewEvent, event_type::EventType},
@@ -13,6 +16,7 @@ pub async fn create_post_event(
   posts: &PostPool,
   events: &EventPool,
   users: &UserPool,
+  orbits: &OrbitPool,
   job_id: Uuid,
 ) -> Result<(), LogicErr> {
   let job = match jobs.fetch_optional_by_id(&job_id).await {
@@ -51,7 +55,14 @@ pub async fn create_post_event(
       Err(err) => return Err(err),
     };
 
-    return federate_ext(FederateExtAction::CreatePost(&post_id), &user, &dest_user, posts).await;
+    return federate_ext(
+      FederateExtAction::CreatePost(&post_id),
+      &user,
+      &FederateExtDestActor::Person(dest_user),
+      posts,
+      orbits,
+    )
+    .await;
   }
 
   // TODO: Make sure event doesn't exist first

@@ -468,6 +468,8 @@ pub async fn api_join_orbit(
     Err(res) => return res,
   };
 
+  // TODO: Federate this if the followed orbit is external
+
   match user_orbits.create_user_orbit(&orbit_id, &session.uid).await {
     Ok(_) => HttpResponse::Created().finish(),
     Err(err) => build_api_err(500, err.to_string(), None),
@@ -484,6 +486,8 @@ pub async fn api_leave_orbit(
     Ok(session) => session,
     Err(res) => return res,
   };
+
+  // TODO: Federate this if the left orbit is external
 
   match user_orbits.delete_user_orbit(&orbit_id, &session.uid).await {
     Ok(_) => HttpResponse::Created().finish(),

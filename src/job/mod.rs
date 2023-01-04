@@ -37,6 +37,8 @@ pub async fn delegate_job(
         &repositories.events,
         &repositories.follows,
         &repositories.user_orbits,
+        &repositories.orbits,
+        &repositories.users,
         queue_job.job_id,
         queue,
       )
@@ -48,6 +50,7 @@ pub async fn delegate_job(
         &repositories.posts,
         &repositories.events,
         &repositories.users,
+        &repositories.orbits,
         queue_job.job_id,
       )
       .await

@@ -3,9 +3,10 @@ use uuid::Uuid;
 
 use crate::{
   db::{
-    event_repository::EventPool, follow_repository::FollowPool, job_repository::JobPool, post_repository::PostPool,
-    user_orbit_repository::UserOrbitPool,
+    event_repository::EventPool, follow_repository::FollowPool, job_repository::JobPool, orbit_repository::OrbitPool,
+    post_repository::PostPool, user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
+  federation::activitypub::{federate_ext, FederateExtAction, FederateExtDestActor},
   helpers::api::{map_db_err, map_ext_err},
   logic::LogicErr,
   model::{
@@ -23,6 +24,8 @@ pub async fn create_post_events(
   events: &EventPool,
   follows: &FollowPool,
   user_orbits: &UserOrbitPool,
+  orbits: &OrbitPool,
+  users: &UserPool,
   job_id: Uuid,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
@@ -58,6 +61,30 @@ pub async fn create_post_events(
   }
 
   if let Some(orbit_id) = post.orbit_id {
+    match orbits.fetch_orbit(&orbit_id).await? {
+      Some(orbit) => {
+        let user = users.fetch_by_id(&user_id).await?;
+
+        if orbit.is_external {
+          federate_ext(
+            FederateExtAction::CreatePost(&post_id),
+            &user,
+            &FederateExtDestActor::Group(orbit),
+            posts,
+            orbits,
+          )
+          .await?;
+        }
+      }
+      _ => {
+        log::warn!(
+          "Failed to fetch remote orbit information with id {} to federate post {}. Federation will be permanently aborted for this post.",
+          orbit_id,
+          post_id
+        );
+      }
+    };
+
     let users = user_orbits.fetch_orbit_user_ids(&orbit_id).await?;
 
     for user in users {

@@ -2,8 +2,13 @@ use uuid::Uuid;
 
 use crate::{
   activitypub::{
+    activity::ActivityProps,
+    activity_convertible::ActivityConvertible,
+    activity_type::ActivityType,
+    document::ActivityPubDocument,
     object::{Object, ObjectType},
     rdf_string::RdfString,
+    reference::Reference,
   },
   db::{
     job_repository::JobPool, orbit_repository::OrbitPool, post_attachment_repository::PostAttachmentPool,
@@ -14,17 +19,19 @@ use crate::{
   model::{
     access_type::AccessType,
     job::{JobStatus, NewJob},
+    orbit::Orbit,
     post::Post,
     post_attachment::PostAttachment,
     queue_job::{QueueJob, QueueJobType},
     user::User,
   },
+  settings::SETTINGS,
   work_queue::queue::Queue,
 };
 
 use super::{
   actor::federate_orbit_group,
-  util::{activitypub_ref_to_uri_opt, deref_activitypub_ref_list, FederateResult},
+  util::{activitypub_ref_to_uri_opt, deref_activitypub_ref_list, send_activitypub_object, FederateResult},
 };
 
 pub async fn federate_create_article(
@@ -281,4 +288,96 @@ pub async fn federate_update_article(
   posts.update_post_content(&post).await?;
 
   Ok(FederateResult::None)
+}
+
+pub async fn federate_ext_create_article(
+  post_id: &Uuid,
+  actor: &User,
+  dest_actor: &Orbit,
+  posts: &PostPool,
+) -> Result<(), LogicErr> {
+  let post = match posts.fetch_post(post_id, &Some(actor.user_id)).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return Err(LogicErr::MissingRecord),
+    },
+    Err(err) => {
+      println!("{}", err);
+      return Err(err);
+    }
+  };
+
+  let obj = match post.to_object(&actor.fediverse_uri) {
+    Some(obj) => obj,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let response_object = Object::builder()
+    .kind(Some(ActivityType::Create.to_string()))
+    .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
+    .actor(Some(Reference::Remote(format!(
+      "{}{}",
+      SETTINGS.server.api_fqdn, actor.fediverse_uri
+    ))))
+    .activity(Some(
+      ActivityProps::builder()
+        .object(Some(Reference::Embedded(Box::new(obj))))
+        .build(),
+    ))
+    .build();
+
+  let doc = ActivityPubDocument::new(response_object);
+
+  let response_uri = match &dest_actor.ext_apub_inbox_uri {
+    Some(uri) => uri,
+    None => return Ok(()),
+  };
+
+  send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
+}
+
+pub async fn federate_ext_update_article(
+  post_id: &Uuid,
+  actor: &User,
+  dest_actor: &Orbit,
+  posts: &PostPool,
+) -> Result<(), LogicErr> {
+  let post = match posts.fetch_post(post_id, &Some(actor.user_id)).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return Err(LogicErr::MissingRecord),
+    },
+    Err(err) => {
+      println!("{}", err);
+      return Err(err);
+    }
+  };
+
+  let obj = match post.to_object(&actor.fediverse_uri) {
+    Some(obj) => obj,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let response_object = Object::builder()
+    .kind(Some(ActivityType::Update.to_string()))
+    .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
+    .actor(Some(Reference::Remote(format!(
+      "{}{}",
+      SETTINGS.server.api_fqdn, actor.fediverse_uri
+    ))))
+    .activity(Some(
+      ActivityProps::builder()
+        .object(Some(Reference::Embedded(Box::new(obj))))
+        .build(),
+    ))
+    .build();
+
+  let doc = ActivityPubDocument::new(response_object);
+
+  let response_uri = match &dest_actor.ext_apub_inbox_uri {
+    Some(uri) => uri,
+    None => return Ok(()),
+  };
+
+  send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
 }

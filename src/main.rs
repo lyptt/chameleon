@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::large_enum_variant)]
 #![deny(unused_imports)]
 
 mod activitypub;

@@ -15,6 +15,8 @@ pub async fn create_follow(
     None => return Err(LogicErr::MissingRecord),
   };
 
+  // TODO: Federate this if the followed user is external
+
   follows.create_follow(user_id, &following_user_id).await
 }
 
@@ -28,6 +30,8 @@ pub async fn delete_follow(
     Some(user_id) => user_id,
     None => return Err(LogicErr::MissingRecord),
   };
+
+  // TODO: Federate this if the unfollowed user is external
 
   follows.delete_follow(user_id, &following_user_id).await
 }

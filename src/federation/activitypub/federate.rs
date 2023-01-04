@@ -2,13 +2,17 @@ use uuid::Uuid;
 
 use super::{
   actor::federate_user_actor,
-  article::{federate_create_article, federate_update_article},
+  article::{federate_create_article, federate_ext_create_article, federate_update_article},
   group::{federate_create_member, federate_remove_member},
   note::{
-    federate_create_note, federate_ext_create_note, federate_like_note, federate_unlike_note, federate_update_note,
+    federate_create_note, federate_ext_create_note, federate_ext_update_note, federate_like_note, federate_unlike_note,
+    federate_update_note,
   },
   object::federate_delete_remote_object,
-  person::{federate_create_follow, federate_remove_follow},
+  person::{
+    federate_create_follow, federate_ext_create_follow, federate_ext_join_group, federate_ext_leave_group,
+    federate_ext_remove_follow, federate_remove_follow,
+  },
   util::{
     activitypub_ref_to_uri_opt, deref_activitypub_ref, determine_activity_target, determine_activity_visibility,
     send_activitypub_object, ActivityTarget, FederateResult,
@@ -29,7 +33,7 @@ use crate::{
   },
   helpers::core::unwrap_or_fail,
   logic::LogicErr,
-  model::{queue_job::OriginDataEntry, user::User},
+  model::{orbit::Orbit, queue_job::OriginDataEntry, user::User},
   net::http_sig::verify_http_signature,
   settings::SETTINGS,
   work_queue::queue::Queue,
@@ -249,24 +253,36 @@ pub async fn federate(
 pub enum FederateExtAction<'a> {
   CreatePost(&'a Uuid),
   UpdatePost(&'a Uuid),
-  FollowProfile(&'a Uuid),
-  UnfollowProfile(&'a Uuid),
+  FollowProfile,
+  UnfollowProfile,
   FollowGroup(&'a Uuid),
   UnfollowGroup(&'a Uuid),
+}
+
+pub enum FederateExtDestActor {
+  Person(User),
+  Group(Orbit),
 }
 
 pub async fn federate_ext<'a>(
   action: FederateExtAction<'a>,
   actor: &User,
-  dest_actor: &User,
+  dest_actor: &FederateExtDestActor,
   posts: &PostPool,
+  orbits: &OrbitPool,
 ) -> Result<(), LogicErr> {
   match action {
-    FederateExtAction::CreatePost(post_id) => federate_ext_create_note(post_id, actor, dest_actor, posts).await,
-    FederateExtAction::UpdatePost(_) => Err(LogicErr::Unimplemented),
-    FederateExtAction::FollowProfile(_) => Err(LogicErr::Unimplemented),
-    FederateExtAction::UnfollowProfile(_) => Err(LogicErr::Unimplemented),
-    FederateExtAction::FollowGroup(_) => Err(LogicErr::Unimplemented),
-    FederateExtAction::UnfollowGroup(_) => Err(LogicErr::Unimplemented),
+    FederateExtAction::CreatePost(post_id) => match dest_actor {
+      FederateExtDestActor::Person(dest_actor) => federate_ext_create_note(post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(post_id, actor, dest_actor, posts).await,
+    },
+    FederateExtAction::UpdatePost(post_id) => match dest_actor {
+      FederateExtDestActor::Person(dest_actor) => federate_ext_update_note(post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(post_id, actor, dest_actor, posts).await,
+    },
+    FederateExtAction::FollowProfile => federate_ext_create_follow(actor, dest_actor).await,
+    FederateExtAction::UnfollowProfile => federate_ext_remove_follow(actor, dest_actor).await,
+    FederateExtAction::FollowGroup(group_id) => federate_ext_join_group(actor, group_id, orbits).await,
+    FederateExtAction::UnfollowGroup(group_id) => federate_ext_leave_group(actor, group_id, orbits).await,
   }
 }
