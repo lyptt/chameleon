@@ -13,6 +13,7 @@ mod create_post_event;
 mod create_post_events;
 mod delete_boost_events;
 mod federate_activitypub;
+mod federate_activitypub_ext;
 
 pub async fn delegate_job(
   queue_job: &QueueJob,
@@ -72,6 +73,15 @@ pub async fn delegate_job(
     }
     QueueJobType::FederateActivityPub => {
       federate_activitypub::federate_activitypub(&queue_job.data, &queue_job.origin_data, repositories, queue).await
+    }
+    QueueJobType::FederateActivityPubExt => {
+      federate_activitypub_ext::federate_activitypub(
+        &queue_job.context,
+        &queue_job.activitypub_federate_ext_action,
+        &queue_job.activitypub_federate_ext_dest_actor,
+        repositories,
+      )
+      .await
     }
     QueueJobType::Unknown => Err(LogicErr::Unimplemented),
   }

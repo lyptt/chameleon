@@ -11,19 +11,24 @@ use uuid::Uuid;
 use crate::{
   cdn::cdn_store::Cdn,
   db::{
-    orbit_moderator_repository::OrbitModeratorPool, orbit_repository::OrbitPool, session_repository::SessionPool,
-    user_orbit_repository::UserOrbitPool, user_repository::UserPool,
+    job_repository::JobPool, orbit_moderator_repository::OrbitModeratorPool, orbit_repository::OrbitPool,
+    session_repository::SessionPool, user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
+  federation::activitypub::{FederateExtAction, FederateExtDestActorRef},
   helpers::{
+    api::map_db_err,
     auth::{assert_auth, query_auth, require_auth},
     core::{build_api_err, build_api_not_found},
     math::div_up,
   },
   model::{
+    job::{JobStatus, NewJob},
+    queue_job::{QueueJob, QueueJobType},
     response::{ListResponse, ObjectResponse},
     user_account_pub::UserAccountPub,
   },
   net::jwt::JwtContext,
+  work_queue::queue::Queue,
 };
 
 #[derive(Deserialize)]
@@ -460,6 +465,9 @@ pub async fn api_delete_orbit(
 pub async fn api_join_orbit(
   sessions: web::Data<SessionPool>,
   user_orbits: web::Data<UserOrbitPool>,
+  orbits: web::Data<OrbitPool>,
+  jobs: web::Data<JobPool>,
+  queue: web::Data<Queue>,
   orbit_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
@@ -468,7 +476,42 @@ pub async fn api_join_orbit(
     Err(res) => return res,
   };
 
-  // TODO: Federate this if the followed orbit is external
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => match orbit {
+      Some(orbit) => orbit,
+      None => return build_api_not_found(orbit_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), None),
+  };
+
+  if orbit.is_external {
+    let job_id = match jobs
+      .create(NewJob {
+        created_by_id: Some(session.uid),
+        status: JobStatus::NotStarted,
+        record_id: Some(*orbit_id),
+        associated_record_id: None,
+      })
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(id) => id,
+      Err(err) => return build_api_err(500, err.to_string(), None),
+    };
+
+    let job = QueueJob::builder()
+      .job_id(job_id)
+      .job_type(QueueJobType::FederateActivityPubExt)
+      .context(vec![session.uid.to_string()])
+      .activitypub_federate_ext_action(FederateExtAction::FollowGroup(*orbit_id))
+      .activitypub_federate_ext_dest_actor(FederateExtDestActorRef::None)
+      .build();
+
+    match queue.send_job(job).await {
+      Ok(_) => {}
+      Err(err) => return build_api_err(500, err.to_string(), None),
+    }
+  }
 
   match user_orbits.create_user_orbit(&orbit_id, &session.uid).await {
     Ok(_) => HttpResponse::Created().finish(),
@@ -479,6 +522,9 @@ pub async fn api_join_orbit(
 pub async fn api_leave_orbit(
   sessions: web::Data<SessionPool>,
   user_orbits: web::Data<UserOrbitPool>,
+  orbits: web::Data<OrbitPool>,
+  jobs: web::Data<JobPool>,
+  queue: web::Data<Queue>,
   orbit_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
@@ -487,7 +533,42 @@ pub async fn api_leave_orbit(
     Err(res) => return res,
   };
 
-  // TODO: Federate this if the left orbit is external
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => match orbit {
+      Some(orbit) => orbit,
+      None => return build_api_not_found(orbit_id.to_string()),
+    },
+    Err(err) => return build_api_err(500, err.to_string(), None),
+  };
+
+  if orbit.is_external {
+    let job_id = match jobs
+      .create(NewJob {
+        created_by_id: Some(session.uid),
+        status: JobStatus::NotStarted,
+        record_id: Some(*orbit_id),
+        associated_record_id: None,
+      })
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(id) => id,
+      Err(err) => return build_api_err(500, err.to_string(), None),
+    };
+
+    let job = QueueJob::builder()
+      .job_id(job_id)
+      .job_type(QueueJobType::FederateActivityPubExt)
+      .context(vec![session.uid.to_string()])
+      .activitypub_federate_ext_action(FederateExtAction::UnfollowGroup(*orbit_id))
+      .activitypub_federate_ext_dest_actor(FederateExtDestActorRef::None)
+      .build();
+
+    match queue.send_job(job).await {
+      Ok(_) => {}
+      Err(err) => return build_api_err(500, err.to_string(), None),
+    }
+  }
 
   match user_orbits.delete_user_orbit(&orbit_id, &session.uid).await {
     Ok(_) => HttpResponse::Created().finish(),

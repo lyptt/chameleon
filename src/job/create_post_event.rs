@@ -56,7 +56,7 @@ pub async fn create_post_event(
     };
 
     return federate_ext(
-      FederateExtAction::CreatePost(&post_id),
+      FederateExtAction::CreatePost(post_id),
       &user,
       &FederateExtDestActor::Person(dest_user),
       posts,
@@ -64,8 +64,6 @@ pub async fn create_post_event(
     )
     .await;
   }
-
-  // TODO: Make sure event doesn't exist first
 
   let own_event = NewEvent {
     source_user_id: user_id,

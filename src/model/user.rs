@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio_postgres::Row;
 use uuid::Uuid;
@@ -14,7 +15,7 @@ use crate::{
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
   pub user_id: Uuid,
   pub fediverse_id: String,

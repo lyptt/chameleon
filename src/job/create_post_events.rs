@@ -67,7 +67,7 @@ pub async fn create_post_events(
 
         if orbit.is_external {
           federate_ext(
-            FederateExtAction::CreatePost(&post_id),
+            FederateExtAction::CreatePost(post_id),
             &user,
             &FederateExtDestActor::Group(orbit),
             posts,

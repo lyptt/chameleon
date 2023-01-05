@@ -39,6 +39,7 @@ pub trait UserRepo {
   async fn create_from(&self, user: &User) -> Result<User, LogicErr>;
   async fn update_from(&self, user: &User) -> Result<User, LogicErr>;
   async fn delete_user_from_uri(&self, uri: &str) -> Result<(), LogicErr>;
+  async fn user_is_external(&self, user_id: &Uuid) -> bool;
 }
 
 pub type UserPool = Arc<dyn UserRepo + Send + Sync>;
@@ -369,5 +370,25 @@ impl UserRepo for DbUserRepo {
       .map_err(map_db_err)?;
 
     Ok(())
+  }
+
+  async fn user_is_external(&self, user_id: &Uuid) -> bool {
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return false,
+    };
+    let row = match db
+      .query_one(
+        "SELECT COUNT(*) >= 1 FROM users WHERE user_id = $1 is_external = TRUE",
+        &[&user_id],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return false,
+    };
+
+    row.get(0)
   }
 }

@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{
@@ -250,22 +251,32 @@ pub async fn federate(
   }
 }
 
-pub enum FederateExtAction<'a> {
-  CreatePost(&'a Uuid),
-  UpdatePost(&'a Uuid),
+#[derive(Serialize, Deserialize, Clone)]
+pub enum FederateExtAction {
+  CreatePost(Uuid),
+  UpdatePost(Uuid),
   FollowProfile,
   UnfollowProfile,
-  FollowGroup(&'a Uuid),
-  UnfollowGroup(&'a Uuid),
+  FollowGroup(Uuid),
+  UnfollowGroup(Uuid),
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum FederateExtDestActor {
+  None,
   Person(User),
   Group(Orbit),
 }
 
-pub async fn federate_ext<'a>(
-  action: FederateExtAction<'a>,
+#[derive(Serialize, Deserialize)]
+pub enum FederateExtDestActorRef {
+  None,
+  Person(Uuid),
+  Group(Uuid),
+}
+
+pub async fn federate_ext(
+  action: FederateExtAction,
   actor: &User,
   dest_actor: &FederateExtDestActor,
   posts: &PostPool,
@@ -273,16 +284,18 @@ pub async fn federate_ext<'a>(
 ) -> Result<(), LogicErr> {
   match action {
     FederateExtAction::CreatePost(post_id) => match dest_actor {
-      FederateExtDestActor::Person(dest_actor) => federate_ext_create_note(post_id, actor, dest_actor, posts).await,
-      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::Person(dest_actor) => federate_ext_create_note(&post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(&post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::None => Ok(()),
     },
     FederateExtAction::UpdatePost(post_id) => match dest_actor {
-      FederateExtDestActor::Person(dest_actor) => federate_ext_update_note(post_id, actor, dest_actor, posts).await,
-      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::Person(dest_actor) => federate_ext_update_note(&post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(&post_id, actor, dest_actor, posts).await,
+      FederateExtDestActor::None => Ok(()),
     },
     FederateExtAction::FollowProfile => federate_ext_create_follow(actor, dest_actor).await,
     FederateExtAction::UnfollowProfile => federate_ext_remove_follow(actor, dest_actor).await,
-    FederateExtAction::FollowGroup(group_id) => federate_ext_join_group(actor, group_id, orbits).await,
-    FederateExtAction::UnfollowGroup(group_id) => federate_ext_leave_group(actor, group_id, orbits).await,
+    FederateExtAction::FollowGroup(group_id) => federate_ext_join_group(actor, &group_id, orbits).await,
+    FederateExtAction::UnfollowGroup(group_id) => federate_ext_leave_group(actor, &group_id, orbits).await,
   }
 }
