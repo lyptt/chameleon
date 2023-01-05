@@ -40,7 +40,7 @@ chrono = { version = "0.4.23", features = [
   "serde",
 ], default-features = false }
 async-trait = "0.1.60"
-tokio = { version = "1.23.0", features = [
+tokio = { version = "1.23.1", features = [
   "macros",
   "process",
   "rt-multi-thread",
