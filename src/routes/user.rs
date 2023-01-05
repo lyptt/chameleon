@@ -200,6 +200,8 @@ pub async fn api_update_profile(
     };
   }
 
+  // TODO: Federate update
+
   match users.update_from(&user).await {
     Ok(_) => HttpResponse::Ok().finish(),
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
@@ -257,6 +259,8 @@ pub async fn api_update_profile_assets(
   };
 
   user.avatar_url = Some(avatar_uri);
+
+  // TODO: Federate update
 
   match users.update_from(&user).await {
     Ok(_) => HttpResponse::Ok().finish(),

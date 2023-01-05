@@ -308,6 +308,8 @@ pub async fn api_update_orbit(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
+  // TODO: Federate update
+
   match orbits
     .update_orbit(
       &orbit_id,
@@ -418,6 +420,8 @@ pub async fn api_update_orbit_assets(
     None => return build_api_err(500, "Image upload failed".to_string(), None),
   };
 
+  // TODO: Federate update
+
   match orbits
     .update_orbit(
       &orbit_id,
@@ -455,6 +459,8 @@ pub async fn api_delete_orbit(
     }
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
+
+  // TODO: Federate deletion
 
   match orbits.delete_orbit(&orbit_id).await {
     Ok(_) => HttpResponse::Ok().finish(),
