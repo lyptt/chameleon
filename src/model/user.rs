@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio_postgres::Row;
 use uuid::Uuid;
@@ -8,13 +9,13 @@ use crate::{
     activity_convertible::ActivityConvertible, actor::ActorProps, key::KeyProps, object::Object, reference::Reference,
   },
   db::FromRow,
-  helpers::api::relative_to_absolute_uri,
+  helpers::api::{relative_cdn_to_absolute_cdn_uri, relative_to_absolute_uri},
   settings::SETTINGS,
 };
 
 use super::webfinger::{WebfingerRecord, WebfingerRecordLink};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct User {
   pub user_id: Uuid,
   pub fediverse_id: String,
@@ -43,17 +44,18 @@ pub struct User {
   pub ext_apub_inbox_uri: Option<String>,
   pub ext_apub_outbox_uri: Option<String>,
   pub created_at: DateTime<Utc>,
+  pub updated_at: DateTime<Utc>,
 }
 
 impl User {
   pub fn to_webfinger(&self) -> WebfingerRecord {
     WebfingerRecord {
-      aliases: Some(vec![WebfingerRecordLink::build_self_uri(&self.user_id)]),
+      aliases: Some(vec![WebfingerRecordLink::build_user_self_uri(&self.user_id)]),
       subject: self.fediverse_id.replacen('@', "acct:", 1),
       links: [
-        WebfingerRecordLink::build_self_link(&self.user_id),
+        WebfingerRecordLink::build_user_self_link(&self.user_id),
         WebfingerRecordLink::build_profile_page_link(&self.handle),
-        WebfingerRecordLink::build_feed_link(&self.user_id),
+        WebfingerRecordLink::build_user_feed_link(&self.user_id),
       ]
       .into(),
     }
@@ -90,6 +92,7 @@ impl FromRow for User {
       ext_apub_inbox_uri: row.get("ext_apub_inbox_uri"),
       ext_apub_outbox_uri: row.get("ext_apub_outbox_uri"),
       created_at: row.get("created_at"),
+      updated_at: row.get("updated_at"),
     })
   }
 }
@@ -99,7 +102,7 @@ impl ActivityConvertible for User {
     let id = relative_to_absolute_uri(&self.fediverse_uri);
     let public_inbox_uri = format!("{}/federate/activitypub/shared-inbox", SETTINGS.server.api_fqdn);
     let inbox_uri = format!(
-      "{}/federate/activitypub/inbox/{}",
+      "{}/federate/activitypub/user/{}/inbox",
       SETTINGS.server.api_fqdn, &self.user_id
     );
     let outbox_uri = format!("{}/user/{}/feed", SETTINGS.server.api_fqdn, &self.user_id);
@@ -111,7 +114,7 @@ impl ActivityConvertible for User {
         Object::builder()
           .kind(Some("Image".to_string()))
           .media_type(Some("image/jpeg".to_string()))
-          .url(Some(Reference::Remote(avatar_url)))
+          .url(Some(Reference::Remote(relative_cdn_to_absolute_cdn_uri(&avatar_url))))
           .build(),
       ))
     });
@@ -184,6 +187,7 @@ mod tests {
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
       created_at: Utc::now(),
+      updated_at: Utc::now(),
     };
 
     temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {

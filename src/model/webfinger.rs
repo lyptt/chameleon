@@ -15,11 +15,11 @@ pub struct WebfingerRecordLink {
 }
 
 impl WebfingerRecordLink {
-  pub fn build_self_uri(id: &Uuid) -> String {
+  pub fn build_user_self_uri(id: &Uuid) -> String {
     format!("{}/user/{}", SETTINGS.server.api_fqdn, id)
   }
 
-  pub fn build_self_link(id: &Uuid) -> WebfingerRecordLink {
+  pub fn build_user_self_link(id: &Uuid) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "self".to_string(),
       link_type: "application/activity+json".to_string(),
@@ -28,7 +28,7 @@ impl WebfingerRecordLink {
     }
   }
 
-  pub fn build_feed_link(id: &Uuid) -> WebfingerRecordLink {
+  pub fn build_user_feed_link(id: &Uuid) -> WebfingerRecordLink {
     WebfingerRecordLink {
       rel: "feed".to_string(),
       link_type: "application/activity+json".to_string(),
@@ -42,6 +42,37 @@ impl WebfingerRecordLink {
       rel: "http://webfinger.net/rel/profile-page".to_string(),
       link_type: "text/html".to_string(),
       href: Some(format!("{}/users/{}", SETTINGS.server.fqdn, handle)),
+      template: None,
+    }
+  }
+
+  pub fn build_orbit_page_link(shortcode: &str) -> WebfingerRecordLink {
+    WebfingerRecordLink {
+      rel: "http://webfinger.net/rel/profile-page".to_string(),
+      link_type: "text/html".to_string(),
+      href: Some(format!("{}/orbits/{}", SETTINGS.server.fqdn, shortcode)),
+      template: None,
+    }
+  }
+
+  pub fn build_orbit_self_uri(id: &Uuid) -> String {
+    format!("{}/orbit/{}", SETTINGS.server.api_fqdn, id)
+  }
+
+  pub fn build_orbit_self_link(id: &Uuid) -> WebfingerRecordLink {
+    WebfingerRecordLink {
+      rel: "self".to_string(),
+      link_type: "application/activity+json".to_string(),
+      href: Some(format!("{}/orbit/{}", SETTINGS.server.api_fqdn, id)),
+      template: None,
+    }
+  }
+
+  pub fn build_orbit_feed_link(id: &Uuid) -> WebfingerRecordLink {
+    WebfingerRecordLink {
+      rel: "feed".to_string(),
+      link_type: "application/activity+json".to_string(),
+      href: Some(format!("{}/orbit/{}/feed", SETTINGS.server.api_fqdn, id)),
       template: None,
     }
   }

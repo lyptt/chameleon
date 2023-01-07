@@ -25,6 +25,7 @@ pub trait UserRepo {
   async fn fetch_followers_count(&self, user_id: &Uuid) -> i64;
   async fn fetch_following_count(&self, user_id: &Uuid) -> i64;
   async fn fetch_by_fediverse_uri(&self, fediverse_uri: &str) -> Option<User>;
+  async fn fetch_outdated_external_users(&self) -> Result<Vec<Uuid>, LogicErr>;
   async fn create(
     &self,
     handle: &str,
@@ -39,6 +40,9 @@ pub trait UserRepo {
   async fn create_from(&self, user: &User) -> Result<User, LogicErr>;
   async fn update_from(&self, user: &User) -> Result<User, LogicErr>;
   async fn delete_user_from_uri(&self, uri: &str) -> Result<(), LogicErr>;
+  async fn delete_user(&self, id: &Uuid) -> Result<(), LogicErr>;
+  async fn delete_external_user(&self, id: &Uuid) -> Result<(), LogicErr>;
+  async fn user_is_external(&self, user_id: &Uuid) -> bool;
 }
 
 pub type UserPool = Arc<dyn UserRepo + Send + Sync>;
@@ -326,7 +330,7 @@ impl UserRepo for DbUserRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(r#"UPDATE users SET handle = $2, fediverse_id = $3, fediverse_uri = $4, avatar_url = $5, email = $6, password_hash = $7, is_external = $8, 
     url_1 = $9, url_2 = $10, url_3 = $11, url_4 = $12, url_5 = $13, url_1_title = $14, url_2_title = $15, url_3_title = $16, url_4_title = $17, url_5_title = $18, intro_md = $19, intro_html = $20, private_key = $21, public_key = $22, 
-    ext_apub_followers_uri = $23, ext_apub_following_uri = $24, ext_apub_inbox_uri = $25, ext_apub_outbox_uri = $26 WHERE user_id = $1"#,
+    ext_apub_followers_uri = $23, ext_apub_following_uri = $24, ext_apub_inbox_uri = $25, ext_apub_outbox_uri = $26, updated_at = NOW() WHERE user_id = $1"#,
       &[
         &user.user_id,
         &user.handle,
@@ -369,5 +373,56 @@ impl UserRepo for DbUserRepo {
       .map_err(map_db_err)?;
 
     Ok(())
+  }
+
+  async fn delete_user(&self, id: &Uuid) -> Result<(), LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute("DELETE FROM users WHERE user_id = $1", &[&id])
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(())
+  }
+
+  async fn delete_external_user(&self, id: &Uuid) -> Result<(), LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute("DELETE FROM users WHERE user_id = $1 AND is_external = TRUE", &[&id])
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(())
+  }
+
+  async fn user_is_external(&self, user_id: &Uuid) -> bool {
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return false,
+    };
+    let row = match db
+      .query_one(
+        "SELECT COUNT(*) >= 1 FROM users WHERE user_id = $1 is_external = TRUE",
+        &[&user_id],
+      )
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return false,
+    };
+
+    row.get(0)
+  }
+
+  async fn fetch_outdated_external_users(&self) -> Result<Vec<Uuid>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        r#"SELECT user_id FROM users WHERE updated_at < NOW() - INTERVAL '30 minutes'"#,
+        &[],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(rows.into_iter().map(|r| r.get::<&str, Uuid>("user_id")).collect())
   }
 }

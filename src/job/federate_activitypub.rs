@@ -44,6 +44,8 @@ pub async fn federate_activitypub(
     &repositories.likes,
     &repositories.jobs,
     &repositories.post_attachments,
+    &repositories.orbits,
+    &repositories.user_orbits,
     queue,
   )
   .await

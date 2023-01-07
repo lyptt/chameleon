@@ -24,6 +24,7 @@ file_store = "Local"
 queue_backend = "RabbitMQ"
 work_queue = "work_q"
 work_deadletter_queue = "work_dq"
+schedule_jobs = true
 
 [log]
 level = "Debug"

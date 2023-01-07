@@ -11,6 +11,7 @@ use super::{
   collection::{CollectionPageProps, CollectionProps},
   key::KeyProps,
   link::LinkProps,
+  orbit::OrbitProps,
   place::PlaceProps,
   profile::ProfileProps,
   question::QuestionProps,
@@ -146,18 +147,6 @@ pub struct Object {
   #[serde(rename = "publicKey", skip_serializing_if = "Option::is_none")]
   pub key: Option<KeyProps>,
 
-  // Orbit ActivityPub extensions
-  #[serde(
-    rename(serialize = "backgroundColorFill", deserialize = "orbit:backgroundColorFill"),
-    skip_serializing_if = "Option::is_none"
-  )]
-  pub background_color_fill: Option<RdfString>,
-  #[serde(
-    rename(serialize = "backgroundColorFillMap", deserialize = "orbit:backgroundColorFillMap"),
-    skip_serializing_if = "Option::is_none"
-  )]
-  pub background_color_fill_map: Option<HashMap<String, RdfString>>,
-
   #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub link: Option<LinkProps>,
 
@@ -189,6 +178,9 @@ pub struct Object {
   pub tombstone: Option<TombstoneProps>,
 
   #[serde(flatten, skip_serializing_if = "Option::is_none")]
+  pub orbit: Option<OrbitProps>,
+
+  #[serde(flatten, skip_serializing_if = "Option::is_none")]
   pub extra: Option<serde_json::Value>,
 }
 
@@ -204,6 +196,7 @@ mod tests {
     document::{ActivityPubDocument, RawActivityPubDocument},
     link::LinkProps,
     object::Object,
+    orbit::OrbitProps,
     place::PlaceProps,
     profile::ProfileProps,
     question::QuestionProps,
@@ -354,6 +347,7 @@ mod tests {
                   .profile(Some(ProfileProps::builder().build()))
                   .relationship(Some(RelationshipProps::builder().build()))
                   .tombstone(Some(TombstoneProps::builder().build()))
+                  .orbit(Some(OrbitProps::builder().build()))
                   .build()
               ))))
               .build()
@@ -367,6 +361,7 @@ mod tests {
           .profile(Some(ProfileProps::builder().build()))
           .relationship(Some(RelationshipProps::builder().build()))
           .tombstone(Some(TombstoneProps::builder().build()))
+          .orbit(Some(OrbitProps::builder().build()))
           .extra(Some(json!({})))
           .build()
       ))
@@ -395,6 +390,7 @@ mod tests {
           .profile(Some(ProfileProps::builder().build()))
           .relationship(Some(RelationshipProps::builder().build()))
           .tombstone(Some(TombstoneProps::builder().build()))
+          .orbit(Some(OrbitProps::builder().build()))
           .extra(Some(json!({})))
           .build()
       ))]))

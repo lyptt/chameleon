@@ -20,6 +20,7 @@ pub trait JobRepo {
   async fn fetch_optional_by_id(&self, job_id: &Uuid) -> Option<Job>;
   async fn create(&self, job: NewJob) -> Result<Uuid, LogicErr>;
   async fn update(&self, job: &Job) -> Result<(), LogicErr>;
+  async fn purge_completed_jobs(&self) -> Result<(), LogicErr>;
 }
 
 pub type JobPool = Arc<dyn JobRepo + Send + Sync>;
@@ -88,6 +89,18 @@ impl JobRepo for DbJobRepo {
         &job.failed_count,
         &job.job_id,
       ],
+    )
+    .await
+    .map_err(map_db_err)?;
+
+    Ok(())
+  }
+
+  async fn purge_completed_jobs(&self) -> Result<(), LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute(
+      "DELETE FROM jobs WHERE (status = 'done' OR status = 'failed') AND updated_at < NOW() - INTERVAL '1 day'",
+      &[],
     )
     .await
     .map_err(map_db_err)?;

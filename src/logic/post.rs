@@ -7,8 +7,12 @@ use uuid::Uuid;
 
 use super::LogicErr;
 use crate::{
+  activitypub::object::ObjectType,
   cdn::cdn_store::Cdn,
-  db::{job_repository::JobPool, post_attachment_repository::PostAttachmentPool, post_repository::PostPool},
+  db::{
+    job_repository::JobPool, post_attachment_repository::PostAttachmentPool, post_repository::PostPool,
+    tombstone_repository::TombstonePool,
+  },
   helpers::api::{map_db_err, map_ext_err},
   model::{
     access_type::AccessType,
@@ -254,6 +258,48 @@ pub async fn upload_post_files(
   }
 }
 
+pub async fn delete_post(
+  posts: &PostPool,
+  jobs: &JobPool,
+  tombstones: &TombstonePool,
+  queue: &Queue,
+  post_id: &Uuid,
+  user_id: &Uuid,
+) -> Result<(), LogicErr> {
+  let post = posts.fetch_by_id(post_id).await?;
+
+  if &post.user_id != user_id {
+    return Err(LogicErr::MissingRecord);
+  }
+
+  posts.delete_post(post_id, user_id).await?;
+
+  let former_type = if post.orbit_id.is_none() {
+    ObjectType::Article
+  } else {
+    ObjectType::Note
+  };
+
+  tombstones.create_tombstone(&post.uri, &former_type.to_string()).await?;
+
+  let job_id = jobs
+    .create(NewJob {
+      created_by_id: Some(user_id.to_owned()),
+      status: JobStatus::NotStarted,
+      record_id: Some(post_id.to_owned()),
+      associated_record_id: post.orbit_id,
+    })
+    .await
+    .map_err(map_db_err)?;
+
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::DeletePost)
+    .build();
+
+  queue.send_job(job).await
+}
+
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
@@ -368,6 +414,7 @@ mod tests {
       orbit_id: None,
       orbit_name: None,
       orbit_uri: None,
+      orbit_fediverse_uri: None,
       orbit_avatar_uri: None,
       orbit_shortcode: None,
     };

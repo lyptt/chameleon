@@ -8,15 +8,15 @@ use crate::{
   db::{
     follow_repository::FollowPool, job_repository::JobPool, orbit_repository::OrbitPool,
     post_attachment_repository::PostAttachmentPool, post_repository::PostPool, session_repository::SessionPool,
-    user_repository::UserPool,
+    tombstone_repository::TombstonePool, user_repository::UserPool,
   },
   helpers::{
     auth::{query_auth, require_auth},
-    core::{build_api_err, build_api_not_found},
+    core::{build_api_err, build_api_not_found, map_api_err},
     math::div_up,
   },
   logic::post::{
-    create_post, get_global_posts, get_global_posts_count, get_post, get_user_friends_posts,
+    create_post, delete_post, get_global_posts, get_global_posts_count, get_post, get_user_friends_posts,
     get_user_friends_posts_count, get_user_posts, get_user_posts_count, upload_post_files, CreatePostResult,
     NewPostRequest, NewPostResponse,
   },
@@ -257,6 +257,34 @@ pub async fn api_get_orbit_feed(
   })
 }
 
+pub async fn api_get_orbit_feed_by_id(
+  posts: web::Data<PostPool>,
+  orbit_id: web::Path<Uuid>,
+  query: web::Query<PostsQuery>,
+) -> impl Responder {
+  let page = query.page.unwrap_or(0);
+  let page_size = query.page_size.unwrap_or(20);
+  let posts_count = match posts.count_global_federated_orbit_feed(&orbit_id).await {
+    Ok(count) => count,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  let posts = match posts
+    .fetch_global_federated_orbit_feed(&orbit_id, page_size, page * page_size)
+    .await
+  {
+    Ok(posts) => posts,
+    Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
+  };
+
+  HttpResponse::Ok().json(ListResponse {
+    data: posts,
+    page,
+    total_items: posts_count,
+    total_pages: div_up(posts_count, page_size) + 1,
+  })
+}
+
 pub async fn api_get_user_posts(
   sessions: web::Data<SessionPool>,
   posts: web::Data<PostPool>,
@@ -358,6 +386,26 @@ pub async fn api_create_post(
       CreatePostResult::JobQueued(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
     },
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_delete_post(
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+  queue: web::Data<Queue>,
+  jobs: web::Data<JobPool>,
+  tombstones: web::Data<TombstonePool>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &sessions).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  match delete_post(&posts, &jobs, &tombstones, &queue, &post_id, &props.uid).await {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => map_api_err(err),
   }
 }
 

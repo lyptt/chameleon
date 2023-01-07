@@ -6,13 +6,20 @@ use crate::{
   work_queue::queue::Queue,
 };
 
+mod clean_jobs;
 mod convert_new_post_images;
 mod create_boost_event;
 mod create_boost_events;
 mod create_post_event;
 mod create_post_events;
 mod delete_boost_events;
+mod delete_post;
 mod federate_activitypub;
+mod federate_activitypub_ext;
+mod refresh_external_orbit;
+mod refresh_external_orbits;
+mod refresh_external_profile;
+mod refresh_external_profiles;
 
 pub async fn delegate_job(
   queue_job: &QueueJob,
@@ -37,6 +44,8 @@ pub async fn delegate_job(
         &repositories.events,
         &repositories.follows,
         &repositories.user_orbits,
+        &repositories.orbits,
+        &repositories.users,
         queue_job.job_id,
         queue,
       )
@@ -48,6 +57,7 @@ pub async fn delegate_job(
         &repositories.posts,
         &repositories.events,
         &repositories.users,
+        &repositories.orbits,
         queue_job.job_id,
       )
       .await
@@ -67,8 +77,44 @@ pub async fn delegate_job(
     QueueJobType::DeleteBoostEvents => {
       delete_boost_events::delete_boost_events(queue_job.job_id, &repositories.jobs, &repositories.events).await
     }
+    QueueJobType::DeletePost => {
+      delete_post::delete_post(
+        queue_job.job_id,
+        &repositories.jobs,
+        &repositories.orbits,
+        &repositories.user_orbits,
+        &repositories.users,
+        &repositories.posts,
+        &repositories.follows,
+        queue,
+      )
+      .await
+    }
     QueueJobType::FederateActivityPub => {
       federate_activitypub::federate_activitypub(&queue_job.data, &queue_job.origin_data, repositories, queue).await
+    }
+    QueueJobType::FederateActivityPubExt => {
+      federate_activitypub_ext::federate_activitypub(
+        &queue_job.context,
+        &queue_job.activitypub_federate_ext_action,
+        &queue_job.activitypub_federate_ext_dest_actor,
+        repositories,
+      )
+      .await
+    }
+    QueueJobType::CleanJobs => clean_jobs::clean_jobs(&repositories.jobs).await,
+    QueueJobType::RefreshExternalOrbits => {
+      refresh_external_orbits::refresh_external_orbits(&repositories.orbits, &repositories.jobs, queue).await
+    }
+    QueueJobType::RefreshExternalProfiles => {
+      refresh_external_profiles::refresh_external_profiles(&repositories.users, &repositories.jobs, queue).await
+    }
+    QueueJobType::RefreshExternalOrbit => {
+      refresh_external_orbit::refresh_external_orbit(&repositories.orbits, &repositories.jobs, queue_job.job_id).await
+    }
+    QueueJobType::RefreshExternalProfile => {
+      refresh_external_profile::refresh_external_profile(&repositories.users, &repositories.jobs, queue_job.job_id)
+        .await
     }
     QueueJobType::Unknown => Err(LogicErr::Unimplemented),
   }

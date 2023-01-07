@@ -32,16 +32,17 @@ lazy_static! {
 
 pub enum FederateResult {
   None,
-  Accept(User),
-  TentativeAccept(User),
-  Ignore(User),
-  Reject(User),
-  TentativeReject(User),
+  Accept((String, String)),
+  TentativeAccept((String, String)),
+  Ignore((String, String)),
+  Reject((String, String)),
+  TentativeReject((String, String)),
 }
 
 pub enum ActivityTarget {
   Unknown(String),
   UserFollowers(String),
+  OrbitMembers(String),
   Post(String),
   PostLikes(String),
   Invalid,
@@ -117,7 +118,12 @@ pub async fn fetch_activitypub_object(obj_ref: &str) -> Option<Object> {
   }
 }
 
-pub async fn send_activitypub_object(uri: &str, doc: ActivityPubDocument, actor: &User) -> Result<(), LogicErr> {
+pub async fn send_activitypub_object(
+  uri: &str,
+  doc: ActivityPubDocument,
+  actor_fediverse_uri: &str,
+  actor_private_key: &str,
+) -> Result<(), LogicErr> {
   let result: Result<reqwest::Response, LogicErr> = retry(BACKOFF_POLICY.clone(), || async {
     let body = serde_json::to_vec(&doc).map_err(map_ext_err)?;
 
@@ -144,11 +150,11 @@ pub async fn send_activitypub_object(uri: &str, doc: ActivityPubDocument, actor:
       .map_err(map_ext_err)?;
 
     if SETTINGS.app.secure {
-      let private_key = PrivateKey::from_pem(actor.private_key.as_bytes()).map_err(map_ext_err)?;
+      let private_key = PrivateKey::from_pem(actor_private_key.as_bytes()).map_err(map_ext_err)?;
       SigningConfig::new(
         RsaSha256,
         &private_key,
-        format!("{}{}#main-key", SETTINGS.server.api_fqdn, actor.fediverse_uri),
+        format!("{}{}#main-key", SETTINGS.server.api_fqdn, actor_fediverse_uri),
       )
       .sign(&mut req)
       .map_err(map_ext_err)?;
@@ -237,6 +243,9 @@ pub fn determine_activity_target(target: Option<String>) -> ActivityTarget {
         if target.ends_with("/followers") {
           let user_uri = target.replace("/followers", "");
           ActivityTarget::UserFollowers(user_uri)
+        } else if target.ends_with("/members") {
+          let orbit_uri = target.replace("/members", "");
+          ActivityTarget::OrbitMembers(orbit_uri)
         } else if target.contains("/api/feed") && target.ends_with("/likes") {
           let post_uri = target.replace("/likes", "");
           ActivityTarget::PostLikes(post_uri)

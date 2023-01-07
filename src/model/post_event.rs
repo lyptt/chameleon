@@ -16,6 +16,7 @@ use crate::{
     reference::Reference,
   },
   db::{FromRow, FromRowJoin, FromRows},
+  helpers::api::relative_to_absolute_uri,
   logic::LogicErr,
   settings::SETTINGS,
 };
@@ -55,6 +56,7 @@ pub struct PostEvent {
   pub orbit_name: Option<String>,
   pub orbit_shortcode: Option<String>,
   pub orbit_uri: Option<String>,
+  pub orbit_fediverse_uri: Option<String>,
   pub orbit_avatar_uri: Option<String>,
   pub attachments: Vec<PostAttachment>,
 }
@@ -87,6 +89,7 @@ impl FromRow for PostEvent {
       orbit_name: row.get("orbit_name"),
       orbit_shortcode: row.get("orbit_shortcode"),
       orbit_uri: row.get("orbit_uri"),
+      orbit_fediverse_uri: row.get("orbit_fediverse_uri"),
       orbit_avatar_uri: row.get("orbit_avatar_uri"),
       attachments: vec![],
     })
@@ -153,12 +156,33 @@ impl ActivityConvertible for PostEvent {
       _ => None,
     };
 
-    let cc = match self.visibility {
-      AccessType::Unlisted => Some(Reference::Remote::<Object>(
-        "https://www.w3.org/ns/activitystreams#Local".to_string(),
-      )),
-      _ => None,
+    let cc = match &self.orbit_fediverse_uri {
+      Some(orbit_fediverse_uri) => Some(Reference::Remote::<Object>(format!(
+        "{}/members",
+        relative_to_absolute_uri(orbit_fediverse_uri)
+      ))),
+      None => match self.visibility {
+        AccessType::Unlisted => Some(Reference::Remote::<Object>(
+          "https://www.w3.org/ns/activitystreams#Local".to_string(),
+        )),
+        _ => None,
+      },
     };
+
+    let audience = match &self.orbit_fediverse_uri {
+      Some(orbit_fediverse_uri) => self.orbit_shortcode.as_ref().map(|orbit_shortcode| {
+        Reference::Embedded(Box::new(
+          Object::builder()
+            .kind(Some("Group".to_owned()))
+            .name(Some(format!("o/{}", orbit_shortcode)))
+            .id(Some(relative_to_absolute_uri(orbit_fediverse_uri)))
+            .build(),
+        ))
+      }),
+      None => None,
+    };
+
+    let summary = self.title.as_ref().map(|title| RdfString::Raw(title.to_owned()));
 
     let base_uri = format!("{}/feed/{}", SETTINGS.server.api_fqdn, self.post_id);
 
@@ -204,15 +228,21 @@ impl ActivityConvertible for PostEvent {
       })
       .collect();
 
+    let object_kind = Some(match self.orbit_id.is_some() {
+      true => "Article".to_owned(),
+      false => "Note".to_owned(),
+    });
+
     Some(
       Object::builder()
         .id(Some(base_uri.clone()))
         .url(Some(Reference::Remote(base_uri)))
-        .kind(Some("Note".to_string()))
+        .kind(object_kind)
         .attributed_to(Some(Reference::Remote(actor_uri)))
         .to(to)
         .cc(cc)
         .replies(Some(Box::new(replies_collection)))
+        .summary(summary)
         .content(Some(RdfString::Raw(self.content_html.clone())))
         .source(Some(
           ObjectSource::builder()
@@ -222,6 +252,7 @@ impl ActivityConvertible for PostEvent {
         ))
         .published(Some(self.created_at))
         .attachment(Some(Reference::Mixed(attachment_refs)))
+        .audience(audience)
         .build(),
     )
   }

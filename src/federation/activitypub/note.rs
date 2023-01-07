@@ -50,7 +50,6 @@ pub async fn federate_create_note(
     None => return Err(LogicErr::InvalidData),
   };
 
-  // TODO: Figure out some presentation method for text posts
   let attachments: Vec<Object> = match deref_activitypub_ref_list(&activity_object.attachment).await {
     Some(obj) => obj
       .into_iter()
@@ -122,11 +121,9 @@ pub async fn federate_create_note(
   let post = Post {
     post_id,
     user_id: actor.user_id,
-    // TODO: Figure out which orbit something came from
     orbit_id: None,
     uri,
     is_external: true,
-    // TODO: Figure out where we get the title from
     title: None,
     content_md,
     content_html,
@@ -319,7 +316,85 @@ pub async fn federate_ext_create_note(
     None => return Ok(()),
   };
 
-  send_activitypub_object(response_uri, doc, actor).await
+  send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
+}
+
+pub async fn federate_ext_update_note(
+  post_id: &Uuid,
+  actor: &User,
+  dest_actor: &User,
+  posts: &PostPool,
+) -> Result<(), LogicErr> {
+  let post = match posts.fetch_post(post_id, &Some(actor.user_id)).await {
+    Ok(post) => match post {
+      Some(post) => post,
+      None => return Err(LogicErr::MissingRecord),
+    },
+    Err(err) => {
+      println!("{}", err);
+      return Err(err);
+    }
+  };
+
+  let obj = match post.to_object(&actor.fediverse_uri) {
+    Some(obj) => obj,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let response_object = Object::builder()
+    .kind(Some(ActivityType::Update.to_string()))
+    .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
+    .actor(Some(Reference::Remote(format!(
+      "{}{}",
+      SETTINGS.server.api_fqdn, actor.fediverse_uri
+    ))))
+    .activity(Some(
+      ActivityProps::builder()
+        .object(Some(Reference::Embedded(Box::new(obj))))
+        .build(),
+    ))
+    .build();
+
+  let doc = ActivityPubDocument::new(response_object);
+
+  let response_uri = match &dest_actor.ext_apub_inbox_uri {
+    Some(uri) => uri,
+    None => return Ok(()),
+  };
+
+  send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
+}
+
+pub async fn federate_ext_delete_note(post_id: &Uuid, actor: &User, dest_actor: &User) -> Result<(), LogicErr> {
+  // NOTE: By this point, the post is deleted in our DB, so we have to build the URI from scratch here
+  let uri = format!("{}/feed/{}", SETTINGS.server.api_fqdn, post_id);
+  let obj = Object::builder()
+    .kind(Some(ObjectType::Tombstone.to_string()))
+    .url(Some(Reference::Remote(uri)))
+    .build();
+
+  let response_object = Object::builder()
+    .kind(Some(ActivityType::Update.to_string()))
+    .id(Some(format!("{}/{}", SETTINGS.server.api_fqdn, Uuid::new_v4())))
+    .actor(Some(Reference::Remote(format!(
+      "{}{}",
+      SETTINGS.server.api_fqdn, actor.fediverse_uri
+    ))))
+    .activity(Some(
+      ActivityProps::builder()
+        .object(Some(Reference::Embedded(Box::new(obj))))
+        .build(),
+    ))
+    .build();
+
+  let doc = ActivityPubDocument::new(response_object);
+
+  let response_uri = match &dest_actor.ext_apub_inbox_uri {
+    Some(uri) => uri,
+    None => return Ok(()),
+  };
+
+  send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
 }
 
 pub async fn federate_delete_note(target: String, actor: &User, posts: &PostPool) -> Result<FederateResult, LogicErr> {

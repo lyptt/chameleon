@@ -19,7 +19,6 @@ struct ServerStatus {
 }
 
 pub async fn api_get_server_status(db: web::Data<Pool>) -> impl Responder {
-  // TODO: Implement me
   let (db_status, db_error) = match db.get().await {
     Ok(db) => match db.execute("SELECT 1", &[]).await {
       Ok(_) => (true, None),
