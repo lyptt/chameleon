@@ -299,7 +299,7 @@ impl OrbitRepo for DbOrbitRepo {
     db.execute(
       "UPDATE orbits SET shortcode = $2, name = $3, description_md = $4, description_html = $5, avatar_uri = $6, banner_uri = $7, uri = $8, fediverse_uri = $9, private_key = $10, public_key = $11, is_external = $12, ext_apub_inbox_uri = $13, ext_apub_outbox_uri = $14, ext_apub_followers_uri = $15, updated_at = NOW() WHERE orbit_id = $1",
       &[
-        &orbit.orbit_id, 
+        &orbit.orbit_id,
         &orbit.shortcode,
         &orbit.name,
         &orbit.description_md,
@@ -333,9 +333,12 @@ impl OrbitRepo for DbOrbitRepo {
 
   async fn delete_external_orbit(&self, orbit_id: &Uuid) -> Result<(), LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
-    db.execute("DELETE FROM orbits WHERE orbit_id = $1 AND is_external = TRUE", &[&orbit_id])
-      .await
-      .map_err(map_db_err)?;
+    db.execute(
+      "DELETE FROM orbits WHERE orbit_id = $1 AND is_external = TRUE",
+      &[&orbit_id],
+    )
+    .await
+    .map_err(map_db_err)?;
 
     Ok(())
   }
