@@ -17,6 +17,7 @@ pub mod post_event;
 pub mod queue_job;
 pub mod response;
 pub mod session;
+pub mod tombstone;
 pub mod user;
 pub mod user_account_pub;
 pub mod user_orbit;

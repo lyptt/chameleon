@@ -9,16 +9,18 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
+  activitypub::object::ObjectType,
   cdn::cdn_store::Cdn,
   db::{
     job_repository::JobPool, orbit_moderator_repository::OrbitModeratorPool, orbit_repository::OrbitPool,
-    session_repository::SessionPool, user_orbit_repository::UserOrbitPool, user_repository::UserPool,
+    session_repository::SessionPool, tombstone_repository::TombstonePool, user_orbit_repository::UserOrbitPool,
+    user_repository::UserPool,
   },
   federation::activitypub::{FederateExtAction, FederateExtActorRef},
   helpers::{
     api::map_db_err,
     auth::{assert_auth, query_auth, require_auth},
-    core::{build_api_err, build_api_not_found},
+    core::{build_api_err, build_api_not_found, map_api_err},
     math::div_up,
   },
   model::{
@@ -418,8 +420,6 @@ pub async fn api_update_orbit_assets(
     None => return build_api_err(500, "Image upload failed".to_string(), None),
   };
 
-  // TODO: Federate update
-
   match orbits
     .update_orbit(
       &orbit_id,
@@ -440,6 +440,7 @@ pub async fn api_update_orbit_assets(
 pub async fn api_delete_orbit(
   sessions: web::Data<SessionPool>,
   orbits: web::Data<OrbitPool>,
+  tombstones: web::Data<TombstonePool>,
   orbit_moderators: web::Data<OrbitModeratorPool>,
   orbit_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
@@ -458,7 +459,21 @@ pub async fn api_delete_orbit(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  // TODO: Federate deletion
+  let orbit = match orbits.fetch_orbit(&orbit_id).await {
+    Ok(orbit) => match orbit {
+      Some(orbit) => orbit,
+      None => return HttpResponse::Ok().finish(),
+    },
+    Err(err) => return map_api_err(err),
+  };
+
+  match tombstones
+    .create_tombstone(&orbit.uri, &ObjectType::Group.to_string())
+    .await
+  {
+    Ok(_) => {}
+    Err(err) => return map_api_err(err),
+  };
 
   match orbits.delete_orbit(&orbit_id).await {
     Ok(_) => HttpResponse::Ok().finish(),

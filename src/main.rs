@@ -125,6 +125,7 @@ async fn main() -> std::io::Result<()> {
   let orbits = Repository::new_orbit_pool(&pool);
   let orbit_moderators = Repository::new_orbit_moderator_pool(&pool);
   let user_orbits = Repository::new_user_orbit_pool(&pool);
+  let tombstones = Repository::new_tombstone_pool(&pool);
 
   HttpServer::new(move || {
     let cors = Cors::default()
@@ -153,6 +154,7 @@ async fn main() -> std::io::Result<()> {
       .app_data(web::Data::new(orbits.clone()))
       .app_data(web::Data::new(orbit_moderators.clone()))
       .app_data(web::Data::new(user_orbits.clone()))
+      .app_data(web::Data::new(tombstones.clone()))
       .app_data(web::Data::new(Cdn::new()))
       .app_data(web::Data::new(Queue::new()))
       .service(

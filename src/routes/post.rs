@@ -8,7 +8,7 @@ use crate::{
   db::{
     follow_repository::FollowPool, job_repository::JobPool, orbit_repository::OrbitPool,
     post_attachment_repository::PostAttachmentPool, post_repository::PostPool, session_repository::SessionPool,
-    user_repository::UserPool,
+    tombstone_repository::TombstonePool, user_repository::UserPool,
   },
   helpers::{
     auth::{query_auth, require_auth},
@@ -396,13 +396,14 @@ pub async fn api_delete_post(
   jwt: web::ReqData<JwtContext>,
   queue: web::Data<Queue>,
   jobs: web::Data<JobPool>,
+  tombstones: web::Data<TombstonePool>,
 ) -> impl Responder {
   let props = match require_auth(&jwt, &sessions).await {
     Ok(props) => props,
     Err(res) => return res,
   };
 
-  match delete_post(&posts, &jobs, &queue, &post_id, &props.uid).await {
+  match delete_post(&posts, &jobs, &tombstones, &queue, &post_id, &props.uid).await {
     Ok(_) => HttpResponse::Ok().finish(),
     Err(err) => map_api_err(err),
   }

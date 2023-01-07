@@ -11,6 +11,7 @@ pub mod post_repository;
 pub mod repositories;
 pub mod repository;
 pub mod session_repository;
+pub mod tombstone_repository;
 pub mod traits;
 pub mod user_orbit_repository;
 pub mod user_repository;

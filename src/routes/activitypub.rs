@@ -10,13 +10,16 @@ use crate::{
       create_activitypub_ordered_collection_page, create_activitypub_ordered_collection_page_feed,
       create_activitypub_ordered_collection_page_specific_feed,
     },
+    object::{Object, ObjectType},
+    tombstone::TombstoneProps,
   },
   db::{
     comment_repository::CommentPool, follow_repository::FollowPool, job_repository::JobPool,
     orbit_repository::OrbitPool, post_repository::PostPool, session_repository::SessionPool,
-    user_orbit_repository::UserOrbitPool, user_repository::UserPool,
+    tombstone_repository::TombstonePool, user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
   helpers::{
+    api::relative_to_absolute_uri,
     auth::query_auth,
     core::{build_api_err, build_api_not_found, map_api_err},
     types::ACTIVITY_JSON_CONTENT_TYPE,
@@ -38,10 +41,33 @@ use crate::{
 
 use super::{comment::CommentsQuery, orbit::MembersQuery, post::PostsQuery, user::FollowersQuery};
 
+async fn api_activitypub_return_tombstone_or_not_found(uri: String, tombstones: &TombstonePool) -> HttpResponse {
+  match tombstones.fetch_for_fediverse_uri(&uri).await {
+    Some(tombstone) => {
+      let obj = Object::builder()
+        .kind(Some(ObjectType::Tombstone.to_string()))
+        .id(Some(relative_to_absolute_uri(&tombstone.fediverse_uri)))
+        .tombstone(Some(
+          TombstoneProps::builder()
+            .former_kind(Some(tombstone.former_type))
+            .deleted(Some(tombstone.deleted_at))
+            .build(),
+        ))
+        .build();
+
+      let doc = ActivityPubDocument::new(obj);
+
+      HttpResponse::Ok().json(doc)
+    }
+    None => build_api_not_found(uri),
+  }
+}
+
 pub async fn api_activitypub_get_post(
   sessions: web::Data<SessionPool>,
   posts: web::Data<PostPool>,
   follows: web::Data<FollowPool>,
+  tombstones: web::Data<TombstonePool>,
   post_id: web::Path<Uuid>,
   jwt: web::ReqData<JwtContext>,
 ) -> impl Responder {
@@ -54,7 +80,7 @@ pub async fn api_activitypub_get_post(
   let post = match get_post(&post_id, &current_user_id, &posts).await {
     Ok(post) => match post {
       Some(post) => post,
-      None => return build_api_not_found(post_id.to_string()),
+      None => return api_activitypub_return_tombstone_or_not_found(format!("/feed/{}", post_id), &tombstones).await,
     },
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
@@ -247,7 +273,11 @@ pub async fn api_activitypub_get_user_following(
     .json(doc)
 }
 
-pub async fn api_activitypub_get_user_profile(users: web::Data<UserPool>, user_id: web::Path<Uuid>) -> impl Responder {
+pub async fn api_activitypub_get_user_profile(
+  users: web::Data<UserPool>,
+  user_id: web::Path<Uuid>,
+  tombstones: web::Data<TombstonePool>,
+) -> impl Responder {
   match get_user_by_id(&user_id, &users).await {
     Ok(user) => match user.to_object("") {
       Some(obj) => {
@@ -256,13 +286,17 @@ pub async fn api_activitypub_get_user_profile(users: web::Data<UserPool>, user_i
           .insert_header(("Content-Type", ACTIVITY_JSON_CONTENT_TYPE))
           .json(doc)
       }
-      None => HttpResponse::NotFound().finish(),
+      None => api_activitypub_return_tombstone_or_not_found(format!("/user/{}", user_id), &tombstones).await,
     },
     Err(_) => HttpResponse::NotFound().finish(),
   }
 }
 
-pub async fn api_activitypub_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: web::Path<Uuid>) -> impl Responder {
+pub async fn api_activitypub_get_orbit(
+  orbits: web::Data<OrbitPool>,
+  orbit_id: web::Path<Uuid>,
+  tombstones: web::Data<TombstonePool>,
+) -> impl Responder {
   match orbits.fetch_orbit(&orbit_id).await {
     Ok(orbit) => match orbit {
       Some(orbit) => match orbit.to_object("") {
@@ -274,7 +308,7 @@ pub async fn api_activitypub_get_orbit(orbits: web::Data<OrbitPool>, orbit_id: w
         }
         None => HttpResponse::NotFound().finish(),
       },
-      None => HttpResponse::NotFound().finish(),
+      None => api_activitypub_return_tombstone_or_not_found(format!("/orbit/{}", orbit_id), &tombstones).await,
     },
     Err(_) => HttpResponse::NotFound().finish(),
   }

@@ -4,8 +4,8 @@ use super::{
   app_repository::AppPool, comment_repository::CommentPool, event_repository::EventPool, follow_repository::FollowPool,
   job_repository::JobPool, like_repository::LikePool, orbit_moderator_repository::OrbitModeratorPool,
   orbit_repository::OrbitPool, post_attachment_repository::PostAttachmentPool, post_repository::PostPool,
-  repository::Repository, session_repository::SessionPool, user_orbit_repository::UserOrbitPool,
-  user_repository::UserPool, user_stats_repository::UserStatsPool,
+  repository::Repository, session_repository::SessionPool, tombstone_repository::TombstonePool,
+  user_orbit_repository::UserOrbitPool, user_repository::UserPool, user_stats_repository::UserStatsPool,
 };
 
 #[derive(Clone)]
@@ -25,6 +25,7 @@ pub struct Repositories {
   pub orbits: OrbitPool,
   pub orbit_moderators: OrbitModeratorPool,
   pub user_orbits: UserOrbitPool,
+  pub tombstones: TombstonePool,
 }
 
 impl Repositories {
@@ -44,6 +45,7 @@ impl Repositories {
       orbits: Repository::new_orbit_pool(&db),
       orbit_moderators: Repository::new_orbit_moderator_pool(&db),
       user_orbits: Repository::new_user_orbit_pool(&db),
+      tombstones: Repository::new_tombstone_pool(&db),
       pool: db,
     }
   }

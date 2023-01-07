@@ -14,6 +14,7 @@ use super::{
   post_attachment_repository::{DbPostAttachmentRepo, PostAttachmentPool},
   post_repository::{DbPostRepo, PostPool},
   session_repository::{DbSessionRepo, SessionPool},
+  tombstone_repository::{DbTombstoneRepo, TombstonePool},
   user_orbit_repository::{DbUserOrbitRepo, UserOrbitPool},
   user_repository::{DbUserRepo, UserPool},
   user_stats_repository::{DbUserStatsRepo, UserStatsPool},
@@ -76,5 +77,9 @@ impl Repository {
 
   pub fn new_user_orbit_pool(db: &Pool) -> UserOrbitPool {
     Arc::new(DbUserOrbitRepo { db: db.clone() })
+  }
+
+  pub fn new_tombstone_pool(db: &Pool) -> TombstonePool {
+    Arc::new(DbTombstoneRepo { db: db.clone() })
   }
 }
