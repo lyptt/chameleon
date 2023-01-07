@@ -3,6 +3,7 @@ use crate::{
   helpers::api::map_db_err,
   logic::LogicErr,
   model::{orbit::Orbit, orbit_pub::OrbitPub},
+  settings::SETTINGS,
 };
 
 use async_trait::async_trait;
@@ -21,8 +22,10 @@ pub trait OrbitRepo {
   async fn count_orbits(&self) -> Result<i64, LogicErr>;
   async fn fetch_orbits(&self, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn fetch_orbit(&self, orbit_id: &Uuid) -> Result<Option<Orbit>, LogicErr>;
+  async fn fetch_orbit_from_shortcode(&self, shortcode: &str) -> Result<Option<Orbit>, LogicErr>;
   async fn fetch_orbit_for_user(&self, orbit_id: &Uuid, user_id: &Option<Uuid>) -> Result<Option<OrbitPub>, LogicErr>;
   async fn fetch_by_fediverse_uri(&self, fediverse_uri: &str) -> Option<Orbit>;
+  async fn fetch_by_fediverse_id(&self, fediverse_id: &str) -> Option<Orbit>;
   async fn count_user_orbits(&self, user_id: &Uuid) -> Result<i64, LogicErr>;
   async fn fetch_user_orbits(&self, user_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<Orbit>, LogicErr>;
   async fn fetch_popular_orbits(&self) -> Result<Vec<Orbit>, LogicErr>;
@@ -83,6 +86,19 @@ impl OrbitRepo for DbOrbitRepo {
     };
 
     row.and_then(|r| r.get(0))
+  }
+
+  async fn fetch_orbit_from_shortcode(&self, shortcode: &str) -> Result<Option<Orbit>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let row = db
+      .query_opt(
+        "SELECT * FROM orbits WHERE shortcode = $1 AND is_external = FALSE",
+        &[&shortcode],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(row.and_then(Orbit::from_row))
   }
 
   async fn fetch_orbit_shortcode_from_id(&self, id: &Uuid) -> Option<String> {
@@ -220,6 +236,24 @@ impl OrbitRepo for DbOrbitRepo {
     row.and_then(Orbit::from_row)
   }
 
+  async fn fetch_by_fediverse_id(&self, fediverse_id: &str) -> Option<Orbit> {
+    let db = match self.db.get().await.map_err(map_db_err) {
+      Ok(db) => db,
+      Err(_) => return None,
+    };
+
+    let row = match db
+      .query_opt("SELECT * FROM orbits WHERE fediverse_id = $1", &[&fediverse_id])
+      .await
+      .map_err(map_db_err)
+    {
+      Ok(row) => row,
+      Err(_) => return None,
+    };
+
+    row.and_then(Orbit::from_row)
+  }
+
   async fn create_orbit(
     &self,
     name: &str,
@@ -235,13 +269,14 @@ impl OrbitRepo for DbOrbitRepo {
   ) -> Result<Uuid, LogicErr> {
     let orbit_id = Uuid::new_v4();
     let fediverse_uri = format!("/orbit/{}", orbit_id);
+    let fediverse_id = format!("o/{}@{}", shortcode, SETTINGS.server.api_fqdn);
 
     let db = self.db.get().await.map_err(map_db_err)?;
     let row = db
       .query_one(
-        r#"INSERT INTO orbits (orbit_id, name, description_md, description_html, avatar_uri, banner_uri, uri, fediverse_uri, is_external, shortcode, private_key, public_key)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING orbit_id"#,
-        &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &uri, &fediverse_uri, &is_external, &shortcode, &priv_key, &pub_key],
+        r#"INSERT INTO orbits (orbit_id, name, description_md, description_html, avatar_uri, banner_uri, uri, fediverse_uri, is_external, shortcode, private_key, public_key, fediverse_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING orbit_id"#,
+        &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &uri, &fediverse_uri, &is_external, &shortcode, &priv_key, &pub_key, &fediverse_id],
       )
       .await
       .map_err(map_db_err)?;
@@ -253,9 +288,9 @@ impl OrbitRepo for DbOrbitRepo {
     let db = self.db.get().await.map_err(map_db_err)?;
     db
       .execute(
-        r#"INSERT INTO orbits (orbit_id, shortcode, name, description_md, description_html, avatar_uri, banner_uri, uri, fediverse_uri, is_external, ext_apub_inbox_uri, ext_apub_outbox_uri, ext_apub_followers_uri, private_key, public_key)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)"#,
-        &[&orbit.orbit_id, &orbit.shortcode, &orbit.name, &orbit.description_md, &orbit.description_html, &orbit.avatar_uri, &orbit.banner_uri, &orbit.uri, &orbit.fediverse_uri, &orbit.is_external, &orbit.ext_apub_inbox_uri, &orbit.ext_apub_outbox_uri, &orbit.ext_apub_followers_uri, &orbit.private_key, &orbit.public_key],
+        r#"INSERT INTO orbits (orbit_id, shortcode, name, description_md, description_html, avatar_uri, banner_uri, uri, fediverse_uri, is_external, ext_apub_inbox_uri, ext_apub_outbox_uri, ext_apub_followers_uri, private_key, public_key, fediverse_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"#,
+        &[&orbit.orbit_id, &orbit.shortcode, &orbit.name, &orbit.description_md, &orbit.description_html, &orbit.avatar_uri, &orbit.banner_uri, &orbit.uri, &orbit.fediverse_uri, &orbit.is_external, &orbit.ext_apub_inbox_uri, &orbit.ext_apub_outbox_uri, &orbit.ext_apub_followers_uri, &orbit.private_key, &orbit.public_key, &orbit.fediverse_id],
       )
       .await
       .map_err(map_db_err)?;
@@ -297,7 +332,7 @@ impl OrbitRepo for DbOrbitRepo {
   async fn update_orbit_from(&self, orbit: &Orbit) -> Result<(), LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(
-      "UPDATE orbits SET shortcode = $2, name = $3, description_md = $4, description_html = $5, avatar_uri = $6, banner_uri = $7, uri = $8, fediverse_uri = $9, private_key = $10, public_key = $11, is_external = $12, ext_apub_inbox_uri = $13, ext_apub_outbox_uri = $14, ext_apub_followers_uri = $15, updated_at = NOW() WHERE orbit_id = $1",
+      "UPDATE orbits SET shortcode = $2, name = $3, description_md = $4, description_html = $5, avatar_uri = $6, banner_uri = $7, uri = $8, fediverse_uri = $9, private_key = $10, public_key = $11, is_external = $12, ext_apub_inbox_uri = $13, ext_apub_outbox_uri = $14, ext_apub_followers_uri = $15, fediverse_id = $16, updated_at = NOW() WHERE orbit_id = $1",
       &[
         &orbit.orbit_id,
         &orbit.shortcode,
@@ -313,7 +348,8 @@ impl OrbitRepo for DbOrbitRepo {
         &orbit.is_external,
         &orbit.ext_apub_inbox_uri,
         &orbit.ext_apub_outbox_uri,
-        &orbit.ext_apub_followers_uri
+        &orbit.ext_apub_followers_uri,
+        &orbit.fediverse_id,
       ],
     )
     .await

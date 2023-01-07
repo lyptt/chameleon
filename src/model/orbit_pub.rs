@@ -5,6 +5,8 @@ use uuid::Uuid;
 
 use crate::db::FromRow;
 
+use super::orbit::Orbit;
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 pub struct OrbitPub {
   pub orbit_id: Uuid,
@@ -18,8 +20,10 @@ pub struct OrbitPub {
   pub banner_uri: Option<String>,
   pub uri: String,
   pub is_external: bool,
-  pub joined: bool,
-  pub moderating: bool,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub joined: Option<bool>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub moderating: Option<bool>,
 }
 
 impl FromRow for OrbitPub {
@@ -39,5 +43,25 @@ impl FromRow for OrbitPub {
       joined: row.get("joined"),
       moderating: row.get("moderating"),
     })
+  }
+}
+
+impl From<Orbit> for OrbitPub {
+  fn from(orbit: Orbit) -> Self {
+    OrbitPub {
+      orbit_id: orbit.orbit_id,
+      created_at: orbit.created_at,
+      updated_at: orbit.updated_at,
+      shortcode: orbit.shortcode,
+      name: orbit.name,
+      description_md: orbit.description_md,
+      description_html: orbit.description_html,
+      avatar_uri: orbit.avatar_uri,
+      banner_uri: orbit.banner_uri,
+      uri: orbit.uri,
+      is_external: orbit.is_external,
+      joined: None,
+      moderating: None,
+    }
   }
 }

@@ -18,7 +18,7 @@ use url::Url;
 lazy_static! {
   pub static ref BACKOFF_POLICY: ExponentialBackoff = {
     ExponentialBackoff {
-      max_elapsed_time: Some(Duration::from_millis(300_000)),
+      max_elapsed_time: Some(Duration::from_millis(20)),
       ..Default::default()
     }
   };
