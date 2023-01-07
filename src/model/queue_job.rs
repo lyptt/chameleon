@@ -5,7 +5,7 @@ use strum::{Display, EnumString};
 use typed_builder::TypedBuilder;
 use uuid::Uuid;
 
-use crate::federation::activitypub::{FederateExtAction, FederateExtDestActorRef};
+use crate::federation::activitypub::{FederateExtAction, FederateExtActorRef};
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug, Display, EnumString)]
 pub enum QueueJobType {
@@ -16,6 +16,7 @@ pub enum QueueJobType {
   CreateBoostEvents,
   CreateBoostEvent,
   DeleteBoostEvents,
+  DeletePost,
   FederateActivityPub,
   FederateActivityPubExt,
 }
@@ -48,5 +49,5 @@ pub struct QueueJob {
   #[builder(default, setter(strip_option))]
   pub activitypub_federate_ext_action: Option<FederateExtAction>,
   #[builder(default, setter(strip_option))]
-  pub activitypub_federate_ext_dest_actor: Option<FederateExtDestActorRef>,
+  pub activitypub_federate_ext_dest_actor: Option<FederateExtActorRef>,
 }

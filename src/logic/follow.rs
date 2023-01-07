@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::{
   db::{follow_repository::FollowPool, job_repository::JobPool, user_repository::UserPool},
-  federation::activitypub::{FederateExtAction, FederateExtDestActorRef},
+  federation::activitypub::{FederateExtAction, FederateExtActorRef},
   helpers::api::map_db_err,
   model::{
     job::{JobStatus, NewJob},
@@ -44,7 +44,7 @@ pub async fn create_follow(
       .job_type(QueueJobType::FederateActivityPubExt)
       .context(vec![user_id.to_string()])
       .activitypub_federate_ext_action(FederateExtAction::FollowProfile)
-      .activitypub_federate_ext_dest_actor(FederateExtDestActorRef::Person(following_user_id))
+      .activitypub_federate_ext_dest_actor(FederateExtActorRef::Person(following_user_id))
       .build();
 
     queue.send_job(job).await?;
@@ -85,7 +85,7 @@ pub async fn delete_follow(
       .job_type(QueueJobType::FederateActivityPubExt)
       .context(vec![user_id.to_string()])
       .activitypub_federate_ext_action(FederateExtAction::UnfollowProfile)
-      .activitypub_federate_ext_dest_actor(FederateExtDestActorRef::Person(following_user_id))
+      .activitypub_federate_ext_dest_actor(FederateExtActorRef::Person(following_user_id))
       .build();
 
     queue.send_job(job).await?;

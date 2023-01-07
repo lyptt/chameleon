@@ -13,6 +13,7 @@ use super::FromRow;
 #[async_trait]
 pub trait UserOrbitRepo {
   async fn fetch_orbit_user_ids(&self, orbit_id: &Uuid) -> Result<Vec<Uuid>, LogicErr>;
+  async fn fetch_orbit_external_user_ids(&self, orbit_id: &Uuid) -> Result<Vec<Uuid>, LogicErr>;
   async fn count_users(&self, orbit_id: &Uuid) -> Result<i64, LogicErr>;
   async fn fetch_users(&self, orbit_id: &Uuid, limit: i64, skip: i64) -> Result<Vec<User>, LogicErr>;
   async fn create_user_orbit(&self, orbit_id: &Uuid, user_id: &Uuid) -> Result<Uuid, LogicErr>;
@@ -33,6 +34,18 @@ impl UserOrbitRepo for DbUserOrbitRepo {
     let rows = db
       .query(
         "SELECT u.user_id FROM users u INNER JOIN user_orbits o ON o.user_id = u.user_id WHERE o.orbit_id = $1",
+        &[&orbit_id],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(rows.into_iter().map(|r| r.get::<&str, Uuid>("user_id")).collect())
+  }
+  async fn fetch_orbit_external_user_ids(&self, orbit_id: &Uuid) -> Result<Vec<Uuid>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        "SELECT u.user_id FROM users u INNER JOIN user_orbits o ON o.user_id = u.user_id WHERE o.orbit_id = $1 AND u.is_external = TRUE",
         &[&orbit_id],
       )
       .await

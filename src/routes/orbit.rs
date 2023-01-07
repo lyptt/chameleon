@@ -14,7 +14,7 @@ use crate::{
     job_repository::JobPool, orbit_moderator_repository::OrbitModeratorPool, orbit_repository::OrbitPool,
     session_repository::SessionPool, user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
-  federation::activitypub::{FederateExtAction, FederateExtDestActorRef},
+  federation::activitypub::{FederateExtAction, FederateExtActorRef},
   helpers::{
     api::map_db_err,
     auth::{assert_auth, query_auth, require_auth},
@@ -308,8 +308,6 @@ pub async fn api_update_orbit(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  // TODO: Federate update
-
   match orbits
     .update_orbit(
       &orbit_id,
@@ -510,7 +508,7 @@ pub async fn api_join_orbit(
       .job_type(QueueJobType::FederateActivityPubExt)
       .context(vec![session.uid.to_string()])
       .activitypub_federate_ext_action(FederateExtAction::FollowGroup(*orbit_id))
-      .activitypub_federate_ext_dest_actor(FederateExtDestActorRef::None)
+      .activitypub_federate_ext_dest_actor(FederateExtActorRef::None)
       .build();
 
     match queue.send_job(job).await {
@@ -567,7 +565,7 @@ pub async fn api_leave_orbit(
       .job_type(QueueJobType::FederateActivityPubExt)
       .context(vec![session.uid.to_string()])
       .activitypub_federate_ext_action(FederateExtAction::UnfollowGroup(*orbit_id))
-      .activitypub_federate_ext_dest_actor(FederateExtDestActorRef::None)
+      .activitypub_federate_ext_dest_actor(FederateExtActorRef::None)
       .build();
 
     match queue.send_job(job).await {

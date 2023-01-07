@@ -57,9 +57,9 @@ use routes::orbit::{
   api_join_orbit, api_leave_orbit, api_update_orbit, api_update_orbit_assets, api_update_orbit_moderator,
 };
 use routes::post::{
-  api_boost_post, api_create_post, api_get_global_feed, api_get_orbit_feed, api_get_orbit_feed_by_id, api_get_post,
-  api_get_user_friends_feed, api_get_user_liked_posts, api_get_user_own_feed, api_get_user_post, api_get_user_posts,
-  api_unboost_post, api_upload_post_image,
+  api_boost_post, api_create_post, api_delete_post, api_get_global_feed, api_get_orbit_feed, api_get_orbit_feed_by_id,
+  api_get_post, api_get_user_friends_feed, api_get_user_liked_posts, api_get_user_own_feed, api_get_user_post,
+  api_get_user_posts, api_unboost_post, api_upload_post_image,
 };
 use routes::public::web_serve_static;
 use routes::redirect::{
@@ -288,7 +288,8 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().guard(ACTIVITYPUB_ACCEPT_GUARD).to(api_activitypub_get_post))
           .route(web::get().guard(HTML_GUARD).to(api_redirect_to_post))
           .route(web::get().to(api_get_post))
-          .route(web::post().to(api_upload_post_image)),
+          .route(web::post().to(api_upload_post_image))
+          .route(web::delete().to(api_delete_post)),
       )
       .service(
         web::resource("/api/users/{user_handle}/feed/{post_id}")

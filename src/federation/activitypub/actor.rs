@@ -162,6 +162,87 @@ pub async fn federate_user_actor(actor_ref: &Option<Reference<Object>>, users: &
   users.create_from(&user).await
 }
 
+pub async fn federate_update_user_actor(
+  actor_ref: &Option<Reference<Object>>,
+  users: &UserPool,
+) -> Result<User, LogicErr> {
+  let mut user = match query_activitypub_user_ref(actor_ref, users).await {
+    Some(user) => user,
+    None => return federate_user_actor(actor_ref, users).await,
+  };
+
+  let actor_obj = match deref_activitypub_ref(actor_ref).await {
+    Some(obj) => obj,
+    None => return Ok(user),
+  };
+
+  let actor = match &actor_obj.actors {
+    Some(obj) => obj.to_owned(),
+    None => return Ok(user),
+  };
+
+  let handle = match actor.preferred_username {
+    Some(handle) => handle,
+    None => return Ok(user),
+  };
+
+  let following_uri = match activitypub_ref_to_uri_opt(&actor.following) {
+    Some(uri) => uri,
+    None => return Ok(user),
+  };
+
+  let followers_uri = match activitypub_ref_to_uri_opt(&actor.followers) {
+    Some(uri) => uri,
+    None => return Ok(user),
+  };
+
+  let inbox_uri = match activitypub_ref_to_uri_opt(&actor.inbox) {
+    Some(uri) => uri,
+    None => return Ok(user),
+  };
+
+  let outbox_uri = match activitypub_ref_to_uri_opt(&actor.outbox) {
+    Some(uri) => uri,
+    None => return Ok(user),
+  };
+
+  let public_key = match actor_obj.key {
+    Some(k) => match k.public_key_pem {
+      Some(k) => k,
+      None => return Ok(user),
+    },
+    None => return Ok(user),
+  };
+
+  let fediverse_uri = match actor_obj.id {
+    Some(id) => match Uri::from_str(&id) {
+      Ok(uri) => uri,
+      Err(_) => return Ok(user),
+    },
+    None => return Ok(user),
+  };
+
+  let fediverse_uri_host = match fediverse_uri.host() {
+    Some(v) => v,
+    None => return Ok(user),
+  };
+
+  let avatar_url = match deref_activitypub_ref(&actor_obj.icon).await {
+    Some(obj) => activitypub_ref_to_uri_opt(&obj.url),
+    None => None,
+  };
+
+  user.fediverse_id = format!("@{}@{}", handle, fediverse_uri_host);
+  user.avatar_url = avatar_url;
+  user.public_key = public_key;
+  user.ext_apub_followers_uri = Some(followers_uri);
+  user.ext_apub_following_uri = Some(following_uri);
+  user.ext_apub_inbox_uri = Some(inbox_uri);
+  user.ext_apub_outbox_uri = Some(outbox_uri);
+
+  users.update_from(&user).await
+}
+
 pub async fn federate_orbit_group(
   group_ref: &Option<Reference<Object>>,
   orbits: &OrbitPool,

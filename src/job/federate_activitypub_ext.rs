@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
   db::repositories::Repositories,
-  federation::activitypub::{federate_ext, FederateExtAction, FederateExtDestActor, FederateExtDestActorRef},
+  federation::activitypub::{federate_ext, FederateExtAction, FederateExtActor, FederateExtActorRef},
   helpers::api::map_ext_err,
   logic::LogicErr,
 };
@@ -12,7 +12,7 @@ use crate::{
 pub async fn federate_activitypub(
   context: &Option<Vec<String>>,
   activitypub_federate_ext_action: &Option<FederateExtAction>,
-  activitypub_federate_ext_dest_actor: &Option<FederateExtDestActorRef>,
+  activitypub_federate_ext_dest_actor: &Option<FederateExtActorRef>,
   repositories: &Repositories,
 ) -> Result<(), LogicErr> {
   let user_id = match context {
@@ -33,10 +33,10 @@ pub async fn federate_activitypub(
     None => return Err(LogicErr::MissingRecord),
   };
   let dest_actor = match dest_actor {
-    FederateExtDestActorRef::None => FederateExtDestActor::None,
-    FederateExtDestActorRef::Person(id) => FederateExtDestActor::Person(repositories.users.fetch_by_id(id).await?),
-    FederateExtDestActorRef::Group(id) => match repositories.orbits.fetch_orbit(id).await? {
-      Some(orbit) => FederateExtDestActor::Group(orbit),
+    FederateExtActorRef::None => FederateExtActor::None,
+    FederateExtActorRef::Person(id) => FederateExtActor::Person(repositories.users.fetch_by_id(id).await?),
+    FederateExtActorRef::Group(id) => match repositories.orbits.fetch_orbit(id).await? {
+      Some(orbit) => FederateExtActor::Group(orbit),
       None => return Err(LogicErr::MissingRecord),
     },
   };

@@ -5,7 +5,7 @@ use crate::{
     event_repository::EventPool, job_repository::JobPool, orbit_repository::OrbitPool, post_repository::PostPool,
     user_repository::UserPool,
   },
-  federation::activitypub::{federate_ext, FederateExtAction, FederateExtDestActor},
+  federation::activitypub::{federate_ext, FederateExtAction, FederateExtActor},
   helpers::api::map_ext_err,
   logic::LogicErr,
   model::{event::NewEvent, event_type::EventType},
@@ -58,7 +58,7 @@ pub async fn create_post_event(
     return federate_ext(
       FederateExtAction::CreatePost(post_id),
       &user,
-      &FederateExtDestActor::Person(dest_user),
+      &FederateExtActor::Person(dest_user),
       posts,
       orbits,
     )

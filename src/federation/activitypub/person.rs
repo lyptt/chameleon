@@ -19,7 +19,7 @@ use crate::{
 
 use super::{
   util::{send_activitypub_object, FederateResult},
-  FederateExtDestActor,
+  FederateExtActor,
 };
 
 pub async fn federate_create_follow(
@@ -83,9 +83,9 @@ pub async fn federate_remove_follow(
   )))
 }
 
-pub async fn federate_ext_create_follow(actor: &User, following_actor: &FederateExtDestActor) -> Result<(), LogicErr> {
+pub async fn federate_ext_create_follow(actor: &User, following_actor: &FederateExtActor) -> Result<(), LogicErr> {
   let following_actor = match following_actor {
-    FederateExtDestActor::Person(actor) => actor,
+    FederateExtActor::Person(actor) => actor,
     _ => return Err(LogicErr::MissingRecord),
   };
 
@@ -118,12 +118,9 @@ pub async fn federate_ext_create_follow(actor: &User, following_actor: &Federate
   send_activitypub_object(response_uri, doc, &actor.fediverse_uri, &actor.private_key).await
 }
 
-pub async fn federate_ext_remove_follow(
-  actor: &User,
-  unfollowing_actor: &FederateExtDestActor,
-) -> Result<(), LogicErr> {
+pub async fn federate_ext_remove_follow(actor: &User, unfollowing_actor: &FederateExtActor) -> Result<(), LogicErr> {
   let unfollowing_actor = match unfollowing_actor {
-    FederateExtDestActor::Person(actor) => actor,
+    FederateExtActor::Person(actor) => actor,
     _ => return Err(LogicErr::MissingRecord),
   };
 

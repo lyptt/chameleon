@@ -254,6 +254,39 @@ pub async fn upload_post_files(
   }
 }
 
+pub async fn delete_post(
+  posts: &PostPool,
+  jobs: &JobPool,
+  queue: &Queue,
+  post_id: &Uuid,
+  user_id: &Uuid,
+) -> Result<(), LogicErr> {
+  let post = posts.fetch_by_id(post_id).await?;
+
+  if &post.user_id != user_id {
+    return Err(LogicErr::MissingRecord);
+  }
+
+  posts.delete_post(post_id, user_id).await?;
+
+  let job_id = jobs
+    .create(NewJob {
+      created_by_id: Some(user_id.to_owned()),
+      status: JobStatus::NotStarted,
+      record_id: Some(post_id.to_owned()),
+      associated_record_id: post.orbit_id,
+    })
+    .await
+    .map_err(map_db_err)?;
+
+  let job = QueueJob::builder()
+    .job_id(job_id)
+    .job_type(QueueJobType::DeletePost)
+    .build();
+
+  queue.send_job(job).await
+}
+
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;

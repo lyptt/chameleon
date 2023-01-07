@@ -1,32 +1,28 @@
-use log::warn;
 use uuid::Uuid;
 
 use crate::{
   db::{
-    event_repository::EventPool, follow_repository::FollowPool, job_repository::JobPool, orbit_repository::OrbitPool,
-    post_repository::PostPool, user_orbit_repository::UserOrbitPool, user_repository::UserPool,
+    follow_repository::FollowPool, job_repository::JobPool, orbit_repository::OrbitPool, post_repository::PostPool,
+    user_orbit_repository::UserOrbitPool, user_repository::UserPool,
   },
-  federation::activitypub::{federate_ext, FederateExtAction, FederateExtActor},
-  helpers::api::{map_db_err, map_ext_err},
+  federation::activitypub::{federate_ext, FederateExtAction, FederateExtActor, FederateExtActorRef},
+  helpers::api::map_db_err,
   logic::LogicErr,
   model::{
-    event::NewEvent,
-    event_type::EventType,
     job::{JobStatus, NewJob},
     queue_job::{QueueJob, QueueJobType},
   },
   work_queue::queue::Queue,
 };
 
-pub async fn create_post_events(
-  jobs: &JobPool,
-  posts: &PostPool,
-  events: &EventPool,
-  follows: &FollowPool,
-  user_orbits: &UserOrbitPool,
-  orbits: &OrbitPool,
-  users: &UserPool,
+pub async fn delete_post(
   job_id: Uuid,
+  jobs: &JobPool,
+  orbits: &OrbitPool,
+  user_orbits: &UserOrbitPool,
+  users: &UserPool,
+  posts: &PostPool,
+  follows: &FollowPool,
   queue: &Queue,
 ) -> Result<(), LogicErr> {
   let job = match jobs.fetch_optional_by_id(&job_id).await {
@@ -34,46 +30,31 @@ pub async fn create_post_events(
     None => return Err(LogicErr::InternalError("Job not found".to_string())),
   };
 
+  let user_id = match job.created_by_id {
+    Some(id) => id,
+    None => return Err(LogicErr::InternalError("User not found".to_string())),
+  };
+
   let post_id = match job.record_id {
     Some(id) => id,
     None => return Err(LogicErr::InternalError("Post ID not found for job".to_string())),
   };
 
-  let user_id = match job.created_by_id {
-    Some(id) => id,
-    None => return Err(LogicErr::InternalError("User ID not found for job".to_string())),
-  };
-
-  let post = posts.fetch_by_id(&post_id).await?;
-
-  let own_event = NewEvent {
-    source_user_id: user_id,
-    target_user_id: None,
-    visibility: post.visibility.clone(),
-    post_id: Some(post_id),
-    like_id: None,
-    comment_id: None,
-    event_type: EventType::Post,
-  };
-
-  if let Err(err) = events.create_event(own_event).await.map_err(map_ext_err) {
-    warn!("Failed to create user's own event for new post: {}", err);
-  }
-
-  if let Some(orbit_id) = post.orbit_id {
+  if let Some(orbit_id) = job.associated_record_id {
     match orbits.fetch_orbit(&orbit_id).await? {
       Some(orbit) => {
         let user = users.fetch_by_id(&user_id).await?;
 
         if orbit.is_external {
           federate_ext(
-            FederateExtAction::CreatePost(post_id),
+            FederateExtAction::DeletePost(post_id),
             &user,
             &FederateExtActor::Group(orbit),
             posts,
             orbits,
           )
           .await?;
+          return Ok(());
         }
       }
       _ => {
@@ -85,7 +66,7 @@ pub async fn create_post_events(
       }
     };
 
-    let users = user_orbits.fetch_orbit_user_ids(&orbit_id).await?;
+    let users = user_orbits.fetch_orbit_external_user_ids(&orbit_id).await?;
 
     for user in users {
       let job_id = jobs
@@ -100,7 +81,10 @@ pub async fn create_post_events(
 
       let job = QueueJob::builder()
         .job_id(job_id)
-        .job_type(QueueJobType::CreatePostEvent)
+        .job_type(QueueJobType::FederateActivityPubExt)
+        .context(vec![user_id.to_string()])
+        .activitypub_federate_ext_action(FederateExtAction::DeletePost(post_id))
+        .activitypub_federate_ext_dest_actor(FederateExtActorRef::Person(user))
         .build();
 
       queue.send_job(job).await?;
@@ -121,7 +105,10 @@ pub async fn create_post_events(
 
       let job = QueueJob::builder()
         .job_id(job_id)
-        .job_type(QueueJobType::CreatePostEvent)
+        .job_type(QueueJobType::FederateActivityPubExt)
+        .context(vec![user_id.to_string()])
+        .activitypub_federate_ext_action(FederateExtAction::DeletePost(post_id))
+        .activitypub_federate_ext_dest_actor(FederateExtActorRef::Person(follower.user_id))
         .build();
 
       queue.send_job(job).await?;

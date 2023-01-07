@@ -2,12 +2,14 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{
-  actor::federate_user_actor,
-  article::{federate_create_article, federate_ext_create_article, federate_update_article},
+  actor::{federate_update_user_actor, federate_user_actor},
+  article::{
+    federate_create_article, federate_ext_create_article, federate_ext_delete_article, federate_update_article,
+  },
   group::{federate_create_member, federate_remove_member},
   note::{
-    federate_create_note, federate_ext_create_note, federate_ext_update_note, federate_like_note, federate_unlike_note,
-    federate_update_note,
+    federate_create_note, federate_ext_create_note, federate_ext_delete_note, federate_ext_update_note,
+    federate_like_note, federate_unlike_note, federate_update_note,
   },
   object::federate_delete_remote_object,
   person::{
@@ -42,6 +44,26 @@ use crate::{
 
 use std::{collections::HashMap, str::FromStr};
 
+async fn federate_get_actor_user(
+  doc: &ActivityPubDocument,
+  users: &UserPool,
+  origin_data: &Option<HashMap<String, OriginDataEntry>>,
+) -> Result<User, LogicErr> {
+  let mut actor_user = match federate_user_actor(&doc.object.actor, users).await {
+    Ok(user) => user,
+    Err(err) => return Err(err),
+  };
+
+  if SETTINGS.app.secure && !verify_http_signature(origin_data, &actor_user.public_key) {
+    actor_user = federate_update_user_actor(&doc.object.actor, users).await?;
+    if !verify_http_signature(origin_data, &actor_user.public_key) {
+      return Err(LogicErr::UnauthorizedError);
+    }
+  }
+
+  Ok(actor_user)
+}
+
 pub async fn federate(
   doc: ActivityPubDocument,
   origin_data: &Option<HashMap<String, OriginDataEntry>>,
@@ -60,14 +82,7 @@ pub async fn federate(
     Err(err) => return Err(err),
   };
 
-  let actor_user = match federate_user_actor(&doc.object.actor, users).await {
-    Ok(user) => user,
-    Err(err) => return Err(err),
-  };
-
-  if SETTINGS.app.secure && !verify_http_signature(origin_data, &actor_user.public_key) {
-    return Err(LogicErr::UnauthorizedError);
-  }
+  let actor_user = federate_get_actor_user(&doc, users, origin_data).await?;
 
   let activity_visibility = determine_activity_visibility(&doc.object.to, &actor_user);
 
@@ -255,6 +270,7 @@ pub async fn federate(
 pub enum FederateExtAction {
   CreatePost(Uuid),
   UpdatePost(Uuid),
+  DeletePost(Uuid),
   FollowProfile,
   UnfollowProfile,
   FollowGroup(Uuid),
@@ -262,14 +278,14 @@ pub enum FederateExtAction {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum FederateExtDestActor {
+pub enum FederateExtActor {
   None,
   Person(User),
   Group(Orbit),
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum FederateExtDestActorRef {
+pub enum FederateExtActorRef {
   None,
   Person(Uuid),
   Group(Uuid),
@@ -278,20 +294,25 @@ pub enum FederateExtDestActorRef {
 pub async fn federate_ext(
   action: FederateExtAction,
   actor: &User,
-  dest_actor: &FederateExtDestActor,
+  dest_actor: &FederateExtActor,
   posts: &PostPool,
   orbits: &OrbitPool,
 ) -> Result<(), LogicErr> {
   match action {
     FederateExtAction::CreatePost(post_id) => match dest_actor {
-      FederateExtDestActor::Person(dest_actor) => federate_ext_create_note(&post_id, actor, dest_actor, posts).await,
-      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(&post_id, actor, dest_actor, posts).await,
-      FederateExtDestActor::None => Ok(()),
+      FederateExtActor::Person(dest_actor) => federate_ext_create_note(&post_id, actor, dest_actor, posts).await,
+      FederateExtActor::Group(dest_actor) => federate_ext_create_article(&post_id, actor, dest_actor, posts).await,
+      FederateExtActor::None => Ok(()),
     },
     FederateExtAction::UpdatePost(post_id) => match dest_actor {
-      FederateExtDestActor::Person(dest_actor) => federate_ext_update_note(&post_id, actor, dest_actor, posts).await,
-      FederateExtDestActor::Group(dest_actor) => federate_ext_create_article(&post_id, actor, dest_actor, posts).await,
-      FederateExtDestActor::None => Ok(()),
+      FederateExtActor::Person(dest_actor) => federate_ext_update_note(&post_id, actor, dest_actor, posts).await,
+      FederateExtActor::Group(dest_actor) => federate_ext_create_article(&post_id, actor, dest_actor, posts).await,
+      FederateExtActor::None => Ok(()),
+    },
+    FederateExtAction::DeletePost(post_id) => match dest_actor {
+      FederateExtActor::Person(dest_actor) => federate_ext_delete_note(&post_id, actor, dest_actor).await,
+      FederateExtActor::Group(dest_actor) => federate_ext_delete_article(&post_id, actor, dest_actor).await,
+      FederateExtActor::None => Ok(()),
     },
     FederateExtAction::FollowProfile => federate_ext_create_follow(actor, dest_actor).await,
     FederateExtAction::UnfollowProfile => federate_ext_remove_follow(actor, dest_actor).await,

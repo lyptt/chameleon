@@ -12,11 +12,11 @@ use crate::{
   },
   helpers::{
     auth::{query_auth, require_auth},
-    core::{build_api_err, build_api_not_found},
+    core::{build_api_err, build_api_not_found, map_api_err},
     math::div_up,
   },
   logic::post::{
-    create_post, get_global_posts, get_global_posts_count, get_post, get_user_friends_posts,
+    create_post, delete_post, get_global_posts, get_global_posts_count, get_post, get_user_friends_posts,
     get_user_friends_posts_count, get_user_posts, get_user_posts_count, upload_post_files, CreatePostResult,
     NewPostRequest, NewPostResponse,
   },
@@ -386,6 +386,25 @@ pub async fn api_create_post(
       CreatePostResult::JobQueued(job_id) => HttpResponse::Ok().json(JobResponse { job_id }),
     },
     Err(err) => build_api_err(500, err.to_string(), Some(err.to_string())),
+  }
+}
+
+pub async fn api_delete_post(
+  sessions: web::Data<SessionPool>,
+  posts: web::Data<PostPool>,
+  post_id: web::Path<Uuid>,
+  jwt: web::ReqData<JwtContext>,
+  queue: web::Data<Queue>,
+  jobs: web::Data<JobPool>,
+) -> impl Responder {
+  let props = match require_auth(&jwt, &sessions).await {
+    Ok(props) => props,
+    Err(res) => return res,
+  };
+
+  match delete_post(&posts, &jobs, &queue, &post_id, &props.uid).await {
+    Ok(_) => HttpResponse::Ok().finish(),
+    Err(err) => map_api_err(err),
   }
 }
 
