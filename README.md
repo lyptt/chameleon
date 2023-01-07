@@ -20,6 +20,10 @@ Much like Mastodon and other Fediverse servers, Orbit interoperates with any ser
 
 A core goal of Orbit is to not deliver a curated timeline like popular locked down social networks. You will only ever see a chronological timeline, with the power to curate your timeline as you please.
 
+## Comprehensive REST API
+
+Orbit provides its own API that's easy for developers to consume and build applications and automations around. This will stand alongside the built-in federation functionality.
+
 # Planned Features
 
 ## Data portability built in
@@ -31,10 +35,6 @@ Data transfer between Orbit instances will be built-in, allowing you to move all
 ## Safety and moderation tools
 
 Orbit will include tools for system administrators to decide which Fediverse servers can interact with their Orbit server, and users have comprehensive control over the privacy of their data, and will have control over what kind of posts they'll see in their feed.
-
-## Comprehensive REST API
-
-Orbit provides its own API that's easy for developers to consume and build applications and automations around. This will stand alongside the built-in federation functionality.
 
 # Deployment
 
