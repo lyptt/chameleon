@@ -175,6 +175,7 @@ mod tests {
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
       created_at: Utc::now(),
+      updated_at: Utc::now(),
     };
 
     let mut user_repo = MockUserRepo::new();
@@ -240,6 +241,7 @@ mod tests {
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
       created_at: Utc::now(),
+      updated_at: Utc::now(),
     };
 
     let mut user_repo = MockUserRepo::new();
@@ -328,6 +330,7 @@ mod tests {
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
       created_at: Utc::now(),
+      updated_at: Utc::now(),
     };
 
     let mut user_repo = MockUserRepo::new();
@@ -392,6 +395,7 @@ mod tests {
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
       created_at: Utc::now(),
+      updated_at: Utc::now(),
     };
 
     let mut user_repo = MockUserRepo::new();

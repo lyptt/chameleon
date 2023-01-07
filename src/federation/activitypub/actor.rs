@@ -5,7 +5,12 @@ use http::Uri;
 use uuid::Uuid;
 
 use crate::{
-  activitypub::{object::Object, orbit::OrbitProps, rdf_string::RdfString, reference::Reference},
+  activitypub::{
+    object::{Object, ObjectType},
+    orbit::OrbitProps,
+    rdf_string::RdfString,
+    reference::Reference,
+  },
   db::{orbit_repository::OrbitPool, user_repository::UserPool},
   logic::LogicErr,
   model::{orbit::Orbit, user::User},
@@ -157,6 +162,7 @@ pub async fn federate_user_actor(actor_ref: &Option<Reference<Object>>, users: &
     ext_apub_inbox_uri: Some(inbox_uri),
     ext_apub_outbox_uri: Some(outbox_uri),
     created_at: Utc::now(),
+    updated_at: Utc::now(),
   };
 
   users.create_from(&user).await
@@ -175,6 +181,11 @@ pub async fn federate_update_user_actor(
     Some(obj) => obj,
     None => return Ok(user),
   };
+
+  if actor_obj.kind == Some(ObjectType::Tombstone.to_string()) {
+    users.delete_external_user(&user.user_id).await?;
+    return Err(LogicErr::MissingRecord);
+  }
 
   let actor = match &actor_obj.actors {
     Some(obj) => obj.to_owned(),
@@ -351,4 +362,114 @@ pub async fn federate_orbit_group(
   };
 
   orbits.create_from(&orbit).await
+}
+
+pub async fn federate_update_orbit_group(
+  group_ref: &Option<Reference<Object>>,
+  orbits: &OrbitPool,
+) -> Result<Orbit, LogicErr> {
+  let mut orbit = match query_activitypub_orbit_ref(group_ref, orbits).await {
+    Some(orbit) => orbit,
+    None => return federate_orbit_group(group_ref, orbits).await,
+  };
+
+  let actor_obj = match deref_activitypub_ref(group_ref).await {
+    Some(obj) => obj,
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  if actor_obj.kind == Some(ObjectType::Tombstone.to_string()) {
+    orbits.delete_external_orbit(&orbit.orbit_id).await?;
+    return Err(LogicErr::MissingRecord);
+  }
+
+  let actor = match &actor_obj.actors {
+    Some(obj) => obj.to_owned(),
+    None => return Err(LogicErr::MissingRecord),
+  };
+
+  let orbit_props = match &actor_obj.orbit {
+    Some(obj) => obj.to_owned(),
+    None => OrbitProps::builder().build(),
+  };
+
+  let name = match actor_obj.name {
+    Some(name) => name,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let shortcode = match actor.preferred_username {
+    Some(shortcode) => shortcode,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let public_key = match actor_obj.key {
+    Some(k) => match k.public_key_pem {
+      Some(k) => k,
+      None => return Err(LogicErr::InvalidData),
+    },
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let summary_html = match actor_obj.summary {
+    Some(summary) => match summary {
+      RdfString::Raw(content) => content,
+      RdfString::Props(props) => props.string,
+    },
+    None => "".to_string(),
+  };
+
+  let summary_md = match orbit_props.summary_md {
+    Some(summary) => summary,
+    None => "".to_string(),
+  };
+
+  let followers_uri = match activitypub_ref_to_uri_opt(&actor.followers) {
+    Some(uri) => uri,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let inbox_uri = match activitypub_ref_to_uri_opt(&actor.inbox) {
+    Some(uri) => uri,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let outbox_uri = match activitypub_ref_to_uri_opt(&actor.outbox) {
+    Some(uri) => uri,
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let fediverse_uri = match actor_obj.id {
+    Some(id) => match Uri::from_str(&id) {
+      Ok(uri) => uri,
+      Err(_) => return Err(LogicErr::InvalidData),
+    },
+    None => return Err(LogicErr::InvalidData),
+  };
+
+  let avatar_url = match deref_activitypub_ref(&actor_obj.icon).await {
+    Some(obj) => activitypub_ref_to_uri_opt(&obj.url),
+    None => None,
+  };
+
+  let banner_url = match deref_activitypub_ref(&actor_obj.image).await {
+    Some(obj) => activitypub_ref_to_uri_opt(&obj.url),
+    None => None,
+  };
+
+  orbit.shortcode = shortcode;
+  orbit.name = name;
+  orbit.description_md = summary_md;
+  orbit.description_html = summary_html;
+  orbit.avatar_uri = avatar_url;
+  orbit.banner_uri = banner_url;
+  orbit.uri = fediverse_uri.to_string();
+  orbit.public_key = public_key;
+  orbit.ext_apub_inbox_uri = Some(inbox_uri);
+  orbit.ext_apub_outbox_uri = Some(outbox_uri);
+  orbit.ext_apub_followers_uri = Some(followers_uri);
+
+  orbits.update_orbit_from(&orbit).await?;
+
+  Ok(orbit)
 }

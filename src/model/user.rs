@@ -44,6 +44,7 @@ pub struct User {
   pub ext_apub_inbox_uri: Option<String>,
   pub ext_apub_outbox_uri: Option<String>,
   pub created_at: DateTime<Utc>,
+  pub updated_at: DateTime<Utc>,
 }
 
 impl User {
@@ -91,6 +92,7 @@ impl FromRow for User {
       ext_apub_inbox_uri: row.get("ext_apub_inbox_uri"),
       ext_apub_outbox_uri: row.get("ext_apub_outbox_uri"),
       created_at: row.get("created_at"),
+      updated_at: row.get("updated_at"),
     })
   }
 }
@@ -185,6 +187,7 @@ mod tests {
       ext_apub_inbox_uri: None,
       ext_apub_outbox_uri: None,
       created_at: Utc::now(),
+      updated_at: Utc::now(),
     };
 
     temp_env::with_vars(vec![("RUN_MODE", Some("production"))], || {

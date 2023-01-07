@@ -10,6 +10,7 @@ use super::{
 
 #[derive(Clone)]
 pub struct Repositories {
+  pool: Pool,
   pub apps: AppPool,
   pub comments: CommentPool,
   pub events: EventPool,
@@ -27,22 +28,23 @@ pub struct Repositories {
 }
 
 impl Repositories {
-  pub fn new(db: &Pool) -> Self {
+  pub fn new(db: Pool) -> Self {
     Repositories {
-      apps: Repository::new_app_pool(db),
-      comments: Repository::new_comment_pool(db),
-      events: Repository::new_event_pool(db),
-      follows: Repository::new_follow_pool(db),
-      jobs: Repository::new_job_pool(db),
-      likes: Repository::new_like_pool(db),
-      posts: Repository::new_post_pool(db),
-      post_attachments: Repository::new_post_attachment_pool(db),
-      sessions: Repository::new_session_pool(db),
-      users: Repository::new_user_pool(db),
-      user_stats: Repository::new_user_stats_pool(db),
-      orbits: Repository::new_orbit_pool(db),
-      orbit_moderators: Repository::new_orbit_moderator_pool(db),
-      user_orbits: Repository::new_user_orbit_pool(db),
+      apps: Repository::new_app_pool(&db),
+      comments: Repository::new_comment_pool(&db),
+      events: Repository::new_event_pool(&db),
+      follows: Repository::new_follow_pool(&db),
+      jobs: Repository::new_job_pool(&db),
+      likes: Repository::new_like_pool(&db),
+      posts: Repository::new_post_pool(&db),
+      post_attachments: Repository::new_post_attachment_pool(&db),
+      sessions: Repository::new_session_pool(&db),
+      users: Repository::new_user_pool(&db),
+      user_stats: Repository::new_user_stats_pool(&db),
+      orbits: Repository::new_orbit_pool(&db),
+      orbit_moderators: Repository::new_orbit_moderator_pool(&db),
+      user_orbits: Repository::new_user_orbit_pool(&db),
+      pool: db,
     }
   }
 }

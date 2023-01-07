@@ -53,6 +53,8 @@ pub trait OrbitRepo {
   async fn orbit_is_external(&self, orbit_id: &Uuid) -> Result<bool, LogicErr>;
   async fn update_orbit_from(&self, orbit: &Orbit) -> Result<(), LogicErr>;
   async fn delete_orbit(&self, orbit_id: &Uuid) -> Result<(), LogicErr>;
+  async fn delete_external_orbit(&self, orbit_id: &Uuid) -> Result<(), LogicErr>;
+  async fn fetch_outdated_external_orbits(&self) -> Result<Vec<Uuid>, LogicErr>;
 }
 
 pub type OrbitPool = Arc<dyn OrbitRepo + Send + Sync>;
@@ -273,7 +275,7 @@ impl OrbitRepo for DbOrbitRepo {
   ) -> Result<(), LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(
-      "UPDATE orbits SET name = $2, description_md = $3, description_html = $4, avatar_uri = $5, banner_uri = $6, is_external = $7 WHERE orbit_id = $1",
+      "UPDATE orbits SET name = $2, description_md = $3, description_html = $4, avatar_uri = $5, banner_uri = $6, is_external = $7, updated_at = NOW() WHERE orbit_id = $1",
       &[&orbit_id, &name, &description_md, &description_html, &avatar_uri, &banner_uri, &is_external],
     )
     .await
@@ -295,8 +297,24 @@ impl OrbitRepo for DbOrbitRepo {
   async fn update_orbit_from(&self, orbit: &Orbit) -> Result<(), LogicErr> {
     let db = self.db.get().await.map_err(map_db_err)?;
     db.execute(
-      "UPDATE orbits SET name = $2, description_md = $3, description_html = $4, avatar_uri = $5, banner_uri = $6, uri = $7, is_external = $8 WHERE orbit_id = $1",
-      &[&orbit.orbit_id, &orbit.name, &orbit.description_md, &orbit.description_html, &orbit.avatar_uri, &orbit.banner_uri, &orbit.uri, &orbit.is_external],
+      "UPDATE orbits SET shortcode = $2, name = $3, description_md = $4, description_html = $5, avatar_uri = $6, banner_uri = $7, uri = $8, fediverse_uri = $9, private_key = $10, public_key = $11, is_external = $12, ext_apub_inbox_uri = $13, ext_apub_outbox_uri = $14, ext_apub_followers_uri = $15, updated_at = NOW() WHERE orbit_id = $1",
+      &[
+        &orbit.orbit_id, 
+        &orbit.shortcode,
+        &orbit.name,
+        &orbit.description_md,
+        &orbit.description_html,
+        &orbit.avatar_uri,
+        &orbit.banner_uri,
+        &orbit.uri,
+        &orbit.fediverse_uri,
+        &orbit.private_key,
+        &orbit.public_key,
+        &orbit.is_external,
+        &orbit.ext_apub_inbox_uri,
+        &orbit.ext_apub_outbox_uri,
+        &orbit.ext_apub_followers_uri
+      ],
     )
     .await
     .map_err(map_db_err)?;
@@ -311,5 +329,27 @@ impl OrbitRepo for DbOrbitRepo {
       .map_err(map_db_err)?;
 
     Ok(())
+  }
+
+  async fn delete_external_orbit(&self, orbit_id: &Uuid) -> Result<(), LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    db.execute("DELETE FROM orbits WHERE orbit_id = $1 AND is_external = TRUE", &[&orbit_id])
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(())
+  }
+
+  async fn fetch_outdated_external_orbits(&self) -> Result<Vec<Uuid>, LogicErr> {
+    let db = self.db.get().await.map_err(map_db_err)?;
+    let rows = db
+      .query(
+        r#"SELECT orbit_id FROM orbits WHERE updated_at < NOW() - INTERVAL '30 minutes'"#,
+        &[],
+      )
+      .await
+      .map_err(map_db_err)?;
+
+    Ok(rows.into_iter().map(|r| r.get::<&str, Uuid>("orbit_id")).collect())
   }
 }

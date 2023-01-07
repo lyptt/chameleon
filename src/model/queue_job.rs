@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::federation::activitypub::{FederateExtAction, FederateExtActorRef};
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug, Display, EnumString)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Clone, Debug, Display, EnumString, Copy)]
 pub enum QueueJobType {
   Unknown,
   ConvertNewPostImages,
@@ -19,6 +19,11 @@ pub enum QueueJobType {
   DeletePost,
   FederateActivityPub,
   FederateActivityPubExt,
+  CleanJobs,
+  RefreshExternalProfiles,
+  RefreshExternalProfile,
+  RefreshExternalOrbits,
+  RefreshExternalOrbit,
 }
 
 impl Default for QueueJobType {

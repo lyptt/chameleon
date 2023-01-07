@@ -6,6 +6,7 @@ use crate::{
   work_queue::queue::Queue,
 };
 
+mod clean_jobs;
 mod convert_new_post_images;
 mod create_boost_event;
 mod create_boost_events;
@@ -15,6 +16,10 @@ mod delete_boost_events;
 mod delete_post;
 mod federate_activitypub;
 mod federate_activitypub_ext;
+mod refresh_external_orbit;
+mod refresh_external_orbits;
+mod refresh_external_profile;
+mod refresh_external_profiles;
 
 pub async fn delegate_job(
   queue_job: &QueueJob,
@@ -96,6 +101,20 @@ pub async fn delegate_job(
         repositories,
       )
       .await
+    }
+    QueueJobType::CleanJobs => clean_jobs::clean_jobs(&repositories.jobs).await,
+    QueueJobType::RefreshExternalOrbits => {
+      refresh_external_orbits::refresh_external_orbits(&repositories.orbits, &repositories.jobs, queue).await
+    }
+    QueueJobType::RefreshExternalProfiles => {
+      refresh_external_profiles::refresh_external_profiles(&repositories.users, &repositories.jobs, queue).await
+    }
+    QueueJobType::RefreshExternalOrbit => {
+      refresh_external_orbit::refresh_external_orbit(&repositories.orbits, &repositories.jobs, queue_job.job_id).await
+    }
+    QueueJobType::RefreshExternalProfile => {
+      refresh_external_profile::refresh_external_profile(&repositories.users, &repositories.jobs, queue_job.job_id)
+        .await
     }
     QueueJobType::Unknown => Err(LogicErr::Unimplemented),
   }

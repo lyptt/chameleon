@@ -80,6 +80,7 @@ pub struct Queue {
   pub url: Option<String>,
   pub work_deadletter_queue: String,
   pub credentials: Option<CloudCredentials>,
+  pub schedule_jobs: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -145,6 +146,7 @@ impl Settings {
         work_queue: "work_q".to_string(),
         work_deadletter_queue: "work_dq".to_string(),
         credentials: None,
+        schedule_jobs: true,
       },
       app: Application {
         imagemagick_exe_path: "convert".to_string(),
