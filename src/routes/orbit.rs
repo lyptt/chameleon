@@ -1,8 +1,8 @@
 use actix_easy_multipart::{tempfile::Tempfile, MultipartForm};
 use actix_web::{web, HttpResponse, Responder};
 use rsa::{
-  pkcs1::{EncodeRsaPrivateKey, EncodeRsaPublicKey},
-  pkcs8::LineEnding,
+  pkcs1::EncodeRsaPrivateKey,
+  pkcs8::{EncodePublicKey, LineEnding},
   RsaPrivateKey, RsaPublicKey,
 };
 use serde::{Deserialize, Serialize};
@@ -238,7 +238,7 @@ pub async fn api_create_orbit(
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };
 
-  let pub_key = match pub_key.to_pkcs1_pem(LineEnding::LF) {
+  let pub_key = match pub_key.to_public_key_pem(LineEnding::LF) {
     Ok(key) => key.to_string(),
     Err(err) => return build_api_err(500, err.to_string(), Some(err.to_string())),
   };

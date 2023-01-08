@@ -500,7 +500,7 @@ export default function CreateLayout({
 
   useEffect(() => {
     if (!session && !embedded) {
-      router.replace(`/api/oauth/login`)
+      router.replace(`/api/auth/login`)
     }
   }, [session, router, embedded])
 

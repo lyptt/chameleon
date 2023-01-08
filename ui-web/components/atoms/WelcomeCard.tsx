@@ -68,13 +68,13 @@ export default function WelcomeCard({
 
             <Button
               className="orbit-welcome-card__content-sign-in"
-              href="/api/oauth/login"
+              href="/api/auth/login"
             >
               Sign in
             </Button>
             <Button
               className="orbit-welcome-card__content-new-account"
-              href="/api/oauth/register"
+              href="/api/auth/register"
               variant="outline"
             >
               Create an account

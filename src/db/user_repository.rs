@@ -238,7 +238,7 @@ impl UserRepo for DbUserRepo {
       Err(_) => return None,
     };
     let row = match db
-      .query_opt("SELECT * FROM users WHERE handle = $1", &[&fediverse_uri])
+      .query_opt("SELECT * FROM users WHERE fediverse_uri = $1", &[&fediverse_uri])
       .await
       .map_err(map_db_err)
     {

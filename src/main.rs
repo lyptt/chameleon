@@ -477,7 +477,7 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_get_nodeinfo_2_1)),
       )
       .service(
-        web::resource("/{path:.*}")
+        web::resource("/api/static/{path:.*}")
           .name("static_files")
           .route(web::get().to(web_serve_static)),
       )

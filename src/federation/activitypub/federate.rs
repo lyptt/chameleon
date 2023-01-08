@@ -149,7 +149,14 @@ pub async fn federate(
         }
         _ => Err(LogicErr::InvalidData),
       },
-      _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+      _ => {
+        log::warn!(
+          "Unimplemented federation task: Activity Type: {} on Object Type {}",
+          kind,
+          object_type
+        );
+        return Ok(());
+      }
     },
     ObjectType::Article => match kind {
       ActivityType::Create => {
@@ -205,7 +212,14 @@ pub async fn federate(
         }
         _ => Err(LogicErr::InvalidData),
       },
-      _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+      _ => {
+        log::warn!(
+          "Unimplemented federation task: Activity Type: {} on Object Type {}",
+          kind,
+          object_type
+        );
+        return Ok(());
+      }
     },
     ObjectType::Tombstone => match object.id {
       Some(id) => match id.starts_with(&SETTINGS.server.api_root_fqdn) {
@@ -215,7 +229,14 @@ pub async fn federate(
             federate_remove_member(target, &actor_user, user_orbits, orbits).await
           }
           ActivityTarget::PostLikes(target) => federate_unlike_note(target, &actor_user, posts, likes).await,
-          _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+          _ => {
+            log::warn!(
+              "Unimplemented federation task: Activity Type: {} on Object Type {}",
+              kind,
+              object_type
+            );
+            return Ok(());
+          }
         },
         false => federate_delete_remote_object(id, &actor_user, object_type, origin_data, posts, users, likes).await,
       },
@@ -223,14 +244,28 @@ pub async fn federate(
     },
     ObjectType::Group => match kind {
       ActivityType::Follow => federate_create_member(object, &actor_user, user_orbits, orbits).await,
-      _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+      _ => {
+        log::warn!(
+          "Unimplemented federation task: Activity Type: {} on Object Type {}",
+          kind,
+          object_type
+        );
+        return Ok(());
+      }
     },
-    _ => Err(LogicErr::InternalError("Unimplemented".to_string())),
+    _ => {
+      log::warn!(
+        "Unimplemented federation task: Activity Type: {} on Object Type {}",
+        kind,
+        object_type
+      );
+      return Ok(());
+    }
   };
 
   match result {
     Ok(result) => {
-      let (activity_type, actor_private_key, actor_fediverse_uri) = match result {
+      let (activity_type, actor_fediverse_uri, actor_private_key) = match result {
         FederateResult::None => return Ok(()),
         FederateResult::Accept(actor) => (ActivityType::Accept, actor.0, actor.1),
         FederateResult::TentativeAccept(actor) => (ActivityType::TentativeAccept, actor.0, actor.1),
