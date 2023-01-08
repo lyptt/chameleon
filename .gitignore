@@ -267,3 +267,4 @@ $RECYCLE.BIN/
 /config/testing.toml
 /config/production.toml
 /config/local.toml
+/local

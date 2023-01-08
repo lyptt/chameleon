@@ -199,7 +199,7 @@ mod tests {
       assert_eq!(finger.links.len(), 3);
 
       assert_eq!(finger.links[0].rel, "self");
-      assert_eq!(finger.links[0].link_type, "application/activity+json");
+      assert_eq!(finger.links[0].link_type, Some("application/activity+json".to_string()));
       assert!(finger.links[0].href.is_some());
       assert_eq!(
         finger.links[0].href.as_ref().unwrap(),
@@ -207,7 +207,7 @@ mod tests {
       );
 
       assert_eq!(finger.links[1].rel, "http://webfinger.net/rel/profile-page");
-      assert_eq!(finger.links[1].link_type, "text/html");
+      assert_eq!(finger.links[1].link_type, Some("text/html".to_string()));
       assert!(finger.links[1].href.is_some());
       assert_eq!(finger.links[1].href.as_ref().unwrap(), "http://0.0.0.0:8080/users/user");
     });

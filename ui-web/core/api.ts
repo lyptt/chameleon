@@ -166,6 +166,7 @@ export interface IOrbit {
   banner_uri?: string
   uri: string
   is_external: boolean
+  fediverse_id: string
 }
 
 export interface IOrbitProfile extends IOrbit {
@@ -207,6 +208,11 @@ interface IProfileUpdateRequest {
   url_3_title?: IPatchProp
   url_4_title?: IPatchProp
   url_5_title?: IPatchProp
+}
+
+export interface ISearchResult {
+  user?: IProfile
+  orbit?: IOrbit
 }
 
 export async function fetchProfile(authToken: string): Promise<IProfile> {
@@ -911,4 +917,27 @@ export async function leaveOrbit(
   if (response.status !== 201) {
     throw new Error('Request failed')
   }
+}
+
+export async function fetchSearchResult(
+  term: string,
+  authToken: string | undefined,
+  page: number,
+  pageSize: number = 20
+): Promise<IListResponse<ISearchResult>> {
+  const response = await fetch(
+    `${Config.apiUri}/search?term=${term}&page=${page}&page_size=${pageSize}`,
+    {
+      ...(authToken
+        ? buildDefaultHeaders(authToken)
+        : buildUnauthenticatedHeaders()),
+      method: 'GET',
+    }
+  )
+
+  if (response.status !== 200) {
+    throw new Error('Request failed')
+  }
+
+  return await response.json()
 }

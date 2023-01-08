@@ -1,0 +1,43 @@
+env = "Development"
+
+[server]
+url = "localhost"
+port = 8001
+fqdn = "https://orbit2.test"
+cdn_fqdn = "https://DISTRIBUTION_ID.cloudfront.net"
+api_fqdn = "https://orbit2.test/api"
+api_root_fqdn = "https://orbit2.test"
+jwt_secret = "super-secret-key"
+
+[database]
+host = "localhost"
+port = 5432
+database = "orbit2"
+username = "orbit"
+password = "orbit"
+max_connections = 5
+idle_timeout = 10
+connection_timeout = 5
+
+[cdn]
+file_store = "S3"
+path = ""
+container = "S3_BUCKET"
+
+[cdn.credentials]
+access_key = "ACCESS_KEY"
+secret_key = "SECRET_KEY"
+
+[queue]
+queue_backend = "RabbitMQ"
+work_queue = "work_2_q"
+work_deadletter_queue = "work_2_dq"
+schedule_jobs = true
+
+[log]
+level = "Debug"
+
+[app]
+imagemagick_exe_path = "convert"
+secure = true
+verify_external_https_certificates = false

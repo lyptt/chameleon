@@ -54,7 +54,10 @@ pub fn build_origin_data(req: &HttpRequest) -> Option<HashMap<String, OriginData
 pub fn verify_http_signature(context: &Option<HashMap<String, OriginDataEntry>>, public_key_pem: &str) -> bool {
   let key = match PublicKey::from_pem(public_key_pem.as_bytes()) {
     Ok(k) => k,
-    Err(_) => return false,
+    Err(err) => {
+      log::error!("Failed to load public key: {:?}", err);
+      return false;
+    }
   };
 
   let context = match context {

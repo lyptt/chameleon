@@ -1,8 +1,8 @@
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use gravatar::{Gravatar, Rating};
 use rsa::{
-  pkcs1::{EncodeRsaPrivateKey, EncodeRsaPublicKey},
-  pkcs8::LineEnding,
+  pkcs1::EncodeRsaPrivateKey,
+  pkcs8::{EncodePublicKey, LineEnding},
   rand_core::OsRng,
   RsaPrivateKey, RsaPublicKey,
 };
@@ -83,7 +83,7 @@ pub async fn register_user(
     Err(err) => return Err(LogicErr::InternalError(err.to_string())),
   };
 
-  let pub_key = match pub_key.to_pkcs1_pem(LineEnding::LF) {
+  let pub_key = match pub_key.to_public_key_pem(LineEnding::LF) {
     Ok(key) => key.to_string(),
     Err(err) => return Err(LogicErr::InternalError(err.to_string())),
   };

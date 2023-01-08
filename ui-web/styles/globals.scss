@@ -18,6 +18,7 @@
 @import 'molecules/side-nav';
 @import 'molecules/user-button';
 @import 'molecules/post-content';
+@import 'molecules/orbit-button';
 @import 'layouts/main';
 @import 'layouts/create';
 @import 'layouts/modal';
@@ -25,5 +26,6 @@
 @import 'pages/orbit';
 @import 'pages/post';
 @import 'pages/user';
+@import 'pages/search';
 @import 'pages/feed-friends';
 @import 'pages/feed-federated';

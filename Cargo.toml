@@ -90,6 +90,7 @@ mime2ext = "0.1.52"
 immeta = "0.4.0"
 phf = { version = "0.11.1", features = ["macros"] }
 clokwerk = "0.4.0"
+substring = "1.4.5"
 
 [dev-dependencies]
 mockall = "0.11.3"

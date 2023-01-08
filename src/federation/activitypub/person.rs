@@ -78,7 +78,7 @@ pub async fn federate_remove_follow(
   follows.delete_follow(&actor.user_id, &unfollowed_user.user_id).await?;
 
   Ok(FederateResult::Accept((
-    unfollowed_user.fediverse_id,
+    unfollowed_user.fediverse_uri,
     unfollowed_user.private_key,
   )))
 }

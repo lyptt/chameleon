@@ -67,6 +67,7 @@ use routes::redirect::{
   api_redirect_to_orbit_members, api_redirect_to_post, api_redirect_to_post_comment, api_redirect_to_post_comments,
   api_redirect_to_user, api_redirect_to_user_followers, api_redirect_to_user_following,
 };
+use routes::search::api_search;
 use routes::status::api_get_server_status;
 use routes::user::{
   api_get_profile, api_get_user_followers, api_get_user_following, api_get_user_profile, api_get_user_stats,
@@ -431,6 +432,11 @@ async fn main() -> std::io::Result<()> {
           .route(web::delete().to(api_delete_orbit_moderator)),
       )
       .service(
+        web::resource("/api/search")
+          .name("search")
+          .route(web::get().to(api_search)),
+      )
+      .service(
         web::resource("/api/federate/activitypub/user/{user_id}/inbox")
           .name("federate_activitypub")
           .route(web::post().to(api_activitypub_federate_user_inbox)),
@@ -471,7 +477,7 @@ async fn main() -> std::io::Result<()> {
           .route(web::get().to(api_get_nodeinfo_2_1)),
       )
       .service(
-        web::resource("/{path:.*}")
+        web::resource("/api/static/{path:.*}")
           .name("static_files")
           .route(web::get().to(web_serve_static)),
       )

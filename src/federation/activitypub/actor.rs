@@ -1,7 +1,9 @@
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
+use backoff::{future::retry, ExponentialBackoff};
 use chrono::Utc;
 use http::Uri;
+use lazy_static::lazy_static;
 use uuid::Uuid;
 
 use crate::{
@@ -12,12 +14,28 @@ use crate::{
     reference::Reference,
   },
   db::{orbit_repository::OrbitPool, user_repository::UserPool},
+  helpers::api::map_ext_err,
   logic::LogicErr,
-  model::{orbit::Orbit, user::User},
+  model::{orbit::Orbit, user::User, webfinger::WebfingerRecord},
   settings::SETTINGS,
 };
 
 use super::util::{activitypub_ref_to_uri_opt, deref_activitypub_ref};
+
+lazy_static! {
+  pub static ref BACKOFF_POLICY: ExponentialBackoff = {
+    ExponentialBackoff {
+      max_elapsed_time: Some(Duration::from_millis(10)),
+      ..Default::default()
+    }
+  };
+  pub static ref HTTP_CLIENT: reqwest::Client = {
+    reqwest::Client::builder()
+      .danger_accept_invalid_certs(!SETTINGS.app.verify_external_https_certificates)
+      .build()
+      .unwrap()
+  };
+}
 
 async fn query_activitypub_user_ref(obj_ref: &Option<Reference<Object>>, users: &UserPool) -> Option<User> {
   let uri = match obj_ref {
@@ -166,6 +184,52 @@ pub async fn federate_user_actor(actor_ref: &Option<Reference<Object>>, users: &
   };
 
   users.create_from(&user).await
+}
+
+pub async fn federate_user_actor_from_webfinger(
+  domain: &str,
+  webfinger_query: &str,
+  users: &UserPool,
+) -> Result<Option<User>, LogicErr> {
+  let uri = match domain.starts_with("http") {
+    true => format!("{}/.well-known/webfinger?resource={}", domain, webfinger_query),
+    false => format!("https://{}/.well-known/webfinger?resource={}", domain, webfinger_query),
+  };
+
+  let result: Result<Option<WebfingerRecord>, reqwest::Error> = retry(BACKOFF_POLICY.clone(), || async {
+    Ok(HTTP_CLIENT.get(&uri).send().await?.json().await?)
+  })
+  .await;
+
+  let result = match result {
+    Ok(v) => match v {
+      Some(v) => v,
+      None => return Ok(None),
+    },
+    Err(err) => return Err(map_ext_err(err)),
+  };
+
+  let link = match result
+    .links
+    .iter()
+    .find(|l| l.rel == "self" && l.link_type == Some("application/activity+json".to_string()))
+  {
+    Some(link) => link,
+    None => return Ok(None),
+  };
+
+  let link_href = match &link.href {
+    Some(href) => href.to_owned(),
+    None => return Ok(None),
+  };
+
+  match federate_user_actor(&Some(Reference::Remote(link_href)), users).await {
+    Ok(user) => Ok(Some(user)),
+    Err(err) => match err {
+      LogicErr::MissingRecord => Ok(None),
+      _ => Err(err),
+    },
+  }
 }
 
 pub async fn federate_update_user_actor(
@@ -331,6 +395,8 @@ pub async fn federate_orbit_group(
     None => return Err(LogicErr::InvalidData),
   };
 
+  let fediverse_id = format!("o/{}@{}", shortcode, fediverse_uri.host().unwrap_or_default());
+
   let avatar_url = match deref_activitypub_ref(&actor_obj.icon).await {
     Some(obj) => activitypub_ref_to_uri_opt(&obj.url),
     None => None,
@@ -353,6 +419,7 @@ pub async fn federate_orbit_group(
     banner_uri: banner_url,
     uri: fediverse_uri.to_string(),
     fediverse_uri: fediverse_uri.to_string(),
+    fediverse_id,
     public_key,
     private_key: "".to_string(),
     is_external: true,
@@ -362,6 +429,52 @@ pub async fn federate_orbit_group(
   };
 
   orbits.create_from(&orbit).await
+}
+
+pub async fn federate_orbit_group_from_webfinger(
+  domain: &str,
+  webfinger_query: &str,
+  orbits: &OrbitPool,
+) -> Result<Option<Orbit>, LogicErr> {
+  let uri = match domain.starts_with("http") {
+    true => format!("{}/.well-known/webfinger?resource={}", domain, webfinger_query),
+    false => format!("https://{}/.well-known/webfinger?resource={}", domain, webfinger_query),
+  };
+
+  let result: Result<Option<WebfingerRecord>, reqwest::Error> = retry(BACKOFF_POLICY.clone(), || async {
+    Ok(HTTP_CLIENT.get(&uri).send().await?.json().await?)
+  })
+  .await;
+
+  let result = match result {
+    Ok(v) => match v {
+      Some(v) => v,
+      None => return Ok(None),
+    },
+    Err(err) => return Err(map_ext_err(err)),
+  };
+
+  let link = match result
+    .links
+    .iter()
+    .find(|l| l.rel == "self" && l.link_type == Some("application/activity+json".to_string()))
+  {
+    Some(link) => link,
+    None => return Ok(None),
+  };
+
+  let link_href = match &link.href {
+    Some(href) => href.to_owned(),
+    None => return Ok(None),
+  };
+
+  match federate_orbit_group(&Some(Reference::Remote(link_href)), orbits).await {
+    Ok(user) => Ok(Some(user)),
+    Err(err) => match err {
+      LogicErr::MissingRecord => Ok(None),
+      _ => Err(err),
+    },
+  }
 }
 
 pub async fn federate_update_orbit_group(
@@ -447,6 +560,8 @@ pub async fn federate_update_orbit_group(
     None => return Err(LogicErr::InvalidData),
   };
 
+  let fediverse_id = format!("o/{}@{}", shortcode, fediverse_uri.host().unwrap_or_default());
+
   let avatar_url = match deref_activitypub_ref(&actor_obj.icon).await {
     Some(obj) => activitypub_ref_to_uri_opt(&obj.url),
     None => None,
@@ -464,6 +579,8 @@ pub async fn federate_update_orbit_group(
   orbit.avatar_uri = avatar_url;
   orbit.banner_uri = banner_url;
   orbit.uri = fediverse_uri.to_string();
+  orbit.fediverse_uri = fediverse_uri.to_string();
+  orbit.fediverse_id = fediverse_id;
   orbit.public_key = public_key;
   orbit.ext_apub_inbox_uri = Some(inbox_uri);
   orbit.ext_apub_outbox_uri = Some(outbox_uri);

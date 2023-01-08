@@ -75,7 +75,7 @@ static STATIC_CONTENT: phf::Map<&'static str, &'static StaticContentData> = phf_
 };
 
 pub async fn web_serve_static(path: web::Path<String>) -> impl Responder {
-  if let Some(data) = STATIC_CONTENT.get(&path) {
+  if let Some(data) = STATIC_CONTENT.get(&path.replace("/api/static/", "")) {
     return HttpResponse::Ok().content_type(data.content_type).body(data.data);
   }
 
