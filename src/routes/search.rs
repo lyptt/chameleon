@@ -1,5 +1,6 @@
 use actix_web::{web, HttpResponse, Responder};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use strum::Display;
 use substring::Substring;
 
 use crate::{
@@ -16,6 +17,14 @@ pub struct SearchQuery {
   pub page_size: Option<i64>,
 }
 
+#[derive(Serialize, Display)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum SearchResult {
+  User(UserAccountPub),
+  Orbit(OrbitPub),
+}
+
 pub async fn api_search(
   query: web::Query<SearchQuery>,
   users: web::Data<UserPool>,
@@ -24,7 +33,7 @@ pub async fn api_search(
   if query.term.starts_with('@') {
     let components: Vec<&str> = query.term.substring(1, query.term.len()).splitn(2, '@').collect();
     if components.is_empty() {
-      return HttpResponse::Ok().json(ListResponse::<UserAccountPub> {
+      return HttpResponse::Ok().json(ListResponse::<SearchResult> {
         data: vec![],
         total_items: 0,
         total_pages: 1,
@@ -36,12 +45,12 @@ pub async fn api_search(
       match users.fetch_by_handle(components[0]).await {
         Ok(user) => match user {
           Some(user) => HttpResponse::Ok().json(ListResponse {
-            data: vec![UserAccountPub::from(user)],
+            data: vec![SearchResult::User(UserAccountPub::from(user))],
             total_items: 1,
             total_pages: 1,
             page: 0,
           }),
-          None => HttpResponse::Ok().json(ListResponse::<UserAccountPub> {
+          None => HttpResponse::Ok().json(ListResponse::<SearchResult> {
             data: vec![],
             total_items: 0,
             total_pages: 1,
@@ -54,7 +63,7 @@ pub async fn api_search(
       match users.fetch_by_fediverse_id(&query.term).await {
         Ok(user) => match user {
           Some(user) => HttpResponse::Ok().json(ListResponse {
-            data: vec![UserAccountPub::from(user)],
+            data: vec![SearchResult::User(UserAccountPub::from(user))],
             total_items: 1,
             total_pages: 1,
             page: 0,
@@ -69,12 +78,12 @@ pub async fn api_search(
             {
               Ok(user) => match user {
                 Some(user) => HttpResponse::Ok().json(ListResponse {
-                  data: vec![UserAccountPub::from(user)],
+                  data: vec![SearchResult::User(UserAccountPub::from(user))],
                   total_items: 1,
                   total_pages: 1,
                   page: 0,
                 }),
-                None => HttpResponse::Ok().json(ListResponse::<UserAccountPub> {
+                None => HttpResponse::Ok().json(ListResponse::<SearchResult> {
                   data: vec![],
                   total_items: 0,
                   total_pages: 1,
@@ -100,15 +109,15 @@ pub async fn api_search(
     }
 
     if components.len() == 1 {
-      match orbits.fetch_orbit_from_shortcode(components[0]).await {
+      match orbits.fetch_orbit_from_shortcode(&query.term.replace("o/", "")).await {
         Ok(orbit) => match orbit {
           Some(orbit) => HttpResponse::Ok().json(ListResponse {
-            data: vec![OrbitPub::from(orbit)],
+            data: vec![SearchResult::Orbit(OrbitPub::from(orbit))],
             total_items: 1,
             total_pages: 1,
             page: 0,
           }),
-          None => HttpResponse::Ok().json(ListResponse::<UserAccountPub> {
+          None => HttpResponse::Ok().json(ListResponse::<SearchResult> {
             data: vec![],
             total_items: 0,
             total_pages: 1,
@@ -120,7 +129,7 @@ pub async fn api_search(
     } else {
       match orbits.fetch_by_fediverse_id(&query.term).await {
         Some(orbit) => HttpResponse::Ok().json(ListResponse {
-          data: vec![OrbitPub::from(orbit)],
+          data: vec![SearchResult::Orbit(OrbitPub::from(orbit))],
           total_items: 1,
           total_pages: 1,
           page: 0,
@@ -128,19 +137,19 @@ pub async fn api_search(
         None => {
           match federate_orbit_group_from_webfinger(
             components[1],
-            &format!("group:{}@{}", components[0], components[1]),
+            &format!("group:{}@{}", components[0].replace("o/", ""), components[1]),
             &orbits,
           )
           .await
           {
             Ok(orbit) => match orbit {
               Some(orbit) => HttpResponse::Ok().json(ListResponse {
-                data: vec![OrbitPub::from(orbit)],
+                data: vec![SearchResult::Orbit(OrbitPub::from(orbit))],
                 total_items: 1,
                 total_pages: 1,
                 page: 0,
               }),
-              None => HttpResponse::Ok().json(ListResponse::<OrbitPub> {
+              None => HttpResponse::Ok().json(ListResponse::<SearchResult> {
                 data: vec![],
                 total_items: 0,
                 total_pages: 1,

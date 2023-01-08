@@ -20,6 +20,7 @@ import { UserProvider } from '@/components/organisms/UserContext'
 import NavBar from '../molecules/NavBar'
 import { OrbitProvider } from '../organisms/OrbitContext'
 import { CreateProvider } from '../organisms/CreateContext'
+import { SearchProvider } from '../organisms/SearchContext'
 
 interface MainLayoutProps {
   defaultAuthContext?: IAuthContext
@@ -66,12 +67,14 @@ export default function MainLayout({
             <UserProvider>
               <OrbitProvider>
                 <CreateProvider>
-                  <DefaultActionsDelegator />
-                  <main className={cx('orbit-main', theme)}>
-                    <NavBar isBuiltInRoute={isBuiltInRoute} />
-                    {isBuiltInRoute && <>{childrenWithClassname}</>}
-                    {!isBuiltInRoute && <>{childrenWithClassname}</>}
-                  </main>
+                  <SearchProvider>
+                    <DefaultActionsDelegator />
+                    <main className={cx('orbit-main', theme)}>
+                      <NavBar isBuiltInRoute={isBuiltInRoute} />
+                      {isBuiltInRoute && <>{childrenWithClassname}</>}
+                      {!isBuiltInRoute && <>{childrenWithClassname}</>}
+                    </main>
+                  </SearchProvider>
                 </CreateProvider>
               </OrbitProvider>
             </UserProvider>

@@ -1,0 +1,42 @@
+.#{$theme-class} {
+  .orbit-orbit-button {
+    text-decoration: none;
+    font-size: $font-size-m;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-dark;
+    }
+  }
+
+  .orbit-orbit-button__avatar {
+    color: transparent;
+
+    @media (prefers-color-scheme: light) {
+      background: $fill-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: $fill-dark;
+    }
+  }
+
+  .orbit-orbit-button__details-handle {
+    font-weight: $font-weight-medium;
+  }
+
+  .orbit-orbit-button__details-full-handle {
+    font-size: $font-size-s;
+
+    @media (prefers-color-scheme: light) {
+      color: $text-2-light;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: $text-2-dark;
+    }
+  }
+}

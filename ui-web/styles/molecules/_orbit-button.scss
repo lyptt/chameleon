@@ -1,0 +1,22 @@
+.orbit-orbit-button {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.orbit-orbit-button__avatar {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.orbit-orbit-button__details {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  @include mq($until: desktop) {
+    display: none;
+  }
+}

@@ -18,6 +18,7 @@ pub struct OrbitPub {
   pub description_html: String,
   pub avatar_uri: Option<String>,
   pub banner_uri: Option<String>,
+  pub fediverse_id: String,
   pub uri: String,
   pub is_external: bool,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -38,6 +39,7 @@ impl FromRow for OrbitPub {
       description_html: row.get("description_html"),
       avatar_uri: row.get("avatar_uri"),
       banner_uri: row.get("banner_uri"),
+      fediverse_id: row.get("fediverse_id"),
       uri: row.get("uri"),
       is_external: row.get("is_external"),
       joined: row.get("joined"),
@@ -58,6 +60,7 @@ impl From<Orbit> for OrbitPub {
       description_html: orbit.description_html,
       avatar_uri: orbit.avatar_uri,
       banner_uri: orbit.banner_uri,
+      fediverse_id: orbit.fediverse_id,
       uri: orbit.uri,
       is_external: orbit.is_external,
       joined: None,

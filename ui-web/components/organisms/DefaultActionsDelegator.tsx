@@ -25,6 +25,11 @@ import {
   useCreate,
 } from '@/components/organisms/CreateContext'
 import { userActionDismiss, useUser } from './UserContext'
+import {
+  searchActionLoadResult,
+  searchActionReset,
+  useSearch,
+} from './SearchContext'
 
 export default function DefaultActionsDelegator() {
   const { session } = useAuth()
@@ -34,6 +39,7 @@ export default function DefaultActionsDelegator() {
   const { state: orbitsState, dispatch: orbitsDispatch } = useOrbits()
   const { state: createState, dispatch: createDispatch } = useCreate()
   const { state: userState, dispatch: userDispatch } = useUser()
+  const { state: searchState, dispatch: searchDispatch } = useSearch()
   const { route, query } = useRouter()
 
   useEffect(() => {
@@ -194,6 +200,38 @@ export default function DefaultActionsDelegator() {
       )
     }
   }, [session, profileState, orbitsState, orbitsDispatch])
+
+  useEffect(() => {
+    if (route !== '/search') {
+      if (searchState.initialLoadComplete) {
+        searchActionReset(searchDispatch)
+      }
+      return
+    }
+
+    if (
+      (query.term === searchState.searchedTerm &&
+        searchState.initialLoadComplete) ||
+      searchState.loading ||
+      searchState.loadingFailed
+    ) {
+      return
+    }
+
+    if (!query.term) {
+      if (searchState.initialLoadComplete) {
+        searchActionReset(searchDispatch)
+      }
+      return
+    }
+
+    searchActionLoadResult(
+      query.term as string,
+      0,
+      session?.access_token,
+      searchDispatch
+    )
+  }, [route, query, session, profileState, searchState, searchDispatch])
 
   useEffect(() => {
     if (
