@@ -39,7 +39,7 @@ chrono = { version = "0.4.23", features = [
   "wasmbind",
   "serde",
 ], default-features = false }
-async-trait = "0.1.60"
+async-trait = "0.1.61"
 tokio = { version = "1.24.1", features = [
   "macros",
   "process",
