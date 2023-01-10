@@ -76,7 +76,7 @@ rsa = "0.7.2"
 gravatar = "0.2.0"
 regex = "1.7.0"
 url = "2.3.1"
-base64 = "0.20.0"
+base64 = "0.21.0"
 http-signing = { git = "https://github.com/lyptt/http-signing.git", rev = "3047bc572b6cc2e3b0b16e246a9c2a3b69670426", features = [
   "rsa",
   "reqwest",
